@@ -9,20 +9,28 @@ app.use(express.json());
 const PORT = process.env.PORT || 5000;
 // Example rout
 
-const mongoURI = "mongodb+srv://tanishq:fPRcY28gGTs4WLHm@procurement.yckca.mongodb.net/?retryWrites=true&w=majority&appName=Procurement";
+const mongoURI = process.env.MONGO_DB_URL
+try {
+  mongoose.connect(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+  });
 
-mongoose.connect(mongoURI)
-  .then(() => console.log('MongoDB connected successfully'))
-  .catch((err) => console.error('MongoDB connection error:', err));
-
+  const connection = mongoose.connection;
+  connection.once('open', () => {
+      console.log('MongoDB connected.');
+  });
+} catch (err) {
+  console.log('Error : ' + err);
+}
 app.get('/api', (req, res) => {
   res.send('Hello from the backend');
 });
 
-import vendorController from './controller/vendor.controller'
+const vendorController =require('./controller/vendor.controller')
 app.use('/vendor' , vendorController)
 
-import authController from './controller/auth.controller'
+const authController = require('./controller/auth.controller')
 app.use('/auth', authController)
 
 app.listen(PORT, () => {
