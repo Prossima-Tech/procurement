@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const VendorSchema = new Schema({
-  VendorID: { type: String, required: true, unique: true },
+  VendorCode: { type: Number, required: true },
   POPrefix: String,
   VendorName: { type: String, required: true },
   ContactPerson: { type: String, required: true },
@@ -24,4 +24,4 @@ const VendorSchema = new Schema({
 
 
 const Vendor = mongoose.model('Vendor', VendorSchema);
-export default Vendor
+module.exports = Vendor;

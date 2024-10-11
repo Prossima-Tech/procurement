@@ -6,10 +6,10 @@ const cors = require('cors');
 const app = express();
 app.use(cors());
 app.use(express.json());
-const PORT = process.env.PORT || 5000;
-// Example rout
 
+const PORT = process.env.PORT || 5000;
 const mongoURI = process.env.MONGO_DB_URL
+
 try {
   mongoose.connect(mongoURI, {
       useNewUrlParser: true,
@@ -23,6 +23,7 @@ try {
 } catch (err) {
   console.log('Error : ' + err);
 }
+
 app.get('/api', (req, res) => {
   res.send('Hello from the backend');
 });
@@ -34,5 +35,6 @@ const authController = require('./controller/auth.controller')
 app.use('/auth', authController)
 
 app.listen(PORT, () => {
+  
   console.log(`Server running on port ${PORT}`);
 });
