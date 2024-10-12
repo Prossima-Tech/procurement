@@ -34,6 +34,8 @@ app.use('/vendor' , vendorController)
 const authController = require('./controller/auth.controller')
 app.use('/auth', authController)
 
+const itemController = require('./controller/item.controller')
+app.use('/item', itemController)
 app.listen(PORT, () => {
   
   console.log(`Server running on port ${PORT}`);

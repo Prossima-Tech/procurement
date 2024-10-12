@@ -4,8 +4,9 @@ const Schema = mongoose.Schema;
 const ItemSchema = new Schema({
   ItemCode: { type: String, required: true, unique: true },
   ItemName: { type: String, required: true },
+  type: { type: String, required: true, enum: ['good', 'service'] },
   SAC_HSN_Code: String,
-  ItemType: String,
+  ItemCategory: String,
   SerialNumber: String,
   IGST_Rate: Number,
   CGST_Rate: Number,
@@ -14,4 +15,4 @@ const ItemSchema = new Schema({
 });
 
 const Item = mongoose.model('Item', ItemSchema);
-export default Item
+module.exports = Item;
