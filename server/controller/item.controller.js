@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const Item = require('../model/item.model');
+const { Item, ItemCategory } = require('../model/item.model');
 
 // Get a single item by ID
 router.get('/getItem/:itemId', async (req, res) => {
@@ -36,6 +36,7 @@ router.post('/createItem', async (req, res) => {
       SAC_HSN_Code,
       ItemCategory,
       SerialNumber,
+      Remarks,
       IGST_Rate,
       CGST_Rate,
       SGST_Rate,
@@ -65,6 +66,7 @@ router.post('/createItem', async (req, res) => {
       SAC_HSN_Code: SAC_HSN_Code || '',
       ItemCategory: ItemCategory || '',
       SerialNumber: SerialNumber || '',
+      Remarks: Remarks || '',
       IGST_Rate: IGST_Rate || null,
       CGST_Rate: CGST_Rate || null,
       SGST_Rate: SGST_Rate || null,
@@ -128,6 +130,7 @@ router.put('/updateItem/:id', async (req, res) => {
       SAC_HSN_Code,
       ItemCategory,
       SerialNumber,
+      Remarks,
       IGST_Rate,
       CGST_Rate,
       SGST_Rate,
@@ -142,6 +145,7 @@ router.put('/updateItem/:id', async (req, res) => {
     if (SAC_HSN_Code !== undefined) updateFields.SAC_HSN_Code = SAC_HSN_Code;
     if (ItemCategory !== undefined) updateFields.ItemCategory = ItemCategory;
     if (SerialNumber !== undefined) updateFields.SerialNumber = SerialNumber;
+    if (Remarks !== undefined) updateFields.Remarks = Remarks;
     if (IGST_Rate !== undefined) updateFields.IGST_Rate = IGST_Rate;
     if (CGST_Rate !== undefined) updateFields.CGST_Rate = CGST_Rate;
     if (SGST_Rate !== undefined) updateFields.SGST_Rate = SGST_Rate;
@@ -186,5 +190,69 @@ router.delete('/deleteItem/:id', async (req, res) => {
   }
 }); //tested completely
 
-module.exports = router;
+// Create a new ItemCategory
+router.post('/createItemCategory', async (req, res) => {
+  try {
+    const { name } = req.body;
 
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: name is required'
+      });
+    }
+
+    const newItemCategory = await ItemCategory.create({ name });
+
+    res.status(201).json({
+      success: true,
+      data: newItemCategory
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Search ItemCategories
+router.get('/searchItemCategories', async (req, res) => {
+  try {
+    const { query } = req.query;
+    const regex = new RegExp(query, 'i');
+
+    const categories = await ItemCategory.find({ name: regex });
+
+    res.status(200).json({
+      success: true,
+      count: categories.length,
+      data: categories
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Server Error'
+    });
+  }
+});
+
+// Get all ItemCategories
+router.get('/allItemCategories', async (req, res) => {
+  try {
+    const categories = await ItemCategory.find();
+
+    res.status(200).json({
+      success: true,
+      count: categories.length,
+      data: categories
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Server Error'
+    });
+  }
+});
+
+module.exports = router;

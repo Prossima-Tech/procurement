@@ -8,6 +8,7 @@ const ItemSchema = new Schema({
   SAC_HSN_Code: String,
   ItemCategory: String,
   SerialNumber: String,
+  Remarks: String,
   IGST_Rate: Number,
   CGST_Rate: Number,
   SGST_Rate: Number,
@@ -15,4 +16,11 @@ const ItemSchema = new Schema({
 });
 
 const Item = mongoose.model('Item', ItemSchema);
-module.exports = Item;
+
+const ItemCategorySchema = new Schema({
+  name: { type: String, required: true, unique: true }
+});
+
+const ItemCategory = mongoose.model('ItemCategory', ItemCategorySchema);
+
+module.exports = { Item, ItemCategory };

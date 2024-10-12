@@ -11,6 +11,39 @@ const PartCodeSchema = new Schema({
   MeasurementUnit: String //{ type: Schema.Types.ObjectId , ref: 'Measureunit'},
 });
 
+// SizeName Schema
+const SizeNameSchema = new Schema({
+  name: { type: String, required: true, unique: true },
+});
+
+// ColourName Schema
+const ColourNameSchema = new Schema({
+  name: { type: String, required: true, unique: true },
+});
+
+// MakerName Schema
+const MakerNameSchema = new Schema({
+  name: { type: String, required: true, unique: true },
+});
+
+// MeasurementUnit Schema
+const MeasurementUnitSchema = new Schema({
+  name: { type: String, required: true, unique: true },
+});
+
+
 // Create models
 const PartCode = mongoose.model('PartCode', PartCodeSchema);
-export default PartCode
+const SizeName = mongoose.model('SizeName', SizeNameSchema);
+const ColourName = mongoose.model('ColourName', ColourNameSchema);
+const MakerName = mongoose.model('MakerName', MakerNameSchema);
+const MeasurementUnit = mongoose.model('MeasurementUnit', MeasurementUnitSchema);
+
+
+module.exports = {
+  PartCode,
+  SizeName,
+  ColourName,
+  MakerName,
+  MeasurementUnit
+};
