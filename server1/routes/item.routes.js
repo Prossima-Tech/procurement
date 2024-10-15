@@ -9,4 +9,8 @@ router.get('/:id', authenticate, itemController.getItemById);
 router.put('/:id', authenticate, authorize(['admin', 'manager']), itemController.updateItem);
 router.delete('/:id', authenticate, authorize(['admin']), itemController.deleteItem);
 
+router.post('/createItemCategory', itemController.createItemCategory);
+router.get('/searchItemCategories', itemController.searchItemCategories);
+router.get('/allItemCategories', itemController.getAllItemCategories);
+
 module.exports = router;
