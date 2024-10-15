@@ -1,4 +1,5 @@
 const Item = require('../models/item.model');
+const ItemCategory  = require('../models/item.model');
 
 exports.createItem = async (req, res) => {
   try {
@@ -52,5 +53,70 @@ exports.deleteItem = async (req, res) => {
     res.json({ message: 'Item deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// Create a new ItemCategory
+exports.createItemCategory = async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: name is required'
+      });
+    }
+
+    const newItemCategory = await ItemCategory.create({ name });
+
+    res.status(201).json({
+      success: true,
+      data: newItemCategory
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+// Search ItemCategories
+exports.searchItemCategories = async (req, res) => {
+  try {
+    const { query } = req.query;
+    const regex = new RegExp(query, 'i');
+
+    const categories = await ItemCategory.find({ name: regex });
+
+    res.status(200).json({
+      success: true,
+      count: categories.length,
+      data: categories
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Server Error'
+    });
+  }
+};
+
+// Get all ItemCategories
+exports.getAllItemCategories = async (req, res) => {
+  try {
+    const categories = await ItemCategory.find();
+
+    res.status(200).json({
+      success: true,
+      count: categories.length,
+      data: categories
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Server Error'
+    });
   }
 };

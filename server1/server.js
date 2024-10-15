@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const vendorRoutes = require('./routes/vendor.routes');
 const itemRoutes = require('./routes/item.routes');
+const partRouter = require('./routes/part.router');
 const purchaseOrderRoutes = require('./routes/purchaseOrder.routes');
 
 const app = express();
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/items', itemRoutes);
+app.use('/api/parts', partRouter);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
 
 // Error handling middleware
