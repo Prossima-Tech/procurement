@@ -46,7 +46,7 @@ const ItemSchema = new mongoose.Schema({
   
 const Item = mongoose.model('Item', ItemSchema);
 
-const ItemCategorySchema = new Schema({
+const ItemCategorySchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true }
 });
 
