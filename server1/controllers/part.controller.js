@@ -1,6 +1,6 @@
 
-const {PartCode, SizeName, ColourName, MakerName, MeasurementUnit} = require('../model/part.model');
-const Item = require('../model/item.model');
+const {PartCode, SizeName, ColourName, MakerName, MeasurementUnit} = require('../models/part.model');
+const Item = require('../models/item.model');
 
 exports.createPart = async (req, res) => {
   try {
