@@ -1,9 +1,14 @@
 const mongoose = require('mongoose');
 
 const PurchaseOrderSchema = new mongoose.Schema({
-  vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
-  unitCode: { type: String, required: true },
-  unitName: { type: String, required: true },
+  vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
+  // purchaseIndent: { type: mongoose.Schema.Types.ObjectId, ref: 'PurchaseIndent' },
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  unitId: { type: mongoose.Schema.Types.ObjectId, ref: 'Unit', required: true },
+  poCode: { type: String, required: true, unique: true },
+  poDate: { type: Date, required: true },
+  validUpto: { type: Date },
+
   invoiceTo: {
     name: { type: String, required: true },
     branchName: String,
@@ -20,26 +25,23 @@ const PurchaseOrderSchema = new mongoose.Schema({
     state: String,
     pin: String
   },
-  poDate: { type: Date, required: true },
-  validUpto: { type: Date },
+  items: [{
+    partCode: { type: mongoose.Schema.Types.ObjectId, ref: 'PartCode', required: true },
+    quantity: { type: Number, required: true },
+    unitPrice: { type: Number, required: true },
+    totalPrice: { type: Number, required: true }
+  }],
+
   deliveryDate: { type: Date, required: true },
-  projectId: String,
+  supplierRef: String,
+  otherRef: String,
+  dispatchThrough: String,
+  destination: String,
   paymentTerms: String,
   deliveryTerms: String,
-  items: [{
-    item: { type: mongoose.Schema.Types.ObjectId, ref: 'Item', required: true },
-    quantity: { type: Number, required: true },
-    rate: { type: Number, required: true },
-    total: { type: Number, required: true }
-  }],
-  totals: {
-    subtotal: { type: Number, required: true },
-    cgst: { type: Number, default: 0 },
-    sgst: { type: Number, default: 0 },
-    igst: { type: Number, default: 0 },
-    grandTotal: { type: Number, required: true }
-  },
-  poNumber: { type: String, required: true, unique: true },
+  poNarration: String,
+  
+  
   status: { type: String, enum: ['draft', 'submitted', 'approved', 'cancelled'], default: 'draft' }
 }, { timestamps: true });
 

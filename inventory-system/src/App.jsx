@@ -7,6 +7,7 @@ import Items from './Pages/Items';
 import PurchaseOrders from './Pages/PurchaseOrders';
 import Reports from './Pages/Reports';
 import Settings from './Pages/Settings';
+import CreatePO from './Pages/createPO';
 import Vendors from './Pages/Vendors';
 import { ThemeProvider } from './contexts/ThemeContext';
 
@@ -19,6 +20,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/items" element={<Items />} />
+          <Route path="/create-po" element={<CreatePO />} />
           <Route path="/purchase-orders" element={<PurchaseOrders />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
