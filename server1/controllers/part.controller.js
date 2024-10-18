@@ -172,6 +172,19 @@ exports.searchSizeNames = async (req, res) => {
   }
 };
 
+exports.deleteSizeName = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedSize = await SizeName.findByIdAndDelete(id);
+    if (!deletedSize) {
+      return res.status(404).json({ success: false, error: 'Size not found' });
+    }
+    res.status(200).json({ success: true, data: {} });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
 // ColourName controllers
 exports.createColourName = async (req, res) => {
   try {
@@ -210,6 +223,20 @@ exports.searchColourNames = async (req, res) => {
   }
 };
 
+exports.deleteColourName = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedColour = await ColourName.findByIdAndDelete(id);
+    if (!deletedColour) {
+      return res.status(404).json({ success: false, error: 'Colour not found' });
+    }
+    res.status(200).json({ success: true, data: {} });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+
 // MakerName controllers
 exports.createMakerName = async (req, res) => {
   try {
@@ -245,6 +272,19 @@ exports.searchMakerNames = async (req, res) => {
     res.status(200).json({ success: true, data: makers });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Server Error' });
+  }
+};
+
+exports.deleteMakerName = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedMaker = await MakerName.findByIdAndDelete(id);
+    if (!deletedMaker) {
+      return res.status(404).json({ success: false, error: 'Maker not found' });
+    }
+    res.status(200).json({ success: true, data: {} });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
   }
 };
 
@@ -286,15 +326,18 @@ exports.searchMeasurementUnits = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
-
-
-
+exports.deleteMeasurementUnit = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedUnit = await MeasurementUnit.findByIdAndDelete(id);
+    if (!deletedUnit) {
+      return res.status(404).json({ success: false, error: 'Measurement unit not found' });
+    }
+    res.status(200).json({ success: true, data: {} });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
 
 
 
