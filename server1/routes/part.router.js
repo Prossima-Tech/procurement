@@ -32,6 +32,6 @@ router.get('/units/allMeasurementUnits', partController.getAllMeasurementUnits);
 router.get('/units/searchMeasurementUnits', partController.searchMeasurementUnits);
 router.delete('/units/:id', partController.deleteMeasurementUnit);
 
-
+router.get('/search', partController.searchParts);
 
 module.exports = router;

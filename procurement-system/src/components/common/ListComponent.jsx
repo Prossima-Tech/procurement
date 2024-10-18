@@ -34,7 +34,7 @@ const ListComponent = ({ title, data, columns, onFetch, totalPages, onCreateNew,
                     onClick={onCreateNew}
                 >
                     <PlusCircle size={20} className="mr-2" />
-                    New Vendor
+                    New {title.replace("Master", "")}
                 </button>
             </div>
             <div className="mb-6 flex justify-between items-center">
