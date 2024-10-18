@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import ListComponent from '../common/ListComponent';
@@ -54,7 +55,7 @@ const PartMasterComponent = () => {
         try {
             // const response = await axios.get(`http://localhost:5000/api/parts/search?page=${page}&query=${query}`, {
             const response = await axios.get(`http://localhost:5000/api/parts/allParts?page=${page}`, {
-            
+
                 headers: { Authorization: `Bearer ${token}` }
             });
             setParts(response.data.data);
@@ -82,7 +83,7 @@ const PartMasterComponent = () => {
 
     const handleSubmit = async (formData) => {
         try {
-            
+
             // const response = await axios.post('http://localhost:5000/api/parts', formData, {
             const response = await axios.post('http://localhost:5000/api/parts/createPart', formData, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -99,7 +100,7 @@ const PartMasterComponent = () => {
     const handleDeletePart = async (partId) => {
         if (window.confirm('Are you sure you want to delete this part?')) {
             try {
-                await axios.delete(`http://localhost:5000/api/parts/${partId}`, {
+                await axios.delete(`http://localhost:5000/api/parts/deletePart/${partId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
