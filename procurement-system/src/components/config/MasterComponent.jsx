@@ -60,7 +60,7 @@ const MasterComponent = ({ title, searchEndpoint, getAllEndpoint, createEndpoint
     };
 
     return (
-        <div className={`p - 6 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'} rounded - lg shadow - md`}>
+        <div className={`p-6 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'} rounded - lg shadow - md`}>
             <h2 className="text-2xl font-bold mb-6">{title}</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
