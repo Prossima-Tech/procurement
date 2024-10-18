@@ -5,7 +5,7 @@ const registerValidation = (data) => {
     username: Joi.string().min(3).max(30).required(),
     email: Joi.string().email().required(),
     password: Joi.string().min(6).required(),
-    role: Joi.string().valid('superadmin', 'admin', 'manager', 'employee')
+    role: Joi.string().valid('admin', 'manager', 'employee')
   });
   return schema.validate(data);
 };
@@ -20,28 +20,28 @@ const loginValidation = (data) => {
 
 const vendorValidation = (data) => {
   const schema = Joi.object({
+    poPrefix: Joi.string(),
     name: Joi.string().required(),
+    contactPerson: Joi.string().required(),
+    contactNumber: Joi.string(),
+    mobileNumber: Joi.string().required(),
+    panNumber: Joi.string().uppercase(),
+    email: Joi.string().email().lowercase(),
+    gstNumber: Joi.string().uppercase(),
+    bankDetails: Joi.object({
+      name: Joi.string(),
+      branchName: Joi.string(),
+      accountNumber: Joi.string(),
+      ifscCode: Joi.string().uppercase()
+    }),
     address: Joi.object({
       line1: Joi.string(),
       line2: Joi.string(),
       city: Joi.string(),
       state: Joi.string(),
-      country: Joi.string(),
       pinCode: Joi.string()
     }),
-    gstNumber: Joi.string(),
-    phone: Joi.string(),
-    email: Joi.string().email(),
-    cinNumber: Joi.string(),
-    paymentTerms: Joi.string(),
-    deliveryTerms: Joi.string(),
-    items: Joi.array().items(Joi.object({
-      item: Joi.string().required(),
-      unitPrice: Joi.number().required(),
-      currency: Joi.string().default('INR'),
-      leadTime: Joi.number()
-    })),
-    isActive: Joi.boolean()
+    remark: Joi.string()
   });
   return schema.validate(data);
 };
