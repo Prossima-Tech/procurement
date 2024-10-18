@@ -1,251 +1,357 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
+/* eslint-disable react/prop-types */
+import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { debounce } from 'lodash'; // Make sure to install lodash if not already present
+import { useTheme } from '../../contexts/ThemeContext';
+
+const BASE_URL = 'http://localhost:5000/api/parts';
+
+const useApi = () => {
+    const makeRequest = useCallback(async (method, url, data = null, params = null) => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await axios({
+                method,
+                url,
+                data,
+                params,
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('API request failed:', error);
+            throw error;
+        }
+    }, []);
+
+    return { makeRequest };
+};
+
+const Dropdown = ({ label, onChange, onSearch, onCreate, options, loading, isDarkMode }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    const handleInputChange = (e) => {
+        const newValue = e.target.value;
+        setSearchTerm(newValue);
+        onChange(newValue);
+        onSearch(newValue);
+    };
+
+    const handleFocus = () => {
+        setIsOpen(true);
+        if (!searchTerm) {
+            onSearch('');
+        }
+    };
+
+    const baseInputClass = `w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-opacity-50 ${isDarkMode
+        ? 'bg-gray-700 text-white border-gray-600 focus:ring-blue-500 focus:border-blue-500'
+        : 'bg-white text-gray-900 border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+        }`;
+
+    const baseDropdownClass = `absolute z-10 w-full mt-1 border rounded-md shadow-lg max-h-60 overflow-auto ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-300'
+        }`;
+
+    return (
+        <div className="mb-4 relative" ref={dropdownRef}>
+            <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                {label}
+            </label>
+            <div className="relative">
+                <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={handleInputChange}
+                    onFocus={handleFocus}
+                    className={baseInputClass}
+                    placeholder={`Search ${label.toLowerCase()}`}
+                />
+                {isOpen && (
+                    <div className={baseDropdownClass}>
+                        {loading ? (
+                            <div className={`px-4 py-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Loading...</div>
+                        ) : options.length > 0 ? (
+                            options.map((option) => (
+                                <div
+                                    key={option.value}
+                                    className={`px-4 py-2 cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                                        }`}
+                                    onClick={() => {
+                                        onChange(option.label);
+                                        setSearchTerm(option.label);
+                                        setIsOpen(false);
+                                    }}
+                                >
+                                    {option.label}
+                                </div>
+                            ))
+                        ) : (
+                            <div
+                                className={`px-4 py-2 cursor-pointer ${isDarkMode ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-gray-100'
+                                    }`}
+                                onClick={() => {
+                                    onCreate(searchTerm);
+                                    setIsOpen(false);
+                                }}
+                            >
+                                Create &quot;{searchTerm}&quot;
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 
 const PartForm = ({ onSubmit, onCancel, initialData = {} }) => {
     const { isDarkMode } = useTheme();
+    const { makeRequest } = useApi();
     const [formData, setFormData] = useState({
-        PartCodeNumber: '',
-        ItemCode: '',
-        SizeName: 'NONE',
-        ColourName: '',
-        SerialNumber: '',
-        ItemMakeName: 'NONE',
-        MeasurementUnit: 'NONE',
+        partCodeNumber: '',
+        itemCode: '',
+        sizeName: '',
+        colourName: '',
+        serialNumber: '',
+        itemMakeName: '',
+        measurementUnit: '',
         ...initialData
     });
 
-    const [sizes, setSizes] = useState([]);
-    const [colours, setColours] = useState([]);
-    const [filteredColours, setFilteredColours] = useState([]);
-    const [makers, setMakers] = useState([]);
-    const [units, setUnits] = useState([]);
     const [items, setItems] = useState([]);
-    const [isSearchingColour, setIsSearchingColour] = useState(false);
-    const [showColourDropdown, setShowColourDropdown] = useState(false);
-    const colourInputRef = useRef(null);
+    const [dropdownOptions, setDropdownOptions] = useState({
+        sizeName: [],
+        colourName: [],
+        itemMakeName: [],
+        measurementUnit: []
+    });
+    const [loading, setLoading] = useState({
+        sizeName: false,
+        colourName: false,
+        itemMakeName: false,
+        measurementUnit: false
+    });
 
     useEffect(() => {
-        fetchOptions();
-    }, []);
+        const fetchItems = async () => {
+            try {
+                const response = await makeRequest('GET', 'http://localhost:5000/api/items');
+                setItems(response.data.map(item => ({ value: item.ItemCode, label: `${item.ItemCode} - ${item.ItemName}` })));
+            } catch (error) {
+                console.error('Error fetching items:', error);
+            }
+        };
+        fetchItems();
+    }, [makeRequest]);
 
-    const fetchOptions = async () => {
-        const token = localStorage.getItem('token');
-        try {
-            const [sizesRes, coloursRes, makersRes, unitsRes, itemsRes] = await Promise.all([
-                axios.get('http://localhost:5000/api/parts/sizes/allSizeNames', { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get('http://localhost:5000/api/parts/colours/allColourNames', { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get('http://localhost:5000/api/parts/makers/allMakerNames', { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get('http://localhost:5000/api/parts/units/allMeasurementUnits', { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get('http://localhost:5000/api/items', { headers: { Authorization: `Bearer ${token}` } })
-            ]);
-
-            setSizes(sizesRes.data.data);
-            setColours(coloursRes.data.data);
-            setMakers(makersRes.data.data);
-            setUnits(unitsRes.data.data);
-            setItems(itemsRes.data.data);
-        } catch (error) {
-            console.error('Error fetching options:', error);
-        }
+    const handleInputChange = (field) => (e) => {
+        setFormData(prev => ({ ...prev, [field]: e.target.value }));
     };
 
-    const debouncedSearchColours = debounce(async (searchTerm) => {
-        if (searchTerm.length < 2) {
-            setFilteredColours(colours);
-            return;
-        }
-        setIsSearchingColour(true);
-        const token = localStorage.getItem('token');
+    const handleDropdownSearch = useCallback(async (field, searchTerm) => {
+        setLoading(prev => ({ ...prev, [field]: true }));
         try {
-            const response = await axios.get(`http://localhost:5000/api/parts/colours/searchColourNames`, {
-                params: { query: searchTerm },
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setFilteredColours(response.data.data);
+            let endpoint;
+            switch (field) {
+                case 'sizeName':
+                    endpoint = searchTerm ? `${BASE_URL}/sizes/searchSizeNames` : `${BASE_URL}/sizes/allSizeNames`;
+                    break;
+                case 'colourName':
+                    endpoint = searchTerm ? `${BASE_URL}/colours/searchColourNames` : `${BASE_URL}/colours/allColourNames`;
+                    break;
+                case 'itemMakeName':
+                    endpoint = searchTerm ? `${BASE_URL}/makers/searchMakerNames` : `${BASE_URL}/makers/allMakerNames`;
+                    break;
+                case 'measurementUnit':
+                    endpoint = searchTerm ? `${BASE_URL}/units/searchMeasurementUnits` : `${BASE_URL}/units/allMeasurementUnits`;
+                    break;
+                default:
+                    throw new Error(`Invalid field: ${field}`);
+            }
+
+            const response = await makeRequest('GET', endpoint, null, searchTerm ? { query: searchTerm } : null);
+            setDropdownOptions(prev => ({
+                ...prev,
+                [field]: response.data.map(item => ({ value: item._id, label: item.name }))
+            }));
         } catch (error) {
-            console.error('Error searching colours:', error);
+            console.error(`Error fetching ${field} options:`, error);
+            setDropdownOptions(prev => ({ ...prev, [field]: [] }));
         } finally {
-            setIsSearchingColour(false);
+            setLoading(prev => ({ ...prev, [field]: false }));
         }
-    }, 300);
+    }, [makeRequest]);
 
-    const handleColourInputChange = (e) => {
-        const { value } = e.target;
-        setFormData(prevState => ({ ...prevState, ColourName: value }));
-        setShowColourDropdown(true);
-        debouncedSearchColours(value);
-    };
-
-    const handleColourSelect = (colour) => {
-        setFormData(prevState => ({ ...prevState, ColourName: colour }));
-        setShowColourDropdown(false);
-    };
-
-    const handleCreateNewColour = async () => {
-        const token = localStorage.getItem('token');
+    const handleCreateNew = useCallback(async (field, name) => {
         try {
-            const response = await axios.post('http://localhost:5000/api/parts/colours/createColourName', 
-                { name: formData.ColourName },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            let endpoint;
+            switch (field) {
+                case 'sizeName':
+                    endpoint = `${BASE_URL}/sizes/createSizeName`;
+                    break;
+                case 'colourName':
+                    endpoint = `${BASE_URL}/colours/createColourName`;
+                    break;
+                case 'itemMakeName':
+                    endpoint = `${BASE_URL}/makers/createMakerName`;
+                    break;
+                case 'measurementUnit':
+                    endpoint = `${BASE_URL}/units/createMeasurementUnit`;
+                    break;
+                default:
+                    throw new Error(`Invalid field: ${field}`);
+            }
 
-            if (response.data.success) {
-                const newColour = response.data.data;
-                
-                // Update the colours list
-                setColours(prevColours => [...prevColours, newColour]);
-                
-                // Update the filtered colours list
-                setFilteredColours(prevFiltered => [...prevFiltered, newColour]);
-                
-                // Update the form data
-                setFormData(prevState => ({ ...prevState, ColourName: newColour.name }));
-                
-                // Close the dropdown
-                setShowColourDropdown(false);
-
-                // Optionally, show a success message
-                alert(`New colour "${newColour.name}" created successfully!`);
+            const response = await makeRequest('POST', endpoint, { name });
+            if (response.success) {
+                setFormData(prev => ({ ...prev, [field]: name }));
+                alert(`New ${field.replace('Name', '')} "${name}" created successfully!`);
+                // Refresh the options for this field
+                handleDropdownSearch(field, '');
             }
         } catch (error) {
-            console.error('Error creating new colour:', error);
-            // Optionally, show an error message
-            alert(`Failed to create new colour: ${error.response?.data?.error || error.message}`);
+            console.error(`Error creating new ${field}:`, error);
+            alert(`Failed to create new ${field.replace('Name', '')}: ${error.response?.data?.error || error.message}`);
         }
-    };
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prevState => ({ ...prevState, [name]: value }));
-    };
+    }, [makeRequest, handleDropdownSearch]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
         onSubmit(formData);
     };
 
-    const inputClass = `w-full p-2 rounded-md border ${
-        isDarkMode 
-            ? 'bg-gray-700 text-white border-gray-600 focus:border-blue-500' 
-            : 'bg-white text-gray-800 border-gray-300 focus:border-blue-500'
-    } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`;
+    const formClass = `p-6 rounded-lg shadow-lg max-w-2xl mx-auto ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
+        }`;
 
-    const labelClass = `block text-sm font-medium mb-1 ${
-        isDarkMode ? 'text-gray-200' : 'text-gray-700'
-    }`;
+    const inputClass = `w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-opacity-50 ${isDarkMode
+        ? 'bg-gray-700 text-white border-gray-600 focus:ring-blue-500 focus:border-blue-500'
+        : 'bg-white text-gray-900 border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+        }`;
+
+    const labelClass = `block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`;
+
+    const buttonClass = `px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-opacity-50 ${isDarkMode
+        ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500'
+        : 'bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-500'
+        }`;
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label htmlFor="PartCodeNumber" className={labelClass}>Part Code Number</label>
-                    <input type="text" id="PartCodeNumber" name="PartCodeNumber" value={formData.PartCodeNumber} onChange={handleChange} className={inputClass} required />
+        <form onSubmit={handleSubmit} className={formClass}>
+            <h2 className={`text-2xl font-bold mb-6 text-center ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>
+                Part Details
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="mb-4">
+                    <label className={labelClass}>Part Code Number</label>
+                    <input
+                        type="text"
+                        value={formData.partCodeNumber}
+                        onChange={handleInputChange('partCodeNumber')}
+                        className={inputClass}
+                        required
+                    />
                 </div>
-                <div>
-                    <label htmlFor="ItemCode" className={labelClass}>Item Code</label>
-                    <select id="ItemCode" name="ItemCode" value={formData.ItemCode} onChange={handleChange} className={inputClass} required>
-                        <option value="">Select an item</option>
-                        {items.map(item => (
-                            <option key={item._id} value={item.ItemCode}>{item.ItemCode} - {item.ItemName}</option>
+                <div className="mb-4">
+                    <label className={labelClass}>Item Code</label>
+                    <select
+                        value={formData.itemCode}
+                        onChange={handleInputChange('itemCode')}
+                        className={inputClass}
+                        required
+                    >
+                        <option value="">Select Item Code</option>
+                        {items.map((item) => (
+                            <option key={item.value} value={item.value}>
+                                {item.label}
+                            </option>
                         ))}
                     </select>
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label htmlFor="SizeName" className={labelClass}>Size</label>
-                    <select id="SizeName" name="SizeName" value={formData.SizeName} onChange={handleChange} className={inputClass} required>
-                        <option value="NONE">NONE</option>
-                        {sizes.map(size => (
-                            <option key={size._id} value={size.name}>{size.name}</option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <label htmlFor="ColourName" className={labelClass}>Colour</label>
-                    <div className="relative">
-                        <input
-                            ref={colourInputRef}
-                            type="text"
-                            id="ColourName"
-                            name="ColourName"
-                            value={formData.ColourName}
-                            onChange={handleColourInputChange}
-                            onFocus={() => setShowColourDropdown(true)}
-                            className={inputClass}
-                            placeholder="Type to search or add a colour"
-                            required
-                        />
-                        {showColourDropdown && (
-                            <ul className={`absolute z-10 w-full mt-1 max-h-60 overflow-auto rounded-md shadow-lg ${
-                                isDarkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-800'
-                            }`}>
-                                {isSearchingColour ? (
-                                    <li className="px-4 py-2 text-sm">Searching...</li>
-                                ) : filteredColours.length > 0 ? (
-                                    filteredColours.map(colour => (
-                                        <li
-                                            key={colour._id}
-                                            className={`px-4 py-2 text-sm cursor-pointer hover:${isDarkMode ? 'bg-gray-600' : 'bg-gray-100'}`}
-                                            onClick={() => handleColourSelect(colour.name)}
-                                        >
-                                            {colour.name}
-                                        </li>
-                                    ))
-                                ) : (
-                                    <li
-                                        className={`px-4 py-2 text-sm cursor-pointer hover:${isDarkMode ? 'bg-gray-600' : 'bg-gray-100'}`}
-                                        onClick={handleCreateNewColour}
-                                    >
-                                        Create new colour: {formData.ColourName}
-                                    </li>
-                                )}
-                            </ul>
-                        )}
-                    </div>
-                </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Dropdown
+                    label="Size"
+                    value={formData.sizeName}
+                    onChange={(value) => setFormData(prev => ({ ...prev, sizeName: value }))}
+                    onSearch={(term) => handleDropdownSearch('sizeName', term)}
+                    onCreate={(name) => handleCreateNew('sizeName', name)}
+                    options={dropdownOptions.sizeName}
+                    loading={loading.sizeName}
+                    isDarkMode={isDarkMode}
+                />
+                <Dropdown
+                    label="Colour"
+                    value={formData.colourName}
+                    onChange={(value) => setFormData(prev => ({ ...prev, colourName: value }))}
+                    onSearch={(term) => handleDropdownSearch('colourName', term)}
+                    onCreate={(name) => handleCreateNew('colourName', name)}
+                    options={dropdownOptions.colourName}
+                    loading={loading.colourName}
+                    isDarkMode={isDarkMode}
+                />
             </div>
-            <div>
-                <label htmlFor="SerialNumber" className={labelClass}>Serial Number</label>
-                <input type="text" id="SerialNumber" name="SerialNumber" value={formData.SerialNumber} onChange={handleChange} className={inputClass} required />
+
+            <div className="mb-4">
+                <label className={labelClass}>Serial Number</label>
+                <input
+                    type="text"
+                    value={formData.serialNumber}
+                    onChange={handleInputChange('serialNumber')}
+                    className={inputClass}
+                    required
+                />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label htmlFor="ItemMakeName" className={labelClass}>Maker</label>
-                    <select id="ItemMakeName" name="ItemMakeName" value={formData.ItemMakeName} onChange={handleChange} className={inputClass} required>
-                        <option value="NONE">NONE</option>
-                        {makers.map(maker => (
-                            <option key={maker._id} value={maker.name}>{maker.name}</option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <label htmlFor="MeasurementUnit" className={labelClass}>Measurement Unit</label>
-                    <select id="MeasurementUnit" name="MeasurementUnit" value={formData.MeasurementUnit} onChange={handleChange} className={inputClass} required>
-                        <option value="NONE">NONE</option>
-                        {units.map(unit => (
-                            <option key={unit._id} value={unit.name}>{unit.name}</option>
-                        ))}
-                    </select>
-                </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Dropdown
+                    label="Maker"
+                    value={formData.itemMakeName}
+                    onChange={(value) => setFormData(prev => ({ ...prev, itemMakeName: value }))}
+                    onSearch={(term) => handleDropdownSearch('itemMakeName', term)}
+                    onCreate={(name) => handleCreateNew('itemMakeName', name)}
+                    options={dropdownOptions.itemMakeName}
+                    loading={loading.itemMakeName}
+                    isDarkMode={isDarkMode}
+                />
+                <Dropdown
+                    label="Measurement Unit"
+                    value={formData.measurementUnit}
+                    onChange={(value) => setFormData(prev => ({ ...prev, measurementUnit: value }))}
+                    onSearch={(term) => handleDropdownSearch('measurementUnit', term)}
+                    onCreate={(name) => handleCreateNew('measurementUnit', name)}
+                    options={dropdownOptions.measurementUnit}
+                    loading={loading.measurementUnit}
+                    isDarkMode={isDarkMode}
+                />
             </div>
-            <div className="flex justify-end space-x-2 mt-6">
-                <button 
-                    type="button" 
-                    onClick={onCancel} 
-                    className={`px-4 py-2 rounded-md ${
-                        isDarkMode 
-                            ? 'bg-gray-600 text-white hover:bg-gray-700' 
-                            : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                    } transition-colors duration-200`}
+
+            <div className="mt-6 flex justify-end space-x-4">
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className={`${buttonClass} bg-gray-500 hover:bg-gray-600`}
                 >
                     Cancel
                 </button>
-                <button 
-                    type="submit" 
-                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200"
+                <button
+                    type="submit"
+                    className={buttonClass}
                 >
                     Submit
                 </button>
