@@ -1,43 +1,59 @@
-const SizeMasterComponent = () => (
-    <div>
-        <h3 className="text-xl font-semibold mb-3">Size Master</h3>
-        <p>This is the Size Master component under Config.</p>
-    </div>
+
+import MasterComponent from './MasterComponent';
+
+const BASE_URL = 'http://localhost:5000/api/parts';
+
+export const SizeMasterComponent = () => (
+    <MasterComponent
+        title="Size Master"
+        endpoint={`${BASE_URL}/sizes`}
+        searchEndpoint={`${BASE_URL}/sizes/searchSizeNames`}
+        getAllEndpoint={`${BASE_URL}/sizes/allSizeNames`}
+        createEndpoint={`${BASE_URL}/sizes/createSizeName`}
+        deleteEndpoint={`${BASE_URL}/sizes`}
+    />
 );
 
-const ColourMasterComponent = () => (
-    <div>
-        <h3 className="text-xl font-semibold mb-3">Colour Master</h3>
-        <p>This is the Colour Master component under Config.</p>
-    </div>
+export const ColourMasterComponent = () => (
+    <MasterComponent
+        title="Colour Master"
+        endpoint={`${BASE_URL}/colours`}
+        searchEndpoint={`${BASE_URL}/colours/searchColourNames`}
+        getAllEndpoint={`${BASE_URL}/colours/allColourNames`}
+        createEndpoint={`${BASE_URL}/colours/createColourName`}
+        deleteEndpoint={`${BASE_URL}/colours`}
+    />
 );
 
-const MakerNameMasterComponent = () => (
-    <div>
-        <h3 className="text-xl font-semibold mb-3">MakerName Master</h3>
-        <p>This is the MakerName Master component under Config.</p>
-    </div>
+export const MakerNameMasterComponent = () => (
+    <MasterComponent
+        title="Maker Name Master"
+        endpoint={`${BASE_URL}/makers`}
+        searchEndpoint={`${BASE_URL}/makers/searchMakerNames`}
+        getAllEndpoint={`${BASE_URL}/makers/allMakerNames`}
+        createEndpoint={`${BASE_URL}/makers/createMakerName`}
+        deleteEndpoint={`${BASE_URL}/makers`}
+    />
 );
 
-const UnitOfMeasurementMasterComponent = () => (
-    <div>
-        <h3 className="text-xl font-semibold mb-3">Unit of Measurement Master</h3>
-        <p>This is the Unit of Measurement Master component under Config.</p>
-    </div>
+export const UnitOfMeasurementMasterComponent = () => (
+    <MasterComponent
+        title="Unit of Measurement Master"
+        endpoint={`${BASE_URL}/units`}
+        searchEndpoint={`${BASE_URL}/units/searchMeasurementUnits`}
+        getAllEndpoint={`${BASE_URL}/units/allMeasurementUnits`}
+        createEndpoint={`${BASE_URL}/units/createMeasurementUnit`}
+        deleteEndpoint={`${BASE_URL}/units`}
+    />
 );
 
-const ItemCategoriesComponent = () => (
-    <div>
-        <h3 className="text-xl font-semibold mb-3">ItemCategoriesComponent</h3>
-
-        <p>This is the ItemCategoriesComponent component under Config.</p>
-    </div>
+export const ItemCategoriesComponent = () => (
+    <MasterComponent
+        title="Item Categories"
+        endpoint={`${BASE_URL}/itemCategories`}
+        searchEndpoint={`${BASE_URL}/itemCategories/search`}
+        getAllEndpoint={`${BASE_URL}/itemCategories/all`}
+        createEndpoint={`${BASE_URL}/itemCategories/create`}
+        deleteEndpoint={`${BASE_URL}/itemCategories`}
+    />
 );
-
-export {
-    SizeMasterComponent,
-    ColourMasterComponent,
-    MakerNameMasterComponent,
-    UnitOfMeasurementMasterComponent,
-    ItemCategoriesComponent
-};
