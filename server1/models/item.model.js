@@ -1,56 +1,58 @@
 const mongoose = require('mongoose');
 
 const ItemSchema = new mongoose.Schema({
-  code: { 
+  ItemCode: { 
     type: String, 
     required: true, 
-    unique: true,
+    unique: true
   },
-  name: { 
+  ItemName: { 
     type: String, 
-    required: true, 
+    required: true 
   },
   type: { 
     type: String, 
     required: true, 
-    enum: ['good', 'service'],
+    enum: ['good', 'service']
   },
-  sacHsnCode: { 
-    type: String,
-    uppercase: true
-  },
-  category: { 
-    type: String,
-  },
-  serialNumber: { 
-    type: String,
-  },
-    
-  igst: { type: Number },
-    
-  cgst: { type: Number},
-    
-  sgst: { type: Number },
-    
-  utgst: { type: Number},
-
-  description: { 
+  SAC_HSN_Code: { 
     type: String
   },
+  ItemCategory: { 
+    type: String
+  },
+  SerialNumber: { 
+    type: String
+  },
+  Remarks: { 
+    type: String
+  },
+  IGST_Rate: { 
+    type: Number 
+  },
+  CGST_Rate: { 
+    type: Number
+  },
+  SGST_Rate: { 
+    type: Number 
+  },
+  UTGST_Rate: { 
+    type: Number
+  }
 }, { 
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  timestamps: true
 });
 
-  
 const Item = mongoose.model('Item', ItemSchema);
 
 const ItemCategorySchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true }
+  name: { 
+    type: String, 
+    required: true, 
+    unique: true 
+  }
 });
 
 const ItemCategory = mongoose.model('ItemCategory', ItemCategorySchema);
 
-
-module.exports = {Item, ItemCategory};
+module.exports = { Item, ItemCategory };

@@ -26,10 +26,18 @@ const UnitOfMeasurementMasterComponent = () => (
     </div>
 );
 
+const ItemCategoriesComponent = () => (
+    <div>
+        <h3 className="text-xl font-semibold mb-3">ItemCategoriesComponent</h3>
+
+        <p>This is the ItemCategoriesComponent component under Config.</p>
+    </div>
+);
 
 export {
     SizeMasterComponent,
     ColourMasterComponent,
     MakerNameMasterComponent,
-    UnitOfMeasurementMasterComponent
+    UnitOfMeasurementMasterComponent,
+    ItemCategoriesComponent
 };
