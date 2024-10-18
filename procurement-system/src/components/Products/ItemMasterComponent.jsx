@@ -4,6 +4,7 @@ import ListComponent from '../common/ListComponent';
 import { useTheme } from '../../contexts/ThemeContext';
 import axios from 'axios';
 import ItemForm from './ItemForm';
+import { Trash2 } from 'lucide-react';
 
 const ItemModal = ({ isOpen, onClose, title, children }) => {
     const { isDarkMode } = useTheme();
@@ -26,6 +27,7 @@ const ItemModal = ({ isOpen, onClose, title, children }) => {
 
 const ItemMasterComponent = () => {
     const [items, setItems] = useState([]);
+    const { isDarkMode } = useTheme();
     const [pagination, setPagination] = useState({
         currentPage: 1,
         totalPages: 1,
@@ -50,7 +52,7 @@ const ItemMasterComponent = () => {
         }
 
         try {
-            const response = await axios.get(`http://localhost:5000/api/items`, {
+            const response = await axios.get(`http://localhost:5000/api/items?page=${page}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setItems(response.data.data);
@@ -89,6 +91,27 @@ const ItemMasterComponent = () => {
         }
     };
 
+    const handleDeleteItem = async (itemId) => {
+        if (window.confirm('Are you sure you want to delete this item?')) {
+            console.log("itemId",itemId);
+            try {
+                // setIsLoading(true);
+                await axios.delete(`http://localhost:5000/api/items/${itemId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                // Refresh the item list after successful deletion
+                fetchItems();
+            } catch (err) {
+                console.error('Error deleting item:', err);
+                setError('Failed to delete item. Please try again.');
+            } finally {
+                // setIsLoading(false);
+            }
+        }
+    };
+
     const columns = [
         { header: 'Code', key: 'ItemCode' },
         { header: 'Name', key: 'ItemName' },
@@ -99,6 +122,19 @@ const ItemMasterComponent = () => {
         { header: 'CGST', key: 'CGST_Rate', render: (item) => item.CGST_Rate ? `${item.CGST_Rate}%` : '-' },
         { header: 'SGST', key: 'SGST_Rate', render: (item) => item.SGST_Rate ? `${item.SGST_Rate}%` : '-' },
         { header: 'UTGST', key: 'UTGST_Rate', render: (item) => item.UTGST_Rate ? `${item.UTGST_Rate}%` : '-' },
+        {
+            header: 'Actions',
+            key: 'actions',
+            render: (item) => (
+                <button
+                    onClick={() => handleDeleteItem(item._id)}
+                    className={`p-1 rounded ${isDarkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'} text-white`}
+                    title="Delete Item"
+                >
+                    <Trash2 size={16} />
+                </button>
+            )
+        }
     ];
 
     return (
