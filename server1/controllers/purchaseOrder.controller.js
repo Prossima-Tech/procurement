@@ -111,3 +111,31 @@ exports.deletePurchaseOrder = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// GET /api/vendors/:code
+exports.getVendorByCode = async (req, res) => {
+  try {
+      const vendor = await Vendor.findOne({ code: req.params.code });
+      if (!vendor) {
+          return res.status(404).json({ message: 'Vendor not found' });
+      }
+      res.json(vendor);
+  } catch (error) {
+      res.status(500).json({ message: error.message });
+  }
+};
+
+// GET /api/vendors/search?query=:query
+exports.searchVendors = async (req, res) => {
+  try {
+      const vendors = await Vendor.find({
+          $or: [
+              { code: { $regex: req.query.query, $options: 'i' } },
+              { name: { $regex: req.query.query, $options: 'i' } }
+          ]
+      }).limit(10);
+      res.json(vendors);
+  } catch (error) {
+      res.status(500).json({ message: error.message });
+  }
+};

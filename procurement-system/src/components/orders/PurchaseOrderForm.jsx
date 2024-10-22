@@ -1,29 +1,89 @@
 /* eslint-disable react/prop-types */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
+import axios from 'axios'; // Make sure to install and import axios
 
 const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
     const { isDarkMode } = useTheme();
     const [formData, setFormData] = useState({
-        poNumber: '',
-        orderDate: '',
-        deliveryDate: '',
+        vendorId: '',
+        vendorCode: '',
         vendorName: '',
         vendorAddress: '',
-        billingAddress: { line1: '', line2: '', city: '', state: '', pinCode: '' },
-        shippingAddress: { line1: '', line2: '', city: '', state: '', pinCode: '' },
-        items: [{ description: '', quantity: '', unitPrice: '', total: '' }],
-        subtotal: '',
-        tax: '',
-        shippingCost: '',
-        total: '',
+        vendorGst: '',
+        projectId: '',
+        unitId: '',
+        poDate: '',
+        validUpto: '',
+        invoiceTo: {
+            name: '',
+            branchName: '',
+            address: '',
+            city: '',
+            state: '',
+            pin: ''
+        },
+        dispatchTo: {
+            name: '',
+            branchName: '',
+            address: '',
+            city: '',
+            state: '',
+            pin: ''
+        },
+        items: [{ partCode: '', quantity: '', unitPrice: '' }],
+        deliveryDate: '',
+        supplierRef: '',
+        otherRef: '',
+        dispatchThrough: '',
+        destination: '',
         paymentTerms: '',
-        specialInstructions: '',
+        deliveryTerms: '',
+        poNarration: ''
     });
+    const [vendorSuggestions, setVendorSuggestions] = useState([]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const fetchVendor = async () => {
+        try {
+            const response = await axios.get(`http://localhost:5000/api/vendors/getByCode/${formData.vendorCode}`);
+            const vendor = response.data;
+            setFormData(prev => ({
+                ...prev,
+                vendorName: vendor.name,
+                vendorAddress: vendor.address.line1 + ', ' + vendor.address.line2,
+                vendorGst: vendor.gstNumber
+            }));
+        } catch (error) {
+            console.error('Error fetching vendor:', error);
+            // Handle error (e.g., show error message to user)
+        }
+    };
+
+    const searchVendors = async () => {
+        try {
+            const response = await axios.get(`http://localhost:5000/api/vendors/searchVendors?query=${formData.vendorCode}`);
+            setVendorSuggestions(response.data);
+        } catch (error) {
+            console.error('Error searching vendors:', error);
+            // Handle error
+        }
+    };
+
+    const selectVendor = (vendor) => {
+        setFormData(prev => ({
+            ...prev,
+            vendorId: vendor._id,
+            vendorCode: vendor.code,
+            vendorName: vendor.name,
+            vendorAddress: vendor.address,
+            vendorGst: vendor.gstNumber
+        }));
+        setVendorSuggestions([]);
     };
 
     const handleNestedChange = (e, nestedField) => {
@@ -38,16 +98,13 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
         const { name, value } = e.target;
         const newItems = [...formData.items];
         newItems[index][name] = value;
-        if (name === 'quantity' || name === 'unitPrice') {
-            newItems[index].total = (newItems[index].quantity * newItems[index].unitPrice).toFixed(2);
-        }
         setFormData(prev => ({ ...prev, items: newItems }));
     };
 
     const addItem = () => {
         setFormData(prev => ({
             ...prev,
-            items: [...prev.items, { description: '', quantity: '', unitPrice: '', total: '' }]
+            items: [...prev.items, { partCode: '', quantity: '', unitPrice: '' }]
         }));
     };
 
@@ -65,98 +122,150 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
 
     const inputClass = `w-full p-3 text-base rounded ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-800'}`;
     const labelClass = 'block text-sm font-medium mb-2';
+    const buttonClass = 'px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600';
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
+            <fieldset className="border p-4 rounded">
+                <legend className="text-lg font-semibold px-2">Vendor Information</legend>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className={labelClass}>Vendor Code*</label>
+                        <div className="flex space-x-2">
+                            <input 
+                                name="vendorCode" 
+                                value={formData.vendorCode} 
+                                onChange={handleChange} 
+                                className={`${inputClass} flex-grow`} 
+                                required 
+                            />
+                            <button type="button" onClick={fetchVendor} className={buttonClass}>Show</button>
+                            <button type="button" onClick={searchVendors} className={buttonClass}>Search</button>
+                        </div>
+                        {vendorSuggestions.length > 0 && (
+                            <ul className="mt-2 border rounded max-h-40 overflow-y-auto">
+                                {vendorSuggestions.map(vendor => (
+                                    <li 
+                                        key={vendor.code} 
+                                        className="p-2 hover:bg-gray-200 cursor-pointer"
+                                        onClick={() => selectVendor(vendor)}
+                                    >
+                                        {vendor.name} ({vendor.code})
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                    <div>
+                        <label className={labelClass}>Vendor Name</label>
+                        <input name="vendorName" value={formData.vendorName} readOnly className={inputClass} />
+                    </div>
+                    <div className="col-span-2">
+                        <label className={labelClass}>Vendor Address</label>
+                        <textarea name="vendorAddress" value={formData.vendorAddress} readOnly className={`${inputClass} h-20`} />
+                    </div>
+                    <div>
+                        <label className={labelClass}>Vendor GST</label>
+                        <input name="vendorGst" value={formData.vendorGst} readOnly className={inputClass} />
+                    </div>
+                </div>
+            </fieldset>
+
             <div className="grid grid-cols-3 gap-6">
                 <div>
-                    <label className={labelClass}>PO Number*</label>
-                    <input name="poNumber" value={formData.poNumber} onChange={handleChange} className={inputClass} required />
+                    <label className={labelClass}>Project ID*</label>
+                    <input name="projectId" value={formData.projectId} onChange={handleChange} className={inputClass} required />
                 </div>
                 <div>
-                    <label className={labelClass}>Order Date*</label>
-                    <input type="date" name="orderDate" value={formData.orderDate} onChange={handleChange} className={inputClass} required />
+                    <label className={labelClass}>Unit ID*</label>
+                    <input name="unitId" value={formData.unitId} onChange={handleChange} className={inputClass} required />
+                </div>
+                <div>
+                    <label className={labelClass}>PO Date*</label>
+                    <input type="date" name="poDate" value={formData.poDate} onChange={handleChange} className={inputClass} required />
+                </div>
+                <div>
+                    <label className={labelClass}>Valid Upto</label>
+                    <input type="date" name="validUpto" value={formData.validUpto} onChange={handleChange} className={inputClass} />
                 </div>
                 <div>
                     <label className={labelClass}>Delivery Date*</label>
                     <input type="date" name="deliveryDate" value={formData.deliveryDate} onChange={handleChange} className={inputClass} required />
                 </div>
             </div>
+            <div className="flex flex-col md:flex-row gap-6">
+            <fieldset className="border p-4 rounded">
+                <legend className="text-lg font-semibold px-2">Invoice To</legend>
+                <div className="space-y-4">
+                    <div>
+                        <label className={labelClass}>Name*</label>
+                        <input name="name" value={formData.invoiceTo.name} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} required />
+                    </div>
+                    <div>
+                        <label className={labelClass}>Branch Name</label>
+                        <input name="branchName" value={formData.invoiceTo.branchName} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                    </div>
+                    <div>
+                        <label className={labelClass}>Address*</label>
+                        <input name="address" value={formData.invoiceTo.address} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} required />
+                    </div>
+                    <div className="grid grid-cols-3 gap-6">
+                        <div>
+                            <label className={labelClass}>City</label>
+                            <input name="city" value={formData.invoiceTo.city} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                        </div>
+                        <div>
+                            <label className={labelClass}>State</label>
+                            <input name="state" value={formData.invoiceTo.state} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                        </div>
+                        <div>
+                            <label className={labelClass}>Pin</label>
+                            <input name="pin" value={formData.invoiceTo.pin} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
 
-            <div className="grid grid-cols-2 gap-6">
-                <div>
-                    <label className={labelClass}>Vendor Name*</label>
-                    <input name="vendorName" value={formData.vendorName} onChange={handleChange} className={inputClass} required />
+            <fieldset className="border p-4 rounded">
+                <legend className="text-lg font-semibold px-2">Dispatch To</legend>
+                <div className="space-y-4">
+                    <div>
+                        <label className={labelClass}>Name*</label>
+                        <input name="name" value={formData.invoiceTo.name} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} required />
+                    </div>
+                    <div>
+                        <label className={labelClass}>Branch Name</label>
+                        <input name="branchName" value={formData.invoiceTo.branchName} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                    </div>
+                    <div>
+                        <label className={labelClass}>Address*</label>
+                        <input name="address" value={formData.invoiceTo.address} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} required />
+                    </div>
+                    <div className="grid grid-cols-3 gap-6">
+                        <div>
+                            <label className={labelClass}>City</label>
+                            <input name="city" value={formData.invoiceTo.city} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                        </div>
+                        <div>
+                            <label className={labelClass}>State</label>
+                            <input name="state" value={formData.invoiceTo.state} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                        </div>
+                        <div>
+                            <label className={labelClass}>Pin</label>
+                            <input name="pin" value={formData.invoiceTo.pin} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label className={labelClass}>Vendor Address</label>
-                    <input name="vendorAddress" value={formData.vendorAddress} onChange={handleChange} className={inputClass} />
-                </div>
+                </fieldset>
             </div>
-
-            <fieldset className="border p-4 rounded">
-                <legend className="text-lg font-semibold px-2">Billing Address</legend>
-                <div className="space-y-4">
-                    <div>
-                        <label className={labelClass}>Address Line 1</label>
-                        <input name="line1" value={formData.billingAddress.line1} onChange={(e) => handleNestedChange(e, 'billingAddress')} className={inputClass} />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Address Line 2</label>
-                        <input name="line2" value={formData.billingAddress.line2} onChange={(e) => handleNestedChange(e, 'billingAddress')} className={inputClass} />
-                    </div>
-                    <div className="grid grid-cols-3 gap-6">
-                        <div>
-                            <label className={labelClass}>City</label>
-                            <input name="city" value={formData.billingAddress.city} onChange={(e) => handleNestedChange(e, 'billingAddress')} className={inputClass} />
-                        </div>
-                        <div>
-                            <label className={labelClass}>State</label>
-                            <input name="state" value={formData.billingAddress.state} onChange={(e) => handleNestedChange(e, 'billingAddress')} className={inputClass} />
-                        </div>
-                        <div>
-                            <label className={labelClass}>Pin Code</label>
-                            <input name="pinCode" value={formData.billingAddress.pinCode} onChange={(e) => handleNestedChange(e, 'billingAddress')} className={inputClass} />
-                        </div>
-                    </div>
-                </div>
-            </fieldset>
-
-            <fieldset className="border p-4 rounded">
-                <legend className="text-lg font-semibold px-2">Shipping Address</legend>
-                <div className="space-y-4">
-                    <div>
-                        <label className={labelClass}>Address Line 1</label>
-                        <input name="line1" value={formData.shippingAddress.line1} onChange={(e) => handleNestedChange(e, 'shippingAddress')} className={inputClass} />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Address Line 2</label>
-                        <input name="line2" value={formData.shippingAddress.line2} onChange={(e) => handleNestedChange(e, 'shippingAddress')} className={inputClass} />
-                    </div>
-                    <div className="grid grid-cols-3 gap-6">
-                        <div>
-                            <label className={labelClass}>City</label>
-                            <input name="city" value={formData.shippingAddress.city} onChange={(e) => handleNestedChange(e, 'shippingAddress')} className={inputClass} />
-                        </div>
-                        <div>
-                            <label className={labelClass}>State</label>
-                            <input name="state" value={formData.shippingAddress.state} onChange={(e) => handleNestedChange(e, 'shippingAddress')} className={inputClass} />
-                        </div>
-                        <div>
-                            <label className={labelClass}>Pin Code</label>
-                            <input name="pinCode" value={formData.shippingAddress.pinCode} onChange={(e) => handleNestedChange(e, 'shippingAddress')} className={inputClass} />
-                        </div>
-                    </div>
-                </div>
-            </fieldset>
 
             <fieldset className="border p-4 rounded">
                 <legend className="text-lg font-semibold px-2">Order Items</legend>
                 {formData.items.map((item, index) => (
-                    <div key={index} className="grid grid-cols-5 gap-4 mb-4">
-                        <div className="col-span-2">
-                            <label className={labelClass}>Description</label>
-                            <input name="description" value={item.description} onChange={(e) => handleItemChange(index, e)} className={inputClass} />
+                    <div key={index} className="grid grid-cols-4 gap-4 mb-4">
+                        <div>
+                            <label className={labelClass}>Part Code</label>
+                            <input name="partCode" value={item.partCode} onChange={(e) => handleItemChange(index, e)} className={inputClass} />
                         </div>
                         <div>
                             <label className={labelClass}>Quantity</label>
@@ -165,10 +274,6 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
                         <div>
                             <label className={labelClass}>Unit Price</label>
                             <input type="number" name="unitPrice" value={item.unitPrice} onChange={(e) => handleItemChange(index, e)} className={inputClass} />
-                        </div>
-                        <div>
-                            <label className={labelClass}>Total</label>
-                            <input name="total" value={item.total} readOnly className={`${inputClass} bg-gray-200`} />
                         </div>
                     </div>
                 ))}
@@ -182,20 +287,20 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
 
             <div className="grid grid-cols-2 gap-6">
                 <div>
-                    <label className={labelClass}>Subtotal</label>
-                    <input name="subtotal" value={formData.subtotal} onChange={handleChange} className={inputClass} />
+                    <label className={labelClass}>Supplier Ref</label>
+                    <input name="supplierRef" value={formData.supplierRef} onChange={handleChange} className={inputClass} />
                 </div>
                 <div>
-                    <label className={labelClass}>Tax</label>
-                    <input name="tax" value={formData.tax} onChange={handleChange} className={inputClass} />
+                    <label className={labelClass}>Other Ref</label>
+                    <input name="otherRef" value={formData.otherRef} onChange={handleChange} className={inputClass} />
                 </div>
                 <div>
-                    <label className={labelClass}>Shipping Cost</label>
-                    <input name="shippingCost" value={formData.shippingCost} onChange={handleChange} className={inputClass} />
+                    <label className={labelClass}>Dispatch Through</label>
+                    <input name="dispatchThrough" value={formData.dispatchThrough} onChange={handleChange} className={inputClass} />
                 </div>
                 <div>
-                    <label className={labelClass}>Total</label>
-                    <input name="total" value={formData.total} onChange={handleChange} className={inputClass} />
+                    <label className={labelClass}>Destination</label>
+                    <input name="destination" value={formData.destination} onChange={handleChange} className={inputClass} />
                 </div>
             </div>
 
@@ -205,8 +310,13 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
             </div>
 
             <div>
-                <label className={labelClass}>Special Instructions</label>
-                <textarea name="specialInstructions" value={formData.specialInstructions} onChange={handleChange} className={`${inputClass} h-24`}></textarea>
+                <label className={labelClass}>Delivery Terms</label>
+                <input name="deliveryTerms" value={formData.deliveryTerms} onChange={handleChange} className={inputClass} />
+            </div>
+
+            <div>
+                <label className={labelClass}>PO Narration</label>
+                <textarea name="poNarration" value={formData.poNarration} onChange={handleChange} className={`${inputClass} h-24`}></textarea>
             </div>
 
             <div className="flex justify-end space-x-4 mt-8">

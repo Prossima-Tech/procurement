@@ -39,4 +39,18 @@ router.delete('/:id',
   asyncHandler(vendorController.deleteVendor)
 );
 
+// GET /api/vendors/getByCode/:code
+router.get('/getByCode/:code', 
+  // authenticate, 
+  // authorize(['admin', 'manager', 'employee'], ['read_vendors']), 
+  asyncHandler(vendorController.getVendorByCode)
+);
+
+// GET /api/vendors/searchVendors?query=:query
+router.get('/searchVendors', 
+  authenticate, 
+  authorize(['admin', 'manager', 'employee'], ['read_vendors']), 
+  asyncHandler(vendorController.searchVendors)
+);
+
 module.exports = router;
