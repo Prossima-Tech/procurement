@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import ListComponent from '../common/ListComponent';
-import { useTheme } from '../../contexts/ThemeContext';
 import Modal from '../common/Modal';
 import VendorForm from './VendorForm';
 import axios from 'axios';
@@ -13,7 +12,6 @@ const VendorsComponent = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [responseData, setResponseData] = useState(null);
-    const { isDarkMode } = useTheme();
 
     const getToken = () => {
         return localStorage.getItem('token');
@@ -111,7 +109,7 @@ const VendorsComponent = () => {
             render: (item) => (
                 <button
                     onClick={() => handleDeleteVendor(item._id)}
-                    className={`p-2 rounded ${isDarkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'} text-white`}
+                    className={`text-red-600 ml-5 hover:text-red-900 focus:outline-none`}
                     title="Delete Vendor"
                 >
                     <Trash2 size={20} />
@@ -122,7 +120,7 @@ const VendorsComponent = () => {
 
 
     return (
-        <div className="container">
+        <div className="container p-6">
 
             {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
                 <strong className="font-bold">Error!</strong>
@@ -143,7 +141,6 @@ const VendorsComponent = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 title="Create New Vendor"
-                size="lg"
             >
                 {responseData && (
                     <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">

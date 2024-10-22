@@ -25,7 +25,7 @@ const Header = ({ onLogout }) => {
                             {isDarkMode ? <SunIcon className="h-6 w-6" /> : <MoonIcon className="h-6 w-6" />}
                         </Button>
                         <Button variant="destructive" size="md" onClick={onLogout} className="text-base">
-                            <LogoutIcon className="h-5 w-5 mr-2" />
+                            <LogoutIcon className="h-5 w-6 mr-2" />
                             Logout
                         </Button>
                     </div>

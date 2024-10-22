@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import axios from 'axios'; // Make sure to install and import axios
 
@@ -132,12 +132,12 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
                     <div>
                         <label className={labelClass}>Vendor Code*</label>
                         <div className="flex space-x-2">
-                            <input 
-                                name="vendorCode" 
-                                value={formData.vendorCode} 
-                                onChange={handleChange} 
-                                className={`${inputClass} flex-grow`} 
-                                required 
+                            <input
+                                name="vendorCode"
+                                value={formData.vendorCode}
+                                onChange={handleChange}
+                                className={`${inputClass} flex-grow`}
+                                required
                             />
                             <button type="button" onClick={fetchVendor} className={buttonClass}>Show</button>
                             <button type="button" onClick={searchVendors} className={buttonClass}>Search</button>
@@ -145,8 +145,8 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
                         {vendorSuggestions.length > 0 && (
                             <ul className="mt-2 border rounded max-h-40 overflow-y-auto">
                                 {vendorSuggestions.map(vendor => (
-                                    <li 
-                                        key={vendor.code} 
+                                    <li
+                                        key={vendor.code}
                                         className="p-2 hover:bg-gray-200 cursor-pointer"
                                         onClick={() => selectVendor(vendor)}
                                     >
@@ -194,68 +194,68 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
                 </div>
             </div>
             <div className="flex flex-col md:flex-row gap-6">
-            <fieldset className="border p-4 rounded">
-                <legend className="text-lg font-semibold px-2">Invoice To</legend>
-                <div className="space-y-4">
-                    <div>
-                        <label className={labelClass}>Name*</label>
-                        <input name="name" value={formData.invoiceTo.name} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} required />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Branch Name</label>
-                        <input name="branchName" value={formData.invoiceTo.branchName} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Address*</label>
-                        <input name="address" value={formData.invoiceTo.address} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} required />
-                    </div>
-                    <div className="grid grid-cols-3 gap-6">
+                <fieldset className="border p-4 rounded">
+                    <legend className="text-lg font-semibold px-2">Invoice To</legend>
+                    <div className="space-y-4">
                         <div>
-                            <label className={labelClass}>City</label>
-                            <input name="city" value={formData.invoiceTo.city} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                            <label className={labelClass}>Name*</label>
+                            <input name="name" value={formData.invoiceTo.name} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} required />
                         </div>
                         <div>
-                            <label className={labelClass}>State</label>
-                            <input name="state" value={formData.invoiceTo.state} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                            <label className={labelClass}>Branch Name</label>
+                            <input name="branchName" value={formData.invoiceTo.branchName} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
                         </div>
                         <div>
-                            <label className={labelClass}>Pin</label>
-                            <input name="pin" value={formData.invoiceTo.pin} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                            <label className={labelClass}>Address*</label>
+                            <input name="address" value={formData.invoiceTo.address} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} required />
+                        </div>
+                        <div className="grid grid-cols-3 gap-6">
+                            <div>
+                                <label className={labelClass}>City</label>
+                                <input name="city" value={formData.invoiceTo.city} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                            </div>
+                            <div>
+                                <label className={labelClass}>State</label>
+                                <input name="state" value={formData.invoiceTo.state} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Pin</label>
+                                <input name="pin" value={formData.invoiceTo.pin} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                            </div>
                         </div>
                     </div>
-                </div>
-            </fieldset>
+                </fieldset>
 
-            <fieldset className="border p-4 rounded">
-                <legend className="text-lg font-semibold px-2">Dispatch To</legend>
-                <div className="space-y-4">
-                    <div>
-                        <label className={labelClass}>Name*</label>
-                        <input name="name" value={formData.invoiceTo.name} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} required />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Branch Name</label>
-                        <input name="branchName" value={formData.invoiceTo.branchName} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Address*</label>
-                        <input name="address" value={formData.invoiceTo.address} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} required />
-                    </div>
-                    <div className="grid grid-cols-3 gap-6">
+                <fieldset className="border p-4 rounded">
+                    <legend className="text-lg font-semibold px-2">Dispatch To</legend>
+                    <div className="space-y-4">
                         <div>
-                            <label className={labelClass}>City</label>
-                            <input name="city" value={formData.invoiceTo.city} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                            <label className={labelClass}>Name*</label>
+                            <input name="name" value={formData.invoiceTo.name} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} required />
                         </div>
                         <div>
-                            <label className={labelClass}>State</label>
-                            <input name="state" value={formData.invoiceTo.state} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                            <label className={labelClass}>Branch Name</label>
+                            <input name="branchName" value={formData.invoiceTo.branchName} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
                         </div>
                         <div>
-                            <label className={labelClass}>Pin</label>
-                            <input name="pin" value={formData.invoiceTo.pin} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                            <label className={labelClass}>Address*</label>
+                            <input name="address" value={formData.invoiceTo.address} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} required />
+                        </div>
+                        <div className="grid grid-cols-3 gap-6">
+                            <div>
+                                <label className={labelClass}>City</label>
+                                <input name="city" value={formData.invoiceTo.city} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                            </div>
+                            <div>
+                                <label className={labelClass}>State</label>
+                                <input name="state" value={formData.invoiceTo.state} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Pin</label>
+                                <input name="pin" value={formData.invoiceTo.pin} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                            </div>
                         </div>
                     </div>
-                </div>
                 </fieldset>
             </div>
 
