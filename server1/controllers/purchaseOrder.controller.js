@@ -2,30 +2,65 @@ const PurchaseOrder = require('../models/purchaseOrder.model');
 const { calculateTotals, generatePoNumber } = require('../utils/purchaseOrderUtils');
 
 exports.createPurchaseOrder = async (req, res) => {
-    try {
-      const poData = req.body;
-      poData.poNumber = await generatePoNumber(poData.unitCode);
-      poData.poDate = poData.poDate || new Date();
-      poData.deliveryDate = poData.deliveryDate || poData.validUpto;
-  
-      // Calculate totals
-      poData.totals = calculateTotals(poData.items);
-  
-      // Calculate total for each item
-      poData.items = poData.items.map(item => ({
-        ...item,
-        total: item.quantity * item.rate
-      }));
-  
-      const purchaseOrder = new PurchaseOrder(poData);
-      await purchaseOrder.save();
-      
-      res.status(201).json(purchaseOrder);
-    } catch (error) {
-      console.error('Error creating purchase order:', error);
-      res.status(400).json({ message: error.message });
-    }
-  };
+  try {
+    const {
+      vendorId,
+      projectId,
+      unitId,
+      poDate,
+      validUpto,
+      invoiceTo,
+      dispatchTo,
+      items,
+      deliveryDate,
+      supplierRef,
+      otherRef,
+      dispatchThrough,
+      destination,
+      paymentTerms,
+      deliveryTerms,
+      poNarration
+    } = req.body;
+
+    // Generate PO Code
+    const poCode = await generatePoNumber(unitId);
+
+    // Create new PurchaseOrder object
+    const newPurchaseOrder = new PurchaseOrder({
+      vendorId,
+      projectId,
+      unitId,
+      poCode,
+      poDate: poDate || new Date(),
+      validUpto,
+      invoiceTo,
+      dispatchTo,
+      items: items.map(item => ({
+        partCode: item.partCode,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.quantity * item.unitPrice
+      })),
+      deliveryDate: deliveryDate || validUpto,
+      supplierRef,
+      otherRef,
+      dispatchThrough,
+      destination,
+      paymentTerms,
+      deliveryTerms,
+      poNarration,
+      status: 'draft'
+    });
+
+    // Save the new PurchaseOrder
+    const savedPurchaseOrder = await newPurchaseOrder.save();
+
+    res.status(201).json(savedPurchaseOrder);
+  } catch (error) {
+    console.error('Error creating purchase order:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
 
 exports.getAllPurchaseOrders = async (req, res) => {
   try {
