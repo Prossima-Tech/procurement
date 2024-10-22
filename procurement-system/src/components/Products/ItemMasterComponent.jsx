@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import ListComponent from '../common/ListComponent';
@@ -13,11 +14,11 @@ const ItemModal = ({ isOpen, onClose, title, children }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
             <div className={`rounded-lg shadow-xl w-11/12 max-w-4xl ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'}`}>
-                <div className="border-b px-4 py-2 flex justify-between items-center">
+                <div className="border-b p-4 flex justify-between items-center">
                     <h3 className="font-semibold text-lg">{title}</h3>
                     <button onClick={onClose} className="text-2xl">&times;</button>
                 </div>
-                <div className="p-4 max-h-[80vh] overflow-y-auto">
+                <div className="p-6 overflow-y-auto">
                     {children}
                 </div>
             </div>
@@ -41,7 +42,7 @@ const ItemMasterComponent = () => {
         const storedToken = localStorage.getItem('token');
         if (storedToken) {
             setToken(storedToken);
-            console.log("token",storedToken);
+            console.log("token", storedToken);
         }
     }, []);
 
@@ -78,7 +79,7 @@ const ItemMasterComponent = () => {
 
     const handleSubmit = async (formData) => {
         try {
-            console.log("formData",formData);
+            console.log("formData", formData);
             const response = await axios.post('http://localhost:5000/api/items', formData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -93,7 +94,7 @@ const ItemMasterComponent = () => {
 
     const handleDeleteItem = async (itemId) => {
         if (window.confirm('Are you sure you want to delete this item?')) {
-            console.log("itemId",itemId);
+            console.log("itemId", itemId);
             try {
                 // setIsLoading(true);
                 await axios.delete(`http://localhost:5000/api/items/${itemId}`, {
@@ -128,7 +129,7 @@ const ItemMasterComponent = () => {
             render: (item) => (
                 <button
                     onClick={() => handleDeleteItem(item._id)}
-                    className={`p-1 rounded ${isDarkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'} text-white`}
+                    className={`text-red-600 ml-5 hover:text-red-900 focus:outline-none`}
                     title="Delete Item"
                 >
                     <Trash2 size={16} />
@@ -139,14 +140,16 @@ const ItemMasterComponent = () => {
 
     return (
         <>
-            <ListComponent
-                title="Item Master"
-                data={items}
-                columns={columns}
-                onFetch={fetchItems}
-                pagination={pagination}
-                onCreateNew={handleCreateNew}
-            />
+            <div className='p-6'>
+                <ListComponent
+                    title="Item Master"
+                    data={items}
+                    columns={columns}
+                    onFetch={fetchItems}
+                    pagination={pagination}
+                    onCreateNew={handleCreateNew}
+                />
+            </div>
             <ItemModal isOpen={isModalOpen} onClose={handleCloseModal} title="Create New Item">
                 <ItemForm onSubmit={handleSubmit} onCancel={handleCloseModal} />
             </ItemModal>

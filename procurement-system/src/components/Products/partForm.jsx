@@ -251,9 +251,7 @@ const PartForm = ({ onSubmit, onCancel, initialData = {} }) => {
 
     return (
         <form onSubmit={handleSubmit} className={formClass}>
-            <h2 className={`text-2xl font-bold mb-6 text-center ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>
-                Part Details
-            </h2>
+
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="mb-4">

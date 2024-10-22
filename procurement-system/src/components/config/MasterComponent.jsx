@@ -128,7 +128,7 @@ const MasterComponent = ({ title, searchEndpoint, getAllEndpoint, createEndpoint
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button
                                             onClick={() => handleDelete(item._id)}
-                                            className="text-red-600 hover:text-red-900 focus:outline-none"
+                                            className={`text-red-600 ml-5 hover:text-red-900 focus:outline-none`}
                                         >
                                             <Trash2 size={18} />
                                         </button>
