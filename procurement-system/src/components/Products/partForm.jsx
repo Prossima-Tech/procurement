@@ -234,7 +234,7 @@ const PartForm = ({ onSubmit, onCancel, initialData = {} }) => {
         onSubmit(formData);
     };
 
-    const formClass = `p-6 rounded-lg shadow-lg max-w-2xl mx-auto ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
+    const formClass = `m-3 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
         }`;
 
     const inputClass = `w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-opacity-50 ${isDarkMode
