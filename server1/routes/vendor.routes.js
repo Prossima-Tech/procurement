@@ -48,10 +48,10 @@ router.delete('/:id',
 );
 
 // // GET /api/vendors/getByCode/:code
-// router.get('/getByCode/:code',
-//   authenticate,
-//   authorize(['admin', 'manager', 'employee'], ['read_vendors']),
-//   asyncHandler(vendorController.getVendorByCode)
-// );
+router.get('/getByCode/:code',
+  // authenticate,
+  // authorize(['admin', 'manager', 'employee'], ['read_vendors']),
+  asyncHandler(vendorController.getVendorByCode)
+);
 
 module.exports = router;
