@@ -4,53 +4,54 @@ const vendorController = require('../controllers/vendor.controller');
 const { authenticate, authorize } = require('../middleware/auth.middleware');
 const asyncHandler = require('../utils/asyncHandler');
 
+
+// GET /api/vendors/searchVendors?query=:query
+router.get('/searchVendors',
+  // authenticate,
+  // authorize(['admin', 'manager', 'employee'], ['read_vendors']),
+  asyncHandler(vendorController.searchVendors)
+);
+
 // Create vendor
-router.post('/', 
-  authenticate, 
-  authorize(['admin', 'manager'], ['create_vendor']), 
+router.post('/',
+  authenticate,
+  authorize(['admin', 'manager'], ['create_vendor']),
   asyncHandler(vendorController.createVendor)
 );
 
 // Get all vendors
-router.get('/', 
-  authenticate, 
-  authorize(['admin', 'manager', 'employee'], ['read_vendors']), 
+router.get('/',
+  authenticate,
+  authorize(['admin', 'manager', 'employee'], ['read_vendors']),
   asyncHandler(vendorController.getAllVendors)
 );
 
 // Get vendor by ID
-router.get('/:id', 
-  authenticate, 
-  authorize(['admin', 'manager', 'employee'], ['read_vendors']), 
+router.get('/:id',
+  authenticate,
+  authorize(['admin', 'manager', 'employee'], ['read_vendors']),
   asyncHandler(vendorController.getVendorById)
 );
 
 // Update vendor
-router.put('/:id', 
-  authenticate, 
-  authorize(['admin', 'manager'], ['update_vendor']), 
+router.put('/:id',
+  authenticate,
+  authorize(['admin', 'manager'], ['update_vendor']),
   asyncHandler(vendorController.updateVendor)
 );
 
 // Delete vendor
-router.delete('/:id', 
-  authenticate, 
-  authorize(['admin', 'manager'], ['delete_vendor']), 
+router.delete('/:id',
+  authenticate,
+  authorize(['admin', 'manager'], ['delete_vendor']),
   asyncHandler(vendorController.deleteVendor)
 );
 
-// GET /api/vendors/getByCode/:code
-router.get('/getByCode/:code', 
-  // authenticate, 
-  // authorize(['admin', 'manager', 'employee'], ['read_vendors']), 
-  asyncHandler(vendorController.getVendorByCode)
-);
-
-// GET /api/vendors/searchVendors?query=:query
-router.get('/searchVendors', 
-  authenticate, 
-  authorize(['admin', 'manager', 'employee'], ['read_vendors']), 
-  asyncHandler(vendorController.searchVendors)
-);
+// // GET /api/vendors/getByCode/:code
+// router.get('/getByCode/:code',
+//   authenticate,
+//   authorize(['admin', 'manager', 'employee'], ['read_vendors']),
+//   asyncHandler(vendorController.getVendorByCode)
+// );
 
 module.exports = router;

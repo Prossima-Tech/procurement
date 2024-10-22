@@ -101,34 +101,47 @@ exports.deleteVendor = async (req, res) => {
 // GET /api/vendors/:code
 exports.getVendorByCode = async (req, res) => {
   try {
-    console.log("code recieved",req.params.code);
-      const vendor = await Vendor.findOne({ code: req.params.code }, 'name gstNumber address');
-      if (vendor) {
-        vendor.compiledInfo = `${vendor.name}, ${vendor.gstNumber}, ${vendor.address}`;
-      }
-      if (!vendor) {
-          return res.status(404).json({ message: 'Vendor not found' });
-      }
-      
-      console.log(vendor);
-      res.json(vendor);
+    console.log("code recieved", req.params.code);
+    const vendor = await Vendor.findOne({ code: req.params.code }, 'name gstNumber address');
+    if (vendor) {
+      vendor.compiledInfo = `${vendor.name}, ${vendor.gstNumber}, ${vendor.address}`;
+    }
+    if (!vendor) {
+      return res.status(404).json({ message: 'Vendor not found' });
+    }
+
+    console.log(vendor);
+    res.json(vendor);
   } catch (error) {
-      res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
 // GET /api/vendors/searchsearchVendors?query=:query
 exports.searchVendors = async (req, res) => {
   try {
-      console.log("query recieved",req.query.query);
-      const vendors = await Vendor.find({
-          $or: [
-              { code: { $regex: req.query.query, $options: 'i' } },
-              { name: { $regex: req.query.query, $options: 'i' } }
-          ]
-      }).limit(10);
-      res.json(vendors);
+    console.log("query received", req.query.query);
+
+    // Convert query to number if it's a number, otherwise keep as string for name search
+    const searchQuery = !isNaN(req.query.query) ? Number(req.query.query) : req.query.query;
+
+    const vendors = await Vendor.find({
+      $or: [
+        // If searchQuery is a number, do exact match for vendorCode
+        typeof searchQuery === 'number' ?
+          { vendorCode: searchQuery } :
+          { vendorCode: { $regex: req.query.query, $options: 'i' } },
+        // Always do regex search for name
+        { name: { $regex: req.query.query, $options: 'i' } }
+      ]
+    })
+      .select('vendorCode name gstNumber address email contactPerson mobileNumber')
+      .limit(10);
+
+    console.log("Found vendors:", vendors);
+    res.json(vendors);
   } catch (error) {
-      res.status(500).json({ message: error.message });
+    console.error("Search error:", error);
+    res.status(500).json({ message: error.message });
   }
 };
