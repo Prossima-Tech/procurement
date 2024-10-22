@@ -73,8 +73,8 @@ const PurchaseOrdersComponent = () => {
         <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center">
-                        <Link to="/" className={`mr-4 p-2 rounded-full ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-200'} transition duration-150 ease-in-out`}>
+                    <div className="flex justify-center ">
+                        <Link to="/" className={`flex justify-center p-2 mr-2 rounded-full ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-200'} transition duration-150 ease-in-out`}>
                             <button onClick={handleCancel}>
                                 <ChevronLeft size={24} />
                             </button>
@@ -84,7 +84,7 @@ const PurchaseOrdersComponent = () => {
                     {!isCreatingNew && (
                         <button
                             onClick={handleCreateNew}
-                            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'
+                            className={`flex items-center p-4 rounded-md text-sm font-medium ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'
                                 } transition duration-150 ease-in-out`}
                         >
                             <Plus size={18} className="mr-2" /> New Purchase Order
@@ -97,6 +97,7 @@ const PurchaseOrdersComponent = () => {
                             <PurchaseOrderForm onSubmit={handleSubmit} onCancel={handleCancel} isDarkMode={isDarkMode} />
                         ) : (
                             <ListComponent
+                                showHeader={false}
                                 title="Purchase Orders"
                                 data={purchaseOrders}
                                 columns={columns}

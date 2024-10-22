@@ -3,7 +3,16 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Calendar, Clock, PlusCircle } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
-const ListComponent = ({ title, data, columns, onFetch, totalPages, onCreateNew, isLoading }) => {
+const ListComponent = ({
+    title,
+    data,
+    columns,
+    onFetch,
+    totalPages,
+    onCreateNew,
+    isLoading,
+    showHeader = true // New prop to control header visibility
+}) => {
     const { isDarkMode } = useTheme();
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
@@ -27,16 +36,18 @@ const ListComponent = ({ title, data, columns, onFetch, totalPages, onCreateNew,
 
     return (
         <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className={`text-2xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{title}</h2>
-                <button
-                    className={`bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center transition duration-300 ease-in-out`}
-                    onClick={onCreateNew}
-                >
-                    <PlusCircle size={20} className="mr-2" />
-                    New {title.replace("Master", "")}
-                </button>
-            </div>
+            {showHeader && (
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className={`text-2xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{title}</h2>
+                    <button
+                        className={`bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center transition duration-300 ease-in-out`}
+                        onClick={onCreateNew}
+                    >
+                        <PlusCircle size={20} className="mr-2" />
+                        New {title.replace("Master", "")}
+                    </button>
+                </div>
+            )}
             <div className="mb-6 flex justify-between items-center">
                 <div className="relative">
                     <input
