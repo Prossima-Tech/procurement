@@ -102,7 +102,7 @@ exports.deleteVendor = async (req, res) => {
 exports.getVendorByCode = async (req, res) => {
   try {
     console.log("code recieved", req.params.code);
-    const vendor = await Vendor.findOne({ code: req.params.code }, 'name gstNumber address');
+    const vendor = await Vendor.findOne({ vendorCode: req.params.code }, 'name gstNumber address');
     if (vendor) {
       vendor.compiledInfo = `${vendor.name}, ${vendor.gstNumber}, ${vendor.address}`;
     }
