@@ -55,12 +55,16 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
         try {
             const response = await axios.get(`http://localhost:5000/api/vendors/getByCode/${formData.vendorCode}`);
             const vendor = response.data;
-            setFormData(prev => ({
-                ...prev,
-                vendorName: vendor.name,
-                vendorAddress: vendor.address.line1 + ', ' + vendor.address.line2,
-                vendorGst: vendor.gstNumber
-            }));
+            if(vendor){
+                setFormData(prev => ({
+                    ...prev,
+                    vendorName: vendor.name,
+                    vendorAddress: vendor.address.line1 + ', ' + vendor.address.line2,
+                    vendorGst: vendor.gstNumber
+                }));
+            }else{
+                toast.error("Vendor not found. Please check the vendor code and try again.");
+            }
         } catch (error) {
             console.error('Error fetching vendor:', error);
             // Handle error (e.g., show error message to user)
@@ -83,7 +87,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
             vendorId: vendor._id,
             vendorCode: vendor.code,
             vendorName: vendor.name,
-            vendorAddress: vendor.address,
+            vendorAddress: vendor.address.line1 + ', ' + vendor.address.line2,
             vendorGst: vendor.gstNumber
         }));
         setVendorSuggestions([]);
