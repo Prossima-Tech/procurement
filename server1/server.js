@@ -11,7 +11,8 @@ const vendorRoutes = require('./routes/vendor.routes');
 const itemRoutes = require('./routes/item.routes');
 const partRouter = require('./routes/part.router');
 const purchaseOrderRoutes = require('./routes/purchaseOrder.routes');
-const unitRoutes = require('./routes/project-unit.routes');
+const projectRoutes = require('./routes/project.routes');
+const unitRoutes = require('./routes/unit.routes');
 const app = express();
 
 // Connect to database
@@ -28,6 +29,7 @@ app.use('/api/vendors', vendorRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/parts', partRouter);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
+app.use('/api/projects', projectRoutes);
 app.use('/api/units', unitRoutes);
 // Error handling middleware
 app.use(errorHandler);
