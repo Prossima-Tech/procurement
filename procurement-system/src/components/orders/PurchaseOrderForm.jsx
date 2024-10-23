@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import axios from 'axios'; // Make sure to install and import axios
-
+import { toast,ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
     const { isDarkMode } = useTheme();
     const [formData, setFormData] = useState({
@@ -45,6 +46,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
         poNarration: ''
     });
     const [vendorSuggestions, setVendorSuggestions] = useState([]);
+    const [newItem, setNewItem] = useState({ partCode: '', quantity: '', unitPrice: '' });
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -63,7 +65,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
                     vendorGst: vendor.gstNumber
                 }));
             }else{
-                toast.error("Vendor not found. Please check the vendor code and try again.");
+                toast.error("Vendor not found. heck the vendor code & try again.");
             }
         } catch (error) {
             console.error('Error fetching vendor:', error);
@@ -108,11 +110,44 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
         setFormData(prev => ({ ...prev, items: newItems }));
     };
 
-    const addItem = () => {
-        setFormData(prev => ({
-            ...prev,
-            items: [...prev.items, { partCode: '', quantity: '', unitPrice: '' }]
-        }));
+    const addItem = async () => {
+        if (!newItem.partCode || !newItem.quantity || !newItem.unitPrice) {
+            toast.error("Please fill all item fields");
+            return;
+        }
+
+        try {
+            const response = await axios.get(`http://localhost:5000/api/parts/getPartByCode/${newItem.partCode}`);
+            const partDetails = response.data;
+            // toast.success("Toast checking");
+
+            if (response.success) {
+                const newItemWithDetails = {
+                    ...newItem,
+                    masterItemName: partDetails.masterItemName,
+                    // Add any other relevant details from the API response
+                };
+
+                setFormData(prev => ({
+                    ...prev,
+                    items: [...prev.items, newItemWithDetails]
+                }));
+
+                // Reset the new item form
+                setNewItem({ partCode: '', quantity: '', unitPrice: '' });
+                toast.success("Item added successfully");
+            } else {
+                toast.error("Part Code not found");
+            }
+        } catch (error) {
+            console.error('Error fetching part details:', error);
+            toast.error("Error adding item. Please try again.", error);
+        }
+    };
+
+    const handleNewItemChange = (e) => {
+        const { name, value } = e.target;
+        setNewItem(prev => ({ ...prev, [name]: value }));
     };
 
     const removeItem = (index) => {
@@ -162,6 +197,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
+            <ToastContainer />
             <fieldset className="border p-4 rounded">
                 <legend className="text-lg font-semibold px-2">Vendor Information</legend>
                 <div className="grid grid-cols-2 gap-4">
@@ -398,28 +434,76 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
 
             <fieldset className="border p-4 rounded">
                 <legend className="text-lg font-semibold px-2">Order Items</legend>
+                <div className="grid grid-cols-4 gap-4 mb-4">
+                    <div>
+                        <label className={labelClass}>Part Code</label>
+                        <input 
+                            name="partCode" 
+                            value={newItem.partCode} 
+                            onChange={handleNewItemChange} 
+                            className={inputClass} 
+                        />
+                    </div>
+                    <div>
+                        <label className={labelClass}>Quantity</label>
+                        <input 
+                            type="number" 
+                            name="quantity" 
+                            value={newItem.quantity} 
+                            onChange={handleNewItemChange} 
+                            className={inputClass} 
+                        />
+                    </div>
+                    <div>
+                        <label className={labelClass}>Unit Price</label>
+                        <input 
+                            type="number" 
+                            name="unitPrice" 
+                            value={newItem.unitPrice} 
+                            onChange={handleNewItemChange} 
+                            className={inputClass} 
+                        />
+                    </div>
+                    <div className="flex items-end">
+                        <button 
+                            type="button" 
+                            onClick={addItem} 
+                            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                        >
+                            Add Item
+                        </button>
+                    </div>
+                </div>
+
                 {formData.items.map((item, index) => (
-                    <div key={index} className="grid grid-cols-4 gap-4 mb-4">
+                    <div key={index} className="grid grid-cols-5 gap-4 mb-4">
                         <div>
                             <label className={labelClass}>Part Code</label>
-                            <input name="partCode" value={item.partCode} onChange={(e) => handleItemChange(index, e)} className={inputClass} />
+                            <input name="partCode" value={item.partCode} readOnly className={inputClass} />
+                        </div>
+                        <div>
+                            <label className={labelClass}>Master Item Name</label>
+                            <input name="masterItemName" value={item.masterItemName} readOnly className={inputClass} />
                         </div>
                         <div>
                             <label className={labelClass}>Quantity</label>
-                            <input type="number" name="quantity" value={item.quantity} onChange={(e) => handleItemChange(index, e)} className={inputClass} />
+                            <input type="number" name="quantity" value={item.quantity} readOnly className={inputClass} />
                         </div>
                         <div>
                             <label className={labelClass}>Unit Price</label>
-                            <input type="number" name="unitPrice" value={item.unitPrice} onChange={(e) => handleItemChange(index, e)} className={inputClass} />
+                            <input type="number" name="unitPrice" value={item.unitPrice} readOnly className={inputClass} />
+                        </div>
+                        <div className="flex items-end">
+                            <button 
+                                type="button" 
+                                onClick={() => removeItem(index)} 
+                                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                            >
+                                Remove
+                            </button>
                         </div>
                     </div>
                 ))}
-                <div className="flex justify-between mt-4">
-                    <button type="button" onClick={addItem} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Add Item</button>
-                    {formData.items.length > 1 && (
-                        <button type="button" onClick={() => removeItem(formData.items.length - 1)} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Remove Last Item</button>
-                    )}
-                </div>
             </fieldset>
 
             <div className="grid grid-cols-2 gap-6">
