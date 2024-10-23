@@ -12,9 +12,12 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
         vendorAddress: '',
         vendorGst: '',
         projectId: '',
+        projectName: '', // Added new field
         unitId: '',
+        unitName: '', // Added new field
         poDate: '',
         validUpto: '',
+        status: 'draft',
         invoiceTo: {
             name: '',
             branchName: '',
@@ -120,9 +123,38 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
         onSubmit(formData);
     };
 
+    const searchProject = async () => {
+        try {
+            const response = await axios.get(`http://localhost:5000/api/projects/${formData.projectId}`);
+            const project = response.data;
+            setFormData(prev => ({
+                ...prev,
+                projectName: project.projectName
+            }));
+        } catch (error) {
+            console.error('Error fetching project:', error);
+            // Handle error (e.g., show error message to user)
+        }
+    };
+
+    const searchUnit = async () => {
+        try {
+            const response = await axios.get(`http://localhost:5000/api/units/${formData.unitId}`);
+            const unit = response.data;
+            setFormData(prev => ({
+                ...prev,
+                unitName: unit.unitName
+            }));
+        } catch (error) {
+            console.error('Error fetching unit:', error);
+            // Handle error (e.g., show error message to user)
+        }
+    };
+
     const inputClass = `w-full p-3 text-base rounded ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-800'}`;
     const labelClass = 'block text-sm font-medium mb-2';
     const buttonClass = 'px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600';
+    const readOnlyClass = `${inputClass} bg-opacity-60 cursor-not-allowed`;
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -171,28 +203,129 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
                 </div>
             </fieldset>
 
-            <div className="grid grid-cols-3 gap-6">
-                <div>
-                    <label className={labelClass}>Project ID*</label>
-                    <input name="projectId" value={formData.projectId} onChange={handleChange} className={inputClass} required />
+
+            <fieldset className="border p-4 rounded">
+                <legend className="text-lg font-semibold px-2">Project Details</legend>
+                <div className="grid grid-cols-2 gap-4">
+                    {/* Project ID and Name Group */}
+                    <div className="space-y-4">
+                        <div>
+                            <label className={labelClass}>Project ID*</label>
+                            <div className="flex space-x-2">
+                                <input
+                                    name="projectId"
+                                    value={formData.projectId}
+                                    onChange={handleChange}
+                                    className={inputClass}
+                                    required
+                                    placeholder="Enter Project ID"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={searchProject}
+                                    className={buttonClass}
+                                >
+                                    Search
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label className={labelClass}>Project Name</label>
+                            <input
+                                name="projectName"
+                                value={formData.projectName}
+                                className={readOnlyClass}
+                                readOnly
+                                placeholder="Project name will appear here"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Unit ID and Name Group */}
+                    <div className="space-y-4">
+                        <div>
+                            <label className={labelClass}>Unit ID*</label>
+                            <div className="flex space-x-2">
+                                <input
+                                    name="unitId"
+                                    value={formData.unitId}
+                                    onChange={handleChange}
+                                    className={inputClass}
+                                    required
+                                    placeholder="Enter Unit ID"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={searchUnit}
+                                    className={buttonClass}
+                                >
+                                    Search
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label className={labelClass}>Unit Name</label>
+                            <input
+                                name="unitName"
+                                value={formData.unitName}
+                                className={readOnlyClass}
+                                readOnly
+                                placeholder="Unit name will appear here"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Dates and Status Group */}
+                    <div>
+                        <label className={labelClass}>PO Date*</label>
+                        <input
+                            type="date"
+                            name="poDate"
+                            value={formData.poDate}
+                            onChange={handleChange}
+                            className={inputClass}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className={labelClass}>Valid Upto*</label>
+                        <input
+                            type="date"
+                            name="validUpto"
+                            value={formData.validUpto}
+                            onChange={handleChange}
+                            className={inputClass}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className={labelClass}>Delivery Date*</label>
+                        <input
+                            type="date"
+                            name="deliveryDate"
+                            value={formData.deliveryDate}
+                            onChange={handleChange}
+                            className={inputClass}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className={labelClass}>Status</label>
+                        <select
+                            name="status"
+                            value={formData.status}
+                            onChange={handleChange}
+                            className={inputClass}
+                        >
+                            <option value="draft">Draft</option>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <label className={labelClass}>Unit ID*</label>
-                    <input name="unitId" value={formData.unitId} onChange={handleChange} className={inputClass} required />
-                </div>
-                <div>
-                    <label className={labelClass}>PO Date*</label>
-                    <input type="date" name="poDate" value={formData.poDate} onChange={handleChange} className={inputClass} required />
-                </div>
-                <div>
-                    <label className={labelClass}>Valid Upto</label>
-                    <input type="date" name="validUpto" value={formData.validUpto} onChange={handleChange} className={inputClass} />
-                </div>
-                <div>
-                    <label className={labelClass}>Delivery Date*</label>
-                    <input type="date" name="deliveryDate" value={formData.deliveryDate} onChange={handleChange} className={inputClass} required />
-                </div>
-            </div>
+            </fieldset>
+
             <div className="flex flex-col md:flex-row gap-6">
                 <fieldset className="border p-4 rounded">
                     <legend className="text-lg font-semibold px-2">Invoice To</legend>
