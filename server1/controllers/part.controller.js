@@ -141,6 +141,20 @@ exports.deletePart = async (req, res) => {
   }
 };
 
+exports.getPartByCode = async (req, res) => {
+  try {
+    const code = req.params.code;
+    const part = await PartCode.findOne({ PartCodeNumber: code }).populate('ItemCode');
+    // console.log(part);
+    if(!part){
+      return res.status(404).json({ success: false, error: 'Part not found' });
+    }
+    res.status(200).json({ success: true, data: part });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Server Error' });
+  }
+};
+
 // SizeName controllers
 exports.createSizeName = async (req, res) => {
   try {
