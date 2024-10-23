@@ -36,12 +36,12 @@ const VendorForm = ({ onSubmit, onCancel, isLoading }) => {
         onSubmit(formData);
     };
 
-    const inputClass = `w-full p-3 text-base rounded ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-800'}`;
-    const labelClass = 'block text-sm font-medium mb-2';
+    const inputClass = `w-full p-2 text-sm rounded ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-800'}`;
+    const labelClass = 'block text-xs font-medium mb-1';
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-3 gap-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-3 gap-3">
                 <div>
                     <label className={labelClass}>PO Prefix</label>
                     <input name="poPrefix" value={formData.poPrefix} onChange={handleChange} className={inputClass} />
@@ -56,7 +56,7 @@ const VendorForm = ({ onSubmit, onCancel, isLoading }) => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-3 gap-3">
                 <div>
                     <label className={labelClass}>Contact Number</label>
                     <input name="contactNumber" value={formData.contactNumber} onChange={handleChange} className={inputClass} />
@@ -71,7 +71,7 @@ const VendorForm = ({ onSubmit, onCancel, isLoading }) => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 gap-3">
                 <div>
                     <label className={labelClass}>PAN Number</label>
                     <input name="panNumber" value={formData.panNumber} onChange={handleChange} className={inputClass} />
@@ -82,9 +82,9 @@ const VendorForm = ({ onSubmit, onCancel, isLoading }) => {
                 </div>
             </div>
 
-            <fieldset className="border p-4 rounded">
-                <legend className="text-lg font-semibold px-2">Bank Details</legend>
-                <div className="grid grid-cols-2 gap-6">
+            <fieldset className="border p-2 rounded">
+                <legend className="text-sm font-semibold px-2">Bank Details</legend>
+                <div className="grid grid-cols-2 gap-3 p-2">
                     <div>
                         <label className={labelClass}>Bank Name</label>
                         <input name="name" value={formData.bankDetails.name} onChange={(e) => handleNestedChange(e, 'bankDetails')} className={inputClass} />
@@ -104,9 +104,9 @@ const VendorForm = ({ onSubmit, onCancel, isLoading }) => {
                 </div>
             </fieldset>
 
-            <fieldset className="border p-4 rounded">
-                <legend className="text-lg font-semibold px-2">Address</legend>
-                <div className="space-y-4">
+            <fieldset className="border p-2 rounded">
+                <legend className="text-sm font-semibold px-2">Address</legend>
+                <div className="space-y-2 p-2">
                     <div>
                         <label className={labelClass}>Address Line 1</label>
                         <input name="line1" value={formData.address.line1} onChange={(e) => handleNestedChange(e, 'address')} className={inputClass} />
@@ -115,7 +115,7 @@ const VendorForm = ({ onSubmit, onCancel, isLoading }) => {
                         <label className={labelClass}>Address Line 2</label>
                         <input name="line2" value={formData.address.line2} onChange={(e) => handleNestedChange(e, 'address')} className={inputClass} />
                     </div>
-                    <div className="grid grid-cols-3 gap-6">
+                    <div className="grid grid-cols-3 gap-3">
                         <div>
                             <label className={labelClass}>City</label>
                             <input name="city" value={formData.address.city} onChange={(e) => handleNestedChange(e, 'address')} className={inputClass} />
@@ -134,21 +134,21 @@ const VendorForm = ({ onSubmit, onCancel, isLoading }) => {
 
             <div>
                 <label className={labelClass}>Remark</label>
-                <textarea name="remark" value={formData.remark} onChange={handleChange} className={`${inputClass} h-24`}></textarea>
+                <textarea name="remark" value={formData.remark} onChange={handleChange} className={`${inputClass} h-16`}></textarea>
             </div>
 
-            <div className="flex justify-end space-x-4 mt-8">
+            <div className="flex justify-end space-x-3 pt-2 ">
                 <button
                     type="button"
                     onClick={onCancel}
-                    className="px-6 py-3 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-base"
+                    className="px-3 py-1.5 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition-colors text-sm"
                     disabled={isLoading}
                 >
                     Cancel
                 </button>
                 <button
                     type="submit"
-                    className="px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 text-base"
+                    className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
                     disabled={isLoading}
                 >
                     {isLoading ? 'Creating...' : 'Create Vendor'}
