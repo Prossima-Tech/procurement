@@ -1,14 +1,24 @@
 /* eslint-disable react/prop-types */
-/* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import ListComponent from '../common/ListComponent';
 import { useTheme } from '../../contexts/ThemeContext';
 import axios from 'axios';
 import ItemForm from './ItemForm';
-import { Trash2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const ItemModal = ({ isOpen, onClose, title, children }) => {
     const { isDarkMode } = useTheme();
+
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     return (
@@ -16,9 +26,14 @@ const ItemModal = ({ isOpen, onClose, title, children }) => {
             <div className={`rounded-lg shadow-xl w-11/12 max-w-4xl ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'}`}>
                 <div className="border-b p-4 flex justify-between items-center">
                     <h3 className="font-semibold text-lg">{title}</h3>
-                    <button onClick={onClose} className="text-2xl">&times;</button>
+                    <button
+                        onClick={onClose}
+                        className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                        <X size={20} />
+                    </button>
                 </div>
-                <div className="p-6 overflow-y-auto">
+                <div className="p-6 overflow-y-auto max-h-[calc(90vh-10rem)]">
                     {children}
                 </div>
             </div>
@@ -36,23 +51,38 @@ const ItemMasterComponent = () => {
         itemsPerPage: 15
     });
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [token, setToken] = useState(null);
+
+    // Toast configuration
+    const toastConfig = {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        style: {
+            background: isDarkMode ? '#1F2937' : '#ffffff',
+            color: isDarkMode ? '#ffffff' : '#1F2937',
+        }
+    };
 
     useEffect(() => {
         const storedToken = localStorage.getItem('token');
         if (storedToken) {
             setToken(storedToken);
-            console.log("token", storedToken);
         }
     }, []);
 
     const fetchItems = async (page = 1) => {
         if (!token) {
-            console.error('No token available');
+            toast.error('Authentication required', toastConfig);
             return;
         }
 
         try {
+            setIsLoading(true);
             const response = await axios.get(`http://localhost:5000/api/items?page=${page}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -60,6 +90,9 @@ const ItemMasterComponent = () => {
             setPagination(response.data.pagination);
         } catch (error) {
             console.error('Error fetching items:', error);
+            toast.error('Failed to fetch items', toastConfig);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -79,38 +112,81 @@ const ItemMasterComponent = () => {
 
     const handleSubmit = async (formData) => {
         try {
-            console.log("formData", formData);
+            setIsLoading(true);
             const response = await axios.post('http://localhost:5000/api/items', formData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            console.log('New Item:', response.data);
+            toast.success('Item created successfully', toastConfig);
             setIsModalOpen(false);
-            fetchItems(); // Refresh the list
+            fetchItems();
         } catch (error) {
             console.error('Error creating item:', error);
-            // TODO: Handle error (e.g., show error message to user)
+            toast.error(error.response?.data?.message || 'Failed to create item', toastConfig);
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const handleDeleteItem = async (itemId) => {
-        if (window.confirm('Are you sure you want to delete this item?')) {
-            console.log("itemId", itemId);
-            try {
-                // setIsLoading(true);
-                await axios.delete(`http://localhost:5000/api/items/${itemId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                // Refresh the item list after successful deletion
-                fetchItems();
-            } catch (err) {
-                console.error('Error deleting item:', err);
-                setError('Failed to delete item. Please try again.');
-            } finally {
-                // setIsLoading(false);
+    const handleDeleteItem = (itemId, itemName) => {
+        toast(
+            ({ closeToast }) => (
+                <div className="flex flex-col space-y-4">
+                    <div className="flex items-center space-x-2">
+                        <Trash2 className="w-5 h-5 text-red-500" />
+                        <span className="font-medium">Delete Item</span>
+                    </div>
+                    <p>Are you sure you want to delete this item? This action cannot be undone.</p>
+                    {itemName && (
+                        <div className={`p-2 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                            <span className="font-medium">{itemName}</span>
+                        </div>
+                    )}
+                    <div className="flex justify-end space-x-2">
+                        <button
+                            onClick={closeToast}
+                            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors
+                                ${isDarkMode
+                                    ? 'bg-gray-600 hover:bg-gray-500 text-white'
+                                    : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={async () => {
+                                try {
+                                    setIsLoading(true);
+                                    await axios.delete(`http://localhost:5000/api/items/${itemId}`, {
+                                        headers: { Authorization: `Bearer ${token}` }
+                                    });
+                                    toast.success('Item deleted successfully', toastConfig);
+                                    fetchItems();
+                                } catch (error) {
+                                    toast.error('Failed to delete item', toastConfig);
+                                    console.error('Error deleting item:', error);
+                                } finally {
+                                    setIsLoading(false);
+                                    closeToast();
+                                }
+                            }}
+                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-medium transition-colors"
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            ),
+            {
+                position: "top-center",
+                autoClose: false,
+                closeOnClick: false,
+                closeButton: false,
+                style: {
+                    background: isDarkMode ? '#1F2937' : '#ffffff',
+                    color: isDarkMode ? '#ffffff' : '#1F2937',
+                    minWidth: '320px',
+                }
             }
-        }
+        );
     };
 
     const columns = [
@@ -128,9 +204,10 @@ const ItemMasterComponent = () => {
             key: 'actions',
             render: (item) => (
                 <button
-                    onClick={() => handleDeleteItem(item._id)}
-                    className={`text-red-600 ml-5 hover:text-red-900 focus:outline-none`}
+                    onClick={() => handleDeleteItem(item._id, item.ItemName)}
+                    className="text-red-600 hover:text-red-900 focus:outline-none p-1 hover:bg-red-50 rounded-full transition-colors"
                     title="Delete Item"
+                    disabled={isLoading}
                 >
                     <Trash2 size={16} />
                 </button>
@@ -148,10 +225,19 @@ const ItemMasterComponent = () => {
                     onFetch={fetchItems}
                     pagination={pagination}
                     onCreateNew={handleCreateNew}
+                    isLoading={isLoading}
                 />
             </div>
-            <ItemModal isOpen={isModalOpen} onClose={handleCloseModal} title="Create New Item">
-                <ItemForm onSubmit={handleSubmit} onCancel={handleCloseModal} />
+            <ItemModal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                title="Create New Item"
+            >
+                <ItemForm
+                    onSubmit={handleSubmit}
+                    onCancel={handleCloseModal}
+                    isLoading={isLoading}
+                />
             </ItemModal>
         </>
     );

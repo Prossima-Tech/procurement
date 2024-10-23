@@ -4,6 +4,9 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import { useAuth } from '../../hooks/useAuth';
 import { Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { useTheme } from '../../contexts/ThemeContext';
 
 import {
     ItemMasterComponent,
@@ -31,7 +34,6 @@ import {
     MakerNameMasterComponent,
     UnitOfMeasurementMasterComponent
 } from '../config/configMasters';
-import { useTheme } from '../../contexts/ThemeContext';
 
 const DashboardComponent = () => {
     const { isDarkMode } = useTheme();
@@ -102,6 +104,22 @@ const Layout = () => {
                     </div>
                 </main>
             </div>
+            <ToastContainer
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme={isDarkMode ? "dark" : "light"}
+                toastStyle={{
+                    background: isDarkMode ? '#1F2937' : '#ffffff',
+                    color: isDarkMode ? '#ffffff' : '#1F2937',
+                }}
+            />
         </div>
     );
 };

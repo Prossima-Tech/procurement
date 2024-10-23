@@ -2,8 +2,9 @@
 import { useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import axios from 'axios'; // Make sure to install and import axios
-import { toast,ToastContainer } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
 const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
     const { isDarkMode } = useTheme();
     const [formData, setFormData] = useState({
@@ -12,7 +13,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
         vendorName: '',
         vendorAddress: '',
         vendorGst: '',
-        projectId: '',
+        projectId: '001',
         projectName: '', // Added new field
         unitId: '',
         unitName: '', // Added new field
@@ -45,8 +46,11 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
         deliveryTerms: '',
         poNarration: ''
     });
+
     const [vendorSuggestions, setVendorSuggestions] = useState([]);
     const [newItem, setNewItem] = useState({ partCode: '', quantity: '', unitPrice: '' });
+
+
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -54,24 +58,32 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
     };
 
     const fetchVendor = async () => {
+        if (!formData.vendorCode.trim()) {
+            toast.error("Please enter a vendor code");
+            return;
+        }
+
         try {
             const response = await axios.get(`http://localhost:5000/api/vendors/getByCode/${formData.vendorCode}`);
             const vendor = response.data;
-            if(vendor){
+
+            if (vendor) {
                 setFormData(prev => ({
                     ...prev,
+                    vendorId: vendor._id,
                     vendorName: vendor.name,
                     vendorAddress: vendor.address.line1 + ', ' + vendor.address.line2,
                     vendorGst: vendor.gstNumber
                 }));
-            }else{
-                toast.error("Vendor not found. heck the vendor code & try again.");
+                toast.success("Vendor details loaded successfully");
+            } else {
+                toast.error("Vendor not found in database");
             }
         } catch (error) {
-            console.error('Error fetching vendor:', error);
-            // Handle error (e.g., show error message to user)
+            toast.error(`Error: ${error.response?.data?.message || "Failed to fetch vendor details"}`);
         }
     };
+
 
     const searchVendors = async () => {
         try {
@@ -111,21 +123,29 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
     };
 
     const addItem = async () => {
-        if (!newItem.partCode || !newItem.quantity || !newItem.unitPrice) {
-            toast.error("Please fill all item fields");
+        // Validate all required fields
+        if (!newItem.partCode.trim()) {
+            toast.error("Please enter a part code");
+            return;
+        }
+        if (!newItem.quantity || newItem.quantity <= 0) {
+            toast.error("Please enter a valid quantity");
+            return;
+        }
+        if (!newItem.unitPrice || newItem.unitPrice <= 0) {
+            toast.error("Please enter a valid unit price");
             return;
         }
 
         try {
             const response = await axios.get(`http://localhost:5000/api/parts/getPartByCode/${newItem.partCode}`);
             const partDetails = response.data;
-            // toast.success("Toast checking");
 
-            if (response.success) {
+            if (partDetails) {
                 const newItemWithDetails = {
                     ...newItem,
                     masterItemName: partDetails.masterItemName,
-                    // Add any other relevant details from the API response
+                    // Add other relevant details
                 };
 
                 setFormData(prev => ({
@@ -133,15 +153,13 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
                     items: [...prev.items, newItemWithDetails]
                 }));
 
-                // Reset the new item form
                 setNewItem({ partCode: '', quantity: '', unitPrice: '' });
                 toast.success("Item added successfully");
             } else {
-                toast.error("Part Code not found");
+                toast.error("Part code not found in database");
             }
         } catch (error) {
-            console.error('Error fetching part details:', error);
-            toast.error("Error adding item. Please try again.", error);
+            toast.error(`Error: ${error.response?.data?.message || "Failed to fetch part details"}`);
         }
     };
 
@@ -155,38 +173,107 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
             ...prev,
             items: prev.items.filter((_, i) => i !== index)
         }));
+        toast.info("Item removed from order");
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onSubmit(formData);
+
+        // Validate required fields
+        if (!formData.vendorId) {
+            toast.error("Please select a valid vendor");
+            return;
+        }
+        if (!formData.projectId) {
+            toast.error("Please select a valid project");
+            return;
+        }
+        if (!formData.unitId) {
+            toast.error("Please select a valid unit");
+            return;
+        }
+        if (!formData.poDate) {
+            toast.error("Please select PO date");
+            return;
+        }
+        if (!formData.validUpto) {
+            toast.error("Please select validity date");
+            return;
+        }
+        if (!formData.deliveryDate) {
+            toast.error("Please select delivery date");
+            return;
+        }
+        if (formData.items.length === 0) {
+            toast.error("Please add at least one item to the order");
+            return;
+        }
+
+        // Validate invoice details
+        if (!formData.invoiceTo.name || !formData.invoiceTo.address) {
+            toast.error("Please fill all required invoice details");
+            return;
+        }
+
+        // Validate dispatch details
+        if (!formData.dispatchTo.name || !formData.dispatchTo.address) {
+            toast.error("Please fill all required dispatch details");
+            return;
+        }
+
+        try {
+            await onSubmit(formData);
+            toast.success("Purchase order created successfully");
+        } catch (error) {
+            toast.error(`Failed to create purchase order: ${error.response?.data?.message || error.message}`);
+        }
     };
 
     const searchProject = async () => {
+        if (!formData.projectId.trim()) {
+            toast.error("Please enter a project ID");
+            return;
+        }
+
         try {
             const response = await axios.get(`http://localhost:5000/api/projects/${formData.projectId}`);
             const project = response.data;
-            setFormData(prev => ({
-                ...prev,
-                projectName: project.projectName
-            }));
+
+            if (project) {
+                setFormData(prev => ({
+                    ...prev,
+                    projectName: project.projectName
+                }));
+                toast.success("Project details loaded successfully");
+            } else {
+                toast.error("Project not found in database");
+            }
         } catch (error) {
-            console.error('Error fetching project:', error);
-            // Handle error (e.g., show error message to user)
+            toast.error(`Error: ${error.response?.data?.message || "Failed to fetch project details"}`);
         }
     };
 
     const searchUnit = async () => {
+        if (!formData.unitId.trim()) {
+            toast.error("Please enter a unit ID");
+            return;
+        }
+
         try {
             const response = await axios.get(`http://localhost:5000/api/units/${formData.unitId}`);
             const unit = response.data;
-            setFormData(prev => ({
-                ...prev,
-                unitName: unit.unitName
-            }));
+
+            if (unit) {
+                setFormData(prev => ({
+                    ...prev,
+                    unitName: unit.unitName
+                }));
+                toast.success("Unit details loaded successfully");
+            } else {
+                toast.error("Unit not found in database");
+            }
         } catch (error) {
-            console.error('Error fetching unit:', error);
-            // Handle error (e.g., show error message to user)
+            toast.error(`Error: ${error.response?.data?.message || "Failed to fetch unit details"}`);
         }
     };
 
@@ -437,37 +524,37 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
                 <div className="grid grid-cols-4 gap-4 mb-4">
                     <div>
                         <label className={labelClass}>Part Code</label>
-                        <input 
-                            name="partCode" 
-                            value={newItem.partCode} 
-                            onChange={handleNewItemChange} 
-                            className={inputClass} 
+                        <input
+                            name="partCode"
+                            value={newItem.partCode}
+                            onChange={handleNewItemChange}
+                            className={inputClass}
                         />
                     </div>
                     <div>
                         <label className={labelClass}>Quantity</label>
-                        <input 
-                            type="number" 
-                            name="quantity" 
-                            value={newItem.quantity} 
-                            onChange={handleNewItemChange} 
-                            className={inputClass} 
+                        <input
+                            type="number"
+                            name="quantity"
+                            value={newItem.quantity}
+                            onChange={handleNewItemChange}
+                            className={inputClass}
                         />
                     </div>
                     <div>
                         <label className={labelClass}>Unit Price</label>
-                        <input 
-                            type="number" 
-                            name="unitPrice" 
-                            value={newItem.unitPrice} 
-                            onChange={handleNewItemChange} 
-                            className={inputClass} 
+                        <input
+                            type="number"
+                            name="unitPrice"
+                            value={newItem.unitPrice}
+                            onChange={handleNewItemChange}
+                            className={inputClass}
                         />
                     </div>
                     <div className="flex items-end">
-                        <button 
-                            type="button" 
-                            onClick={addItem} 
+                        <button
+                            type="button"
+                            onClick={addItem}
                             className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
                         >
                             Add Item
@@ -494,9 +581,9 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
                             <input type="number" name="unitPrice" value={item.unitPrice} readOnly className={inputClass} />
                         </div>
                         <div className="flex items-end">
-                            <button 
-                                type="button" 
-                                onClick={() => removeItem(index)} 
+                            <button
+                                type="button"
+                                onClick={() => removeItem(index)}
                                 className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
                             >
                                 Remove
