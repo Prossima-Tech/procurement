@@ -8,6 +8,7 @@ import LoginPage from './components/authentication/Login';
 import RegisterPage from './components/authentication/Register';
 import UnauthorizedPage from './components/authentication/Unauthorized';
 
+
 function App() {
   return (
     <AuthProvider>
