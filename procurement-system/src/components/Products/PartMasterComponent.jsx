@@ -4,7 +4,7 @@ import ListComponent from '../common/ListComponent';
 import { useTheme } from '../../contexts/ThemeContext';
 import axios from 'axios';
 import PartForm from './partForm';
-import { Trash2, X } from 'lucide-react';
+import { Trash2, X, Pencil } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const PartModal = ({ isOpen, onClose, title, children }) => {
@@ -54,6 +54,7 @@ const PartMasterComponent = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [token, setToken] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [editingPart, setEditingPart] = useState(null);
 
     // Toast configuration
     const toastConfig = {
@@ -76,7 +77,7 @@ const PartMasterComponent = () => {
         }
     }, []);
 
-    const fetchParts = async (page = 1, query = '') => {
+    const fetchParts = async (page = 1, limit = 10, query = '') => {
         if (!token) {
             toast.error('Authentication required', toastConfig);
             return;
@@ -84,12 +85,11 @@ const PartMasterComponent = () => {
 
         try {
             setIsLoading(true);
-            const endpoint = `http://localhost:5000/api/parts/allParts?page=${page}${query ? `&search=${query}` : ''}`;
-        
+            const endpoint = `http://localhost:5000/api/parts/allParts?page=${page}&limit=${limit}${query ? `&search=${query}` : ''}`;
+
             const response = await axios.get(endpoint, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            console.log("response.data from getall parts", response.data.data);
             setParts(response.data.data);
             setPagination(response.data.pagination);
         } catch (error) {
@@ -98,6 +98,16 @@ const PartMasterComponent = () => {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleEdit = (part) => {
+        // Transform the data to match the form's expected structure
+        const editData = {
+            ...part,
+            ItemCode: part.ItemCode, // This should now work since we're getting the correct format from backend
+        };
+        setEditingPart(editData);
+        setIsModalOpen(true);
     };
 
     useEffect(() => {
@@ -112,23 +122,57 @@ const PartMasterComponent = () => {
     const handleSubmit = async (formData) => {
         try {
             setIsLoading(true);
-            const response = await axios.post(
-                'http://localhost:5000/api/parts/createPart',
-                formData,
-                {
-                    headers: { Authorization: `Bearer ${token}` }
+            let response;
+
+            if (editingPart) {
+                // Update existing part
+                response = await axios.put(
+                    `http://localhost:5000/api/parts/updatePart/${editingPart._id}`,
+                    formData,
+                    {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+
+                if (response.data.success) {
+                    toast.success('Part updated successfully', toastConfig);
+                    // Update the part in the local state
+                    setParts(prevParts =>
+                        prevParts.map(part =>
+                            part._id === editingPart._id ? response.data.data : part
+                        )
+                    );
                 }
-            );
-            toast.success('Part created successfully', toastConfig);
+            } else {
+                // Create new part
+                response = await axios.post(
+                    'http://localhost:5000/api/parts/createPart',
+                    formData,
+                    {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+
+                if (response.data.success) {
+                    toast.success('Part created successfully', toastConfig);
+                }
+            }
+
             setIsModalOpen(false);
-            fetchParts(pagination.currentPage, searchQuery);
+            setEditingPart(null);
+            // Refresh the list to show updated data
+            fetchParts(pagination.currentPage, pagination.itemsPerPage, searchQuery);
         } catch (error) {
-            console.error('Error creating part:', error);
-            toast.error(error.response?.data?.message || 'Failed to create part', toastConfig);
+            console.error('Error saving part:', error);
+            const errorMessage = error.response?.data?.error ||
+                error.response?.data?.message ||
+                `Failed to ${editingPart ? 'update' : 'create'} part`;
+            toast.error(errorMessage, toastConfig);
         } finally {
             setIsLoading(false);
         }
     };
+
 
     const handleSearch = (query) => {
         setSearchQuery(query);
@@ -212,14 +256,24 @@ const PartMasterComponent = () => {
             header: 'Actions',
             key: 'actions',
             render: (part) => (
-                <button
-                    onClick={() => handleDeletePart(part._id, part.PartCodeNumber)}
-                    className="text-red-600 hover:text-red-900 focus:outline-none p-1 hover:bg-red-50 rounded-full transition-colors"
-                    title="Delete Part"
-                    disabled={isLoading}
-                >
-                    <Trash2 size={16} />
-                </button>
+                <div className="flex items-center space-x-2">
+                    <button
+                        onClick={() => handleEdit(part)}
+                        className="text-blue-600 hover:text-blue-900 focus:outline-none p-1 hover:bg-blue-50 rounded-full transition-colors"
+                        title="Edit Part"
+                        disabled={isLoading}
+                    >
+                        <Pencil size={16} />
+                    </button>
+                    <button
+                        onClick={() => handleDeletePart(part._id, part.PartCodeNumber)}
+                        className="text-red-600 hover:text-red-900 focus:outline-none p-1 hover:bg-red-50 rounded-full transition-colors"
+                        title="Delete Part"
+                        disabled={isLoading}
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </div>
             )
         }
     ];
@@ -233,20 +287,30 @@ const PartMasterComponent = () => {
                     columns={columns}
                     onFetch={fetchParts}
                     pagination={pagination}
-                    onCreateNew={() => setIsModalOpen(true)}
+                    onCreateNew={() => {
+                        setEditingPart(null);
+                        setIsModalOpen(true);
+                    }}
                     onSearch={handleSearch}
                     isLoading={isLoading}
                 />
             </div>
             <PartModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                title="Create New Part"
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingPart(null);
+                }}
+                title={editingPart ? "Edit Part" : "Create New Part"}
             >
                 <PartForm
                     onSubmit={handleSubmit}
-                    onCancel={() => setIsModalOpen(false)}
+                    onCancel={() => {
+                        setIsModalOpen(false);
+                        setEditingPart(null);
+                    }}
                     isLoading={isLoading}
+                    initialData={editingPart}
                 />
             </PartModal>
         </>

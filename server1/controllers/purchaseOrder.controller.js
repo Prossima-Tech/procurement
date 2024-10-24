@@ -37,15 +37,15 @@ exports.createPurchaseOrder = async (req, res) => {
 
     console.log(" Generating PO Code");
     // const poCode = await generatePoNumber(unitId);
-    
+
     // New function to generate PO code
     const generatePoCode = async (unitId) => {
       const latestPo = await PurchaseOrder.findOne({ unitId }).sort('-createdAt');
       const lastNumber = latestPo ? parseInt(latestPo.poCode.split('-')[1]) : 0;
-      const unitCode = await Unit.findById(unitId).select('unitCode');
-      return `${unitCode.unitCode}-${(lastNumber + 1).toString().padStart(5, '0')}`;
+      // const unitCode = await Unit.findById(unitId).select('unitCode');
+      return `${(lastNumber + 1).toString().padStart(5, '0')}`;
     };
-    
+
     const poCode = await generatePoCode(unitId);
     console.log(" Generated PO Code:", poCode);
 
@@ -137,9 +137,15 @@ exports.getAllPurchaseOrders = async (req, res) => {
     const totalPages = Math.ceil(totalPurchaseOrders / limit);
 
     const purchaseOrders = await PurchaseOrder.find()
-      .populate('vendorId', 'name code')  // Only populate vendor fields
-      .populate('items.partCode')  // Populate item details
-      .sort({ createdAt: -1 }) // Sort by newest first
+      .populate('vendorId', 'name code')
+      .populate({
+        path: 'items.partCode',
+        populate: {
+          path: 'ItemCode',
+          select: 'ItemCode ItemName'
+        }
+      })
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
@@ -159,32 +165,140 @@ exports.getAllPurchaseOrders = async (req, res) => {
   }
 };
 
+
 exports.getPurchaseOrderById = async (req, res) => {
   try {
     const purchaseOrder = await PurchaseOrder.findById(req.params.id)
-      .populate('vendor')
-      .populate('items.item')
-      .populate('preparedBy', 'name')
-      .populate('checkedBy', 'name');
+      .populate('vendorId')
+      .populate({
+        path: 'items.partCode',
+        populate: {
+          path: 'ItemCode',
+          select: 'ItemCode ItemName'
+        }
+      });
 
     if (!purchaseOrder) {
       return res.status(404).json({ message: 'Purchase Order not found' });
     }
-    res.json(purchaseOrder);
+
+    const formattedPO = {
+      ...purchaseOrder.toObject(),
+      items: purchaseOrder.items.map(item => ({
+        partCode: item.partCode?.PartCodeNumber || '',
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.totalPrice,
+        masterItemName: item.partCode?.ItemCode?.ItemName || ''
+      }))
+    };
+
+    res.json(formattedPO);
   } catch (error) {
+    console.error('Error fetching purchase order:', error);
     res.status(500).json({ message: error.message });
   }
 };
 
+
 exports.updatePurchaseOrder = async (req, res) => {
   try {
-    const purchaseOrder = await PurchaseOrder.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!purchaseOrder) {
-      return res.status(404).json({ message: 'Purchase Order not found' });
+    const {
+      vendorId,
+      vendorCode,
+      vendorName,
+      vendorAddress,
+      vendorGst,
+      projectCode,
+      unitId,
+      unitName,
+      poDate,
+      validUpto,
+      status,
+      invoiceTo,
+      dispatchTo,
+      items,
+      deliveryDate,
+      supplierRef,
+      otherRef,
+      dispatchThrough,
+      destination,
+      paymentTerms,
+      deliveryTerms,
+      poNarration
+    } = req.body;
+
+    // Validate project
+    const project = await Project.findOne({ projectCode });
+    if (!project) {
+      return res.status(400).json({ success: false, message: 'Project not found' });
     }
-    res.json(purchaseOrder);
+
+    // Process items
+    const processedItems = await Promise.all(items.map(async (item) => {
+      const part = await PartCode.findOne({ PartCodeNumber: item.partCode });
+      if (!part) {
+        throw new Error(`Part with code ${item.partCode} not found`);
+      }
+      return {
+        partCode: part._id,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.quantity * item.unitPrice
+      };
+    }));
+
+    const updateData = {
+      vendorId: mongoose.Types.ObjectId(vendorId),
+      vendorCode,
+      vendorName,
+      vendorAddress,
+      vendorGst,
+      projectId: project._id,
+      unitId: mongoose.Types.ObjectId(unitId),
+      unitName,
+      poDate,
+      validUpto,
+      status,
+      invoiceTo,
+      dispatchTo,
+      items: processedItems,
+      deliveryDate,
+      supplierRef,
+      otherRef,
+      dispatchThrough,
+      destination,
+      paymentTerms,
+      deliveryTerms,
+      poNarration,
+      updatedBy: req.user._id,
+      updatedAt: new Date()
+    };
+
+    // Calculate totals
+    const totals = calculateTotals(processedItems);
+    updateData.subTotal = totals.subTotal;
+    updateData.tax = totals.tax;
+    updateData.total = totals.total;
+
+    const updatedPO = await PurchaseOrder.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    ).populate('items.partCode');
+
+    if (!updatedPO) {
+      return res.status(404).json({ success: false, message: 'Purchase Order not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Purchase Order updated successfully',
+      data: updatedPO
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error updating purchase order:', error);
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import ListComponent from '../common/ListComponent';
 import VendorForm from './VendorForm';
 import axios from 'axios';
-import { Trash2, X } from 'lucide-react';
+import { Trash2, X, Pencil } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from 'react-toastify';
 
@@ -13,6 +13,7 @@ const VendorsComponent = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [editingVendor, setEditingVendor] = useState(null);
 
     // Toast configuration
     const toastConfig = {
@@ -75,12 +76,20 @@ const VendorsComponent = () => {
     }, [isModalOpen]);
 
     const handleCreateNew = () => {
+        setEditingVendor(null);
+        setIsModalOpen(true);
+        setError(null);
+    };
+
+    const handleEdit = (vendor) => {
+        setEditingVendor(vendor);
         setIsModalOpen(true);
         setError(null);
     };
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
+        setEditingVendor(null);
         setError(null);
     };
 
@@ -88,22 +97,41 @@ const VendorsComponent = () => {
         try {
             setIsLoading(true);
             setError(null);
-            const response = await axios.post(
-                'http://localhost:5000/api/vendors/',
-                formData,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${getToken()}`,
-                        'Content-Type': 'application/json'
+
+            if (editingVendor) {
+                // Update existing vendor
+                await axios.put(
+                    `http://localhost:5000/api/vendors/${editingVendor._id}`,
+                    formData,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${getToken()}`,
+                            'Content-Type': 'application/json'
+                        }
                     }
-                }
-            );
-            toast.success('Vendor created successfully!', toastConfig);
+                );
+                toast.success('Vendor updated successfully!', toastConfig);
+            } else {
+                // Create new vendor
+                await axios.post(
+                    'http://localhost:5000/api/vendors/',
+                    formData,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${getToken()}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+                toast.success('Vendor created successfully!', toastConfig);
+            }
+
             await fetchVendors();
             setIsModalOpen(false);
+            setEditingVendor(null);
         } catch (err) {
-            const errorMessage = err.response?.data?.message || 'Failed to create vendor. Please try again.';
-            console.error('Error creating vendor:', err);
+            const errorMessage = err.response?.data?.message || `Failed to ${editingVendor ? 'update' : 'create'} vendor. Please try again.`;
+            console.error(`Error ${editingVendor ? 'updating' : 'creating'} vendor:`, err);
             setError(errorMessage);
             toast.error(errorMessage, toastConfig);
         } finally {
@@ -187,14 +215,24 @@ const VendorsComponent = () => {
             header: 'Actions',
             key: 'actions',
             render: (item) => (
-                <button
-                    onClick={() => handleDeleteVendor(item._id, item.name)}
-                    className="text-red-600 ml-5 hover:text-red-900 focus:outline-none p-1 hover:bg-red-50 rounded-full transition-colors"
-                    title="Delete Vendor"
-                    disabled={isLoading}
-                >
-                    <Trash2 size={20} />
-                </button>
+                <div className="flex items-center justify-end space-x-2">
+                    <button
+                        onClick={() => handleEdit(item)}
+                        className="text-blue-600 hover:text-blue-900 focus:outline-none p-1 hover:bg-blue-50 rounded-full transition-colors"
+                        title="Edit Vendor"
+                        disabled={isLoading}
+                    >
+                        <Pencil size={20} />
+                    </button>
+                    <button
+                        onClick={() => handleDeleteVendor(item._id, item.name)}
+                        className="text-red-600 hover:text-red-900 focus:outline-none p-1 hover:bg-red-50 rounded-full transition-colors"
+                        title="Delete Vendor"
+                        disabled={isLoading}
+                    >
+                        <Trash2 size={20} />
+                    </button>
+                </div>
             )
         }
     ];
@@ -235,7 +273,9 @@ const VendorsComponent = () => {
                         >
                             {/* Modal Header */}
                             <div className="flex items-center justify-between p-4 border-b shrink-0">
-                                <h2 className="text-xl font-bold">Create New Vendor</h2>
+                                <h2 className="text-xl font-bold">
+                                    {editingVendor ? 'Edit Vendor' : 'Create New Vendor'}
+                                </h2>
                                 <button
                                     onClick={handleCloseModal}
                                     className="text-gray-500 hover:text-gray-700 focus:outline-none p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -250,6 +290,7 @@ const VendorsComponent = () => {
                                     onSubmit={handleSubmit}
                                     onCancel={handleCloseModal}
                                     isLoading={isLoading}
+                                    initialData={editingVendor}
                                 />
                             </div>
                         </div>

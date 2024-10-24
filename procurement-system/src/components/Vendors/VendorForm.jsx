@@ -1,8 +1,8 @@
 /* eslint-disable react/prop-types */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 
-const VendorForm = ({ onSubmit, onCancel, isLoading }) => {
+const VendorForm = ({ onSubmit, onCancel, isLoading, initialData }) => {
     const { isDarkMode } = useTheme();
     const [formData, setFormData] = useState({
         poPrefix: '',
@@ -17,6 +17,35 @@ const VendorForm = ({ onSubmit, onCancel, isLoading }) => {
         address: { line1: '', line2: '', city: '', state: '', pinCode: '' },
         remark: '',
     });
+
+    useEffect(() => {
+        if (initialData) {
+            setFormData({
+                poPrefix: initialData.poPrefix || '',
+                name: initialData.name || '',
+                contactPerson: initialData.contactPerson || '',
+                contactNumber: initialData.contactNumber || '',
+                mobileNumber: initialData.mobileNumber || '',
+                panNumber: initialData.panNumber || '',
+                email: initialData.email || '',
+                gstNumber: initialData.gstNumber || '',
+                bankDetails: {
+                    name: initialData.bankDetails?.name || '',
+                    branchName: initialData.bankDetails?.branchName || '',
+                    accountNumber: initialData.bankDetails?.accountNumber || '',
+                    ifscCode: initialData.bankDetails?.ifscCode || '',
+                },
+                address: {
+                    line1: initialData.address?.line1 || '',
+                    line2: initialData.address?.line2 || '',
+                    city: initialData.address?.city || '',
+                    state: initialData.address?.state || '',
+                    pinCode: initialData.address?.pinCode || '',
+                },
+                remark: initialData.remark || '',
+            });
+        }
+    }, [initialData]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -137,7 +166,7 @@ const VendorForm = ({ onSubmit, onCancel, isLoading }) => {
                 <textarea name="remark" value={formData.remark} onChange={handleChange} className={`${inputClass} h-16`}></textarea>
             </div>
 
-            <div className="flex justify-end space-x-3 pt-2 ">
+            <div className="flex justify-end space-x-3 pt-2">
                 <button
                     type="button"
                     onClick={onCancel}
@@ -151,7 +180,7 @@ const VendorForm = ({ onSubmit, onCancel, isLoading }) => {
                     className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
                     disabled={isLoading}
                 >
-                    {isLoading ? 'Creating...' : 'Create Vendor'}
+                    {isLoading ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Vendor' : 'Create Vendor')}
                 </button>
             </div>
         </form>

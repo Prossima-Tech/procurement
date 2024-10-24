@@ -103,7 +103,7 @@ const ListComponent = ({
                             </tr>
                         ) : filteredData.length === 0 ? (
                             <tr>
-                                <td colSpan={columns.length} className="text-center py-4">No vendors found</td>
+                                <td colSpan={columns.length} className="text-center py-4">Nothing found!</td>
                             </tr>
                         ) : (
                             filteredData.map((item, rowIndex) => (

@@ -7,7 +7,9 @@ router.post('/createPart', partController.createPart);
 router.get('/allParts', partController.getAllParts);
 router.get('/getPart/:partId', partController.getPart);
 router.delete('/deletePart/:id', partController.deletePart);
+router.put('/updatePart/:id', partController.updatePart);
 router.get('/getPartByCode/:code', partController.getPartByCode);
+
 // SizeName routes
 router.post('/sizes/createSizeName', partController.createSizeName);
 router.get('/sizes/allSizeNames', partController.getAllSizeNames);
