@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import ListComponent from '../common/ListComponent';
 import PurchaseOrderForm from './PurchaseOrderForm';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Plus, ChevronLeft, Trash2 } from 'lucide-react';
+import { Plus, ChevronLeft, Trash2, Pencil } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 
@@ -14,6 +14,7 @@ const PurchaseOrdersComponent = () => {
     const [isCreatingNew, setIsCreatingNew] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [editingPO, setEditingPO] = useState(null);
     const { isDarkMode } = useTheme();
 
     // Toast configuration
@@ -84,28 +85,82 @@ const PurchaseOrdersComponent = () => {
         setError(null);
     };
 
+    const handleEdit = async (orderId) => {
+        try {
+            setIsLoading(true);
+            const response = await axios.get(
+                `http://localhost:5000/api/purchase-orders/getPO/${orderId}`,
+                {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                }
+            );
+
+            if (response.data) {
+                // Format dates for the form
+                const formattedData = {
+                    ...response.data,
+                    poDate: response.data.poDate ? new Date(response.data.poDate).toISOString().split('T')[0] : '',
+                    validUpto: response.data.validUpto ? new Date(response.data.validUpto).toISOString().split('T')[0] : '',
+                    deliveryDate: response.data.deliveryDate ? new Date(response.data.deliveryDate).toISOString().split('T')[0] : '',
+                    // Ensure items are in the correct format for the form
+                    items: response.data.items.map(item => ({
+                        partCode: item.partCode,
+                        quantity: item.quantity,
+                        unitPrice: item.unitPrice,
+                        masterItemName: item.masterItemName,
+                        totalPrice: item.totalPrice
+                    }))
+                };
+                setEditingPO(formattedData);
+                setIsCreatingNew(true);
+            }
+        } catch (err) {
+            console.error('Error fetching PO details:', err);
+            toast.error('Failed to fetch purchase order details', toastConfig);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleSubmit = async (formData) => {
         try {
             setIsLoading(true);
             setError(null);
-
-            await axios.post(
-                'http://localhost:5000/api/purchase-orders/create',
-                formData,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${getToken()}`,
-                        'Content-Type': 'application/json'
+            if (editingPO) {
+                // Update existing PO
+                await axios.put(
+                    `http://localhost:5000/api/purchase-orders/updatePO/${editingPO._id}`,
+                    formData,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${getToken()}`,
+                            'Content-Type': 'application/json'
+                        }
                     }
-                }
-            );
+                );
+                toast.success('Purchase Order updated successfully!', toastConfig);
+            } else {
+                // Create new PO
+                await axios.post(
+                    'http://localhost:5000/api/purchase-orders/createPO',
+                    formData,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${getToken()}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+                toast.success('Purchase Order created successfully!', toastConfig);
+            }
 
-            toast.success('Purchase Order created successfully!', toastConfig);
             setIsCreatingNew(false);
+            setEditingPO(null);
             await fetchPurchaseOrders(currentPage);
         } catch (err) {
-            const errorMessage = err.response?.data?.message || 'Failed to create purchase order. Please try again.';
-            console.error('Error creating purchase order:', err);
+            const errorMessage = err.response?.data?.message ||
+                `Failed to ${editingPO ? 'update' : 'create'} purchase order. Please try again.`;
+            console.error(`Error ${editingPO ? 'updating' : 'creating'} purchase order:`, err);
             setError(errorMessage);
             toast.error(errorMessage, toastConfig);
         } finally {
@@ -188,6 +243,7 @@ const PurchaseOrdersComponent = () => {
 
     const handleCancel = () => {
         setIsCreatingNew(false);
+        setEditingPO(null);
         setError(null);
     };
 
@@ -215,8 +271,16 @@ const PurchaseOrdersComponent = () => {
             render: (item) => (
                 <div className="flex items-center justify-end space-x-2">
                     <button
+                        onClick={() => handleEdit(item.id)}
+                        className="text-blue-600 hover:text-blue-900 focus:outline-none p-1 rounded-full transition-colors"
+                        title="Edit Purchase Order"
+                        disabled={isLoading}
+                    >
+                        <Pencil size={20} />
+                    </button>
+                    <button
                         onClick={() => handleDeletePurchaseOrder(item.id, item.reference)}
-                        className={`text-red-600 hover:text-red-900 focus:outline-none p-1 rounded-full transition-colors`}
+                        className="text-red-600 hover:text-red-900 focus:outline-none p-1 rounded-full transition-colors"
                         title="Delete Purchase Order"
                         disabled={isLoading}
                     >
@@ -233,20 +297,21 @@ const PurchaseOrdersComponent = () => {
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex justify-center">
                         {isCreatingNew && (
-                            <Link to="/" className={`flex justify-center p-2 mr-2 rounded-full ${isDarkMode ? ' hover:bg-gray-800' : 'hover:bg-gray-200'} transition duration-150 ease-in-out`}>
+                            <Link to="/" className={`flex justify-center p-2 mr-2 rounded-full ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-200'} transition duration-150 ease-in-out`}>
                                 <button onClick={handleCancel}>
                                     <ChevronLeft size={24} />
                                 </button>
                             </Link>
                         )}
-                        <h1 className="text-2xl font-bold">Purchase Orders</h1>
+                        <h1 className="text-2xl font-bold">
+                            {isCreatingNew ? (editingPO ? 'Edit Purchase Order' : 'Create Purchase Order') : 'Purchase Orders'}
+                        </h1>
                     </div>
 
                     {!isCreatingNew && (
                         <button
                             onClick={handleCreateNew}
-                            className={`flex items-center p-4 rounded-md text-sm font-medium ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'
-                                } transition duration-150 ease-in-out`}
+                            className={`flex items-center p-4 rounded-md text-sm font-medium ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} transition duration-150 ease-in-out`}
                         >
                             <Plus size={18} className="mr-2" /> New Purchase Order
                         </button>
@@ -265,6 +330,7 @@ const PurchaseOrdersComponent = () => {
                                 onCancel={handleCancel}
                                 isDarkMode={isDarkMode}
                                 isLoading={isLoading}
+                                initialData={editingPO}
                             />
                         ) : (
                             <ListComponent

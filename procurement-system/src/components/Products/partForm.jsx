@@ -26,10 +26,18 @@ const useApi = () => {
     return { makeRequest };
 };
 
-const Dropdown = ({ label, onChange, onSearch, onCreate, options, loading, isDarkMode }) => {
+
+const Dropdown = ({ label, value, onChange, onSearch, onCreate, options, loading, isDarkMode }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const dropdownRef = useRef(null);
+
+    // Set initial search term when value prop changes
+    useEffect(() => {
+        if (value) {
+            setSearchTerm(value);
+        }
+    }, [value]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -53,9 +61,7 @@ const Dropdown = ({ label, onChange, onSearch, onCreate, options, loading, isDar
 
     const handleFocus = () => {
         setIsOpen(true);
-        if (!searchTerm) {
-            onSearch('');
-        }
+        onSearch(searchTerm || '');
     };
 
     const baseInputClass = `w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-opacity-50 ${isDarkMode
@@ -145,6 +151,20 @@ const PartForm = ({ onSubmit, onCancel, initialData = {} }) => {
         ItemMakeName: false,
         MeasurementUnit: false
     });
+
+    useEffect(() => {
+        if (initialData) {
+            setFormData({
+                PartCodeNumber: initialData.PartCodeNumber || '',
+                ItemCode: initialData.ItemCode || '',
+                SizeName: initialData.SizeName || '',
+                ColourName: initialData.ColourName || '',
+                SerialNumber: initialData.SerialNumber || '',
+                ItemMakeName: initialData.ItemMakeName || '',
+                MeasurementUnit: initialData.MeasurementUnit || '',
+            });
+        }
+    }, [initialData]);
 
     useEffect(() => {
         const fetchItems = async () => {
@@ -285,7 +305,7 @@ const PartForm = ({ onSubmit, onCancel, initialData = {} }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Dropdown
                     label="Size"
-                    value={formData.SizeName}
+                    value={formData.SizeName}  // Make sure to pass the value prop
                     onChange={(value) => setFormData(prev => ({ ...prev, SizeName: value }))}
                     onSearch={(term) => handleDropdownSearch('SizeName', term)}
                     onCreate={(name) => handleCreateNew('SizeName', name)}

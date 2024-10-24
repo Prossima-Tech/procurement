@@ -174,6 +174,88 @@ exports.getPartByCode = async (req, res) => {
   }
 };
 
+exports.updatePart = async (req, res) => {
+  try {
+    const {
+      PartCodeNumber,
+      ItemCode,
+      SizeName,
+      ColourName,
+      SerialNumber,
+      ItemMakeName,
+      MeasurementUnit
+    } = req.body;
+
+    if (!PartCodeNumber || !ItemCode || !SerialNumber) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: PartCodeNumber, ItemCode, and SerialNumber are required'
+      });
+    }
+
+    // Check if the PartCodeNumber exists but belongs to a different part
+    const existingPart = await PartCode.findOne({
+      PartCodeNumber,
+      _id: { $ne: req.params.id }
+    });
+
+    if (existingPart) {
+      return res.status(400).json({
+        success: false,
+        error: 'PartCodeNumber already exists'
+      });
+    }
+
+    // Verify ItemCode exists
+    const item = await Item.findOne({ ItemCode: ItemCode });
+    if (!item) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid ItemCode'
+      });
+    }
+
+    const updatedPart = await PartCode.findByIdAndUpdate(
+      req.params.id,
+      {
+        PartCodeNumber,
+        ItemCode: item._id,
+        SizeName,
+        ColourName,
+        SerialNumber,
+        ItemMakeName,
+        MeasurementUnit
+      },
+      { new: true }
+    ).populate('ItemCode', 'ItemCode ItemName');
+
+    if (!updatedPart) {
+      return res.status(404).json({
+        success: false,
+        error: 'Part not found'
+      });
+    }
+
+    // Format the response to match the getAllParts format
+    const formattedPart = {
+      ...updatedPart.toObject(),
+      ItemCode: updatedPart.ItemCode.ItemCode,
+      ItemName: updatedPart.ItemCode.ItemName
+    };
+
+    res.status(200).json({
+      success: true,
+      data: formattedPart
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+
 // SizeName controllers
 exports.createSizeName = async (req, res) => {
   try {
