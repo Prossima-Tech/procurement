@@ -64,28 +64,51 @@ exports.createPurchaseOrder = async (req, res) => {
 
 exports.getAllPurchaseOrders = async (req, res) => {
   try {
-    const purchaseOrders = await PurchaseOrder.find().populate('vendor').populate('items.item');
-    res.json(purchaseOrders);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const totalPurchaseOrders = await PurchaseOrder.countDocuments();
+    const totalPages = Math.ceil(totalPurchaseOrders / limit);
+
+    const purchaseOrders = await PurchaseOrder.find()
+      .populate('vendorId', 'name code')  // Only populate vendor fields
+      .populate('items.partCode')  // Populate item details
+      .sort({ createdAt: -1 }) // Sort by newest first
+      .skip(skip)
+      .limit(limit);
+
+    if (!purchaseOrders) {
+      return res.status(404).json({ message: 'No purchase orders found' });
+    }
+
+    res.json({
+      purchaseOrders,
+      currentPage: page,
+      totalPages,
+      totalItems: totalPurchaseOrders
+    });
   } catch (error) {
+    console.error('Error fetching purchase orders:', error);
     res.status(500).json({ message: error.message });
   }
 };
 
 exports.getPurchaseOrderById = async (req, res) => {
-    try {
-        const purchaseOrder = await PurchaseOrder.findById(req.params.id)
-            .populate('vendor')
-            .populate('items.item')
-            .populate('preparedBy', 'name')
-            .populate('checkedBy', 'name');
-        
-        if (!purchaseOrder) {
-            return res.status(404).json({ message: 'Purchase Order not found' });
-        }
-        res.json(purchaseOrder);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+  try {
+    const purchaseOrder = await PurchaseOrder.findById(req.params.id)
+      .populate('vendor')
+      .populate('items.item')
+      .populate('preparedBy', 'name')
+      .populate('checkedBy', 'name');
+
+    if (!purchaseOrder) {
+      return res.status(404).json({ message: 'Purchase Order not found' });
     }
+    res.json(purchaseOrder);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 exports.updatePurchaseOrder = async (req, res) => {
@@ -115,27 +138,27 @@ exports.deletePurchaseOrder = async (req, res) => {
 // GET /api/vendors/:code
 exports.getVendorByCode = async (req, res) => {
   try {
-      const vendor = await Vendor.findOne({ code: req.params.code });
-      if (!vendor) {
-          return res.status(404).json({ message: 'Vendor not found' });
-      }
-      res.json(vendor);
+    const vendor = await Vendor.findOne({ code: req.params.code });
+    if (!vendor) {
+      return res.status(404).json({ message: 'Vendor not found' });
+    }
+    res.json(vendor);
   } catch (error) {
-      res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
 // GET /api/vendors/search?query=:query
 exports.searchVendors = async (req, res) => {
   try {
-      const vendors = await Vendor.find({
-          $or: [
-              { code: { $regex: req.query.query, $options: 'i' } },
-              { name: { $regex: req.query.query, $options: 'i' } }
-          ]
-      }).limit(10);
-      res.json(vendors);
+    const vendors = await Vendor.find({
+      $or: [
+        { code: { $regex: req.query.query, $options: 'i' } },
+        { name: { $regex: req.query.query, $options: 'i' } }
+      ]
+    }).limit(10);
+    res.json(vendors);
   } catch (error) {
-      res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
