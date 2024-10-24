@@ -61,39 +61,54 @@ exports.createPart = async (req, res) => {
 
 exports.getAllParts = async (req, res) => {
   try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = 15;
-    const startIndex = (page - 1) * limit;
+    console.log("req received for ", req.query);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 15;
+    const search = req.query.search || '';
+    console.log("search", search);
 
-    const totalDocs = await PartCode.countDocuments();
-    const totalPages = Math.ceil(totalDocs / limit);
+    let query = {};
+    if (search) {
+      query = {
+        $or: [
+          { PartCodeNumber: { $regex: search, $options: 'i' } },
+          { SerialNumber: { $regex: search, $options: 'i' } },
+          // { SizeName: { $regex: search, $options: 'i' } },
+          // { ColourName: { $regex: search, $options: 'i' } },
+          // { ItemMakeName: { $regex: search, $options: 'i' } },
+          // { MeasurementUnit: { $regex: search, $options: 'i' } },
+        ],
+      };
+    }
 
-    const parts = await PartCode.find()
-    .populate('ItemCode', 'ItemCode ItemName')
-      .skip(startIndex)
-      .limit(limit);
+    console.log("query", query);
+    const total = await PartCode.countDocuments(query);
+    const parts = await PartCode.find(query)
+      .populate('ItemCode', 'ItemCode ItemName')
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort({ createdAt: -1 });
 
-      const formattedParts = parts.map(part => ({
-        ...part.toObject(),
-        ItemCode: part.ItemCode.ItemCode,
-        ItemName: part.ItemCode.ItemName
-      }));
-  
-      res.status(200).json({
-        success: true,
-        count: formattedParts.length,
-        data: formattedParts,
-        pagination: {
-          currentPage: page,
-          totalPages: totalPages,
-          totalItems: totalDocs,
-          itemsPerPage: limit
-        }
-      });
+    const formattedParts = parts.map(part => ({
+      ...part.toObject(),
+      ItemCode: part.ItemCode ? part.ItemCode.ItemCode : null,
+      ItemName: part.ItemCode ? part.ItemCode.ItemName : null
+    }));
+
+    res.json({
+      success: true,
+      data: formattedParts,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalItems: total,
+        itemsPerPage: limit
+      }
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: 'Server Error'
+      error: 'Server Error: ' + error.message
     });
   }
 };
@@ -143,12 +158,15 @@ exports.deletePart = async (req, res) => {
 
 exports.getPartByCode = async (req, res) => {
   try {
+    console.log("req recieved for ",req.params);
     const code = req.params.code;
     const part = await PartCode.findOne({ PartCodeNumber: code }).populate('ItemCode');
     // console.log(part);
     if(!part){
+      console.log("Part not found");
       return res.status(404).json({ success: false, error: 'Part not found' });
     }
+    console.log("Part found", part);
     res.status(200).json({ success: true, data: part });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Server Error' });
@@ -413,3 +431,4 @@ exports.searchParts = async (req, res) => {
     });
   }
 };
+

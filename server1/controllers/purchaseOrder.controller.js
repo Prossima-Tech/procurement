@@ -1,14 +1,27 @@
-const PurchaseOrder = require('../models/purchaseOrder.model');
 const { calculateTotals, generatePoNumber } = require('../utils/purchaseOrderUtils');
+const PurchaseOrder = require('../models/purchaseOrder.model');
+const Project = require('../models/project.model'); // Import the Project model
+const Unit = require('../models/unit.model'); // Import the Unit model
+const { PartCode } = require('../models/part.model'); // Make sure to import this
+const mongoose = require('mongoose');
 
 exports.createPurchaseOrder = async (req, res) => {
   try {
+    console.log(" Starting purchase order creation");
+    console.log(" Request body:", JSON.stringify(req.body, null, 2));
+
     const {
       vendorId,
-      projectId,
+      vendorCode,
+      vendorName,
+      vendorAddress,
+      vendorGst,
+      projectCode,
       unitId,
+      unitName,
       poDate,
       validUpto,
+      status,
       invoiceTo,
       dispatchTo,
       items,
@@ -22,26 +35,65 @@ exports.createPurchaseOrder = async (req, res) => {
       poNarration
     } = req.body;
 
-    // Generate PO Code
-    const poCode = await generatePoNumber(unitId);
+    console.log(" Generating PO Code");
+    // const poCode = await generatePoNumber(unitId);
+    
+    // New function to generate PO code
+    const generatePoCode = async (unitId) => {
+      const latestPo = await PurchaseOrder.findOne({ unitId }).sort('-createdAt');
+      const lastNumber = latestPo ? parseInt(latestPo.poCode.split('-')[1]) : 0;
+      const unitCode = await Unit.findById(unitId).select('unitCode');
+      return `${unitCode.unitCode}-${(lastNumber + 1).toString().padStart(5, '0')}`;
+    };
+    
+    const poCode = await generatePoCode(unitId);
+    console.log(" Generated PO Code:", poCode);
 
-    // Create new PurchaseOrder object
-    const newPurchaseOrder = new PurchaseOrder({
-      vendorId,
-      projectId,
-      unitId,
-      poCode,
-      poDate: poDate || new Date(),
-      validUpto,
-      invoiceTo,
-      dispatchTo,
-      items: items.map(item => ({
-        partCode: item.partCode,
+    console.log(" Finding project by projectCode:", projectCode);
+    const project = await Project.findOne({ projectCode });
+    if (!project) {
+      console.log(" Project not found for projectCode:", projectCode);
+      return res.status(400).json({ success: false, message: 'Project not found' });
+    }
+    console.log(" Found project:", project._id);
+
+    console.log(" Processing items");
+    const processedItems = await Promise.all(items.map(async (item, index) => {
+      console.log(` Processing item ${index + 1}:`, JSON.stringify(item, null, 2));
+      const part = await PartCode.findOne({ partCode: item.partCode });
+      if (!part) {
+        console.log(` Part not found for partCode:`, item.partCode);
+        throw new Error(`Part with code ${item.partCode} not found`);
+      }
+      console.log(` Found part:`, part._id);
+      return {
+        partCode: part._id,
+        // masterItemName: item.masterItemName,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         totalPrice: item.quantity * item.unitPrice
-      })),
-      deliveryDate: deliveryDate || validUpto,
+      };
+    }));
+    console.log(" Processed items:", JSON.stringify(processedItems, null, 2));
+
+    console.log(" Creating new PurchaseOrder object");
+    const newPurchaseOrder = new PurchaseOrder({
+      vendorId: mongoose.Types.ObjectId(vendorId),
+      vendorCode,
+      vendorName,
+      vendorAddress,
+      vendorGst,
+      projectId: project._id,
+      unitId: mongoose.Types.ObjectId(unitId),
+      unitName,
+      poCode,
+      poDate: poDate || new Date(),
+      validUpto,
+      status: status || 'draft',
+      invoiceTo,
+      dispatchTo,
+      items: processedItems,
+      deliveryDate,
       supplierRef,
       otherRef,
       dispatchThrough,
@@ -49,16 +101,29 @@ exports.createPurchaseOrder = async (req, res) => {
       paymentTerms,
       deliveryTerms,
       poNarration,
-      status: 'draft'
+      createdBy: req.user._id
     });
 
-    // Save the new PurchaseOrder
-    const savedPurchaseOrder = await newPurchaseOrder.save();
+    console.log(" Calculating totals");
+    const totals = calculateTotals(newPurchaseOrder.items);
+    newPurchaseOrder.subTotal = totals.subTotal;
+    newPurchaseOrder.tax = totals.tax;
+    newPurchaseOrder.total = totals.total;
+    console.log(" Calculated totals:", JSON.stringify(totals, null, 2));
 
-    res.status(201).json(savedPurchaseOrder);
+    console.log(" Saving new PurchaseOrder");
+    const savedPurchaseOrder = await newPurchaseOrder.save();
+    console.log(" Saved PurchaseOrder:", savedPurchaseOrder._id);
+
+    res.status(201).json({
+      success: true,
+      message: 'Purchase Order created successfully',
+      data: savedPurchaseOrder
+    });
+    console.log(" Purchase order creation completed successfully");
   } catch (error) {
-    console.error('Error creating purchase order:', error);
-    res.status(400).json({ message: error.message });
+    console.error('[createPurchaseOrder] Error creating purchase order:', error);
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 

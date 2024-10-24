@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useState } from 'react';
+import { useState ,useEffect} from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import axios from 'axios'; // Make sure to install and import axios
 import { toast, ToastContainer } from 'react-toastify';
@@ -13,9 +13,11 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
         vendorName: '',
         vendorAddress: '',
         vendorGst: '',
-        projectId: '001',
-        projectName: '', // Added new field
+        projectCode: '00',
+        projectName: '',
+        projectId: '',
         unitId: '',
+        unitCode: '001',
         unitName: '', // Added new field
         poDate: '',
         validUpto: '',
@@ -46,7 +48,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
         deliveryTerms: '',
         poNarration: ''
     });
-
+    const getToken = () => localStorage.getItem('token');
     const [vendorSuggestions, setVendorSuggestions] = useState([]);
     const [newItem, setNewItem] = useState({ partCode: '', quantity: '', unitPrice: '' });
 
@@ -92,6 +94,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
         } catch (error) {
             console.error('Error searching vendors:', error);
             // Handle error
+            toast.error(`Error: ${error.response?.data?.message || "Failed to search vendors"}`);
         }
     };
 
@@ -139,13 +142,15 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
 
         try {
             const response = await axios.get(`http://localhost:5000/api/parts/getPartByCode/${newItem.partCode}`);
-            const partDetails = response.data;
-
-            if (partDetails) {
+            const partDetails = response.data.data;
+            // toast.success("Toast checking");
+            console.log("Part details", partDetails);
+            if (response.data.success) {
+                console.log("Part details found");
                 const newItemWithDetails = {
                     ...newItem,
-                    masterItemName: partDetails.masterItemName,
-                    // Add other relevant details
+                    masterItemName: partDetails.ItemCode.ItemName,
+                    // Add any other relevant details from the API response
                 };
 
                 setFormData(prev => ({
@@ -178,6 +183,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log("Form data before processing", formData);
 
         // Validate required fields
         if (!formData.vendorId) {
@@ -204,44 +210,59 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
             toast.error("Please select delivery date");
             return;
         }
-        if (formData.items.length === 0) {
-            toast.error("Please add at least one item to the order");
+
+        // Filter out empty items
+        const validItems = formData.items.filter(item => 
+            item.partCode && item.quantity && item.unitPrice
+        );
+
+        if (validItems.length === 0) {
+            toast.error("Please add at least one valid item to the order");
             return;
         }
 
-        // Validate invoice details
-        if (!formData.invoiceTo.name || !formData.invoiceTo.address) {
-            toast.error("Please fill all required invoice details");
-            return;
-        }
+        // Create a new object with valid items
+        const dataToSend = {
+            ...formData,
+            items: validItems
+        };
 
-        // Validate dispatch details
-        if (!formData.dispatchTo.name || !formData.dispatchTo.address) {
-            toast.error("Please fill all required dispatch details");
-            return;
-        }
+        console.log("Data to send", dataToSend);
 
         try {
-            await onSubmit(formData);
-            toast.success("Purchase order created successfully");
+            const response = await axios.post('http://localhost:5000/api/purchase-orders/createPO', dataToSend, {
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (response.status === 201) {
+                toast.success("Purchase order created successfully");
+                onSubmit(response.data); // Call the parent component's onSubmit with the created PO data
+            } else {
+                throw new Error('Failed to create Purchase Order');
+            }
         } catch (error) {
+            console.error('Error creating Purchase Order:', error);
             toast.error(`Failed to create purchase order: ${error.response?.data?.message || error.message}`);
         }
     };
 
     const searchProject = async () => {
-        if (!formData.projectId.trim()) {
-            toast.error("Please enter a project ID");
+        if (!formData.projectCode.trim()) {
+            toast.error("Please enter a project code");
             return;
         }
 
         try {
-            const response = await axios.get(`http://localhost:5000/api/projects/${formData.projectId}`);
+            const response = await axios.get(`http://localhost:5000/api/projects/${formData.projectCode}`);
             const project = response.data;
 
             if (project) {
                 setFormData(prev => ({
                     ...prev,
+                    projectId: project._id, // Store the project._id
                     projectName: project.projectName
                 }));
                 toast.success("Project details loaded successfully");
@@ -253,19 +274,25 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
         }
     };
 
+    useEffect(() => {
+        // searchUnit();
+        console.log("formData", formData);
+    }, [formData]);
+
     const searchUnit = async () => {
-        if (!formData.unitId.trim()) {
-            toast.error("Please enter a unit ID");
+        if (!formData.unitCode.trim()) {
+            toast.error("Please enter a unit code");
             return;
         }
 
         try {
-            const response = await axios.get(`http://localhost:5000/api/units/${formData.unitId}`);
+            const response = await axios.get(`http://localhost:5000/api/units/${formData.unitCode}`);
             const unit = response.data;
 
             if (unit) {
                 setFormData(prev => ({
                     ...prev,
+                    unitId: unit._id,
                     unitName: unit.unitName
                 }));
                 toast.success("Unit details loaded successfully");
@@ -337,15 +364,15 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
                     {/* Project ID and Name Group */}
                     <div className="space-y-4">
                         <div>
-                            <label className={labelClass}>Project ID*</label>
+                            <label className={labelClass}>Project Code*</label>
                             <div className="flex space-x-2">
                                 <input
-                                    name="projectId"
-                                    value={formData.projectId}
+                                    name="projectCode"
+                                    value={formData.projectCode}
                                     onChange={handleChange}
                                     className={inputClass}
                                     required
-                                    placeholder="Enter Project ID"
+                                    placeholder="Enter Project Code"
                                 />
                                 <button
                                     type="button"
@@ -374,12 +401,12 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
                             <label className={labelClass}>Unit ID*</label>
                             <div className="flex space-x-2">
                                 <input
-                                    name="unitId"
-                                    value={formData.unitId}
+                                    name="unitCode"
+                                    value={formData.unitCode}
                                     onChange={handleChange}
                                     className={inputClass}
                                     required
-                                    placeholder="Enter Unit ID"
+                                    placeholder="Enter Unit Code"
                                 />
                                 <button
                                     type="button"
@@ -445,9 +472,9 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
                             className={inputClass}
                         >
                             <option value="draft">Draft</option>
-                            <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
                             <option value="rejected">Rejected</option>
+                            <option value="cancelled">Cancelled</option>
                         </select>
                     </div>
                 </div>
@@ -491,28 +518,28 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
                     <div className="space-y-4">
                         <div>
                             <label className={labelClass}>Name*</label>
-                            <input name="name" value={formData.invoiceTo.name} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} required />
+                            <input name="name" value={formData.dispatchTo.name} onChange={(e) => handleNestedChange(e, 'dispatchTo')} className={inputClass} required />
                         </div>
                         <div>
                             <label className={labelClass}>Branch Name</label>
-                            <input name="branchName" value={formData.invoiceTo.branchName} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                            <input name="branchName" value={formData.dispatchTo.branchName} onChange={(e) => handleNestedChange(e, 'dispatchTo')} className={inputClass} />
                         </div>
                         <div>
                             <label className={labelClass}>Address*</label>
-                            <input name="address" value={formData.invoiceTo.address} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} required />
+                            <input name="address" value={formData.dispatchTo.address} onChange={(e) => handleNestedChange(e, 'dispatchTo')} className={inputClass} required />
                         </div>
                         <div className="grid grid-cols-3 gap-6">
                             <div>
                                 <label className={labelClass}>City</label>
-                                <input name="city" value={formData.invoiceTo.city} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                                <input name="city" value={formData.dispatchTo.city} onChange={(e) => handleNestedChange(e, 'dispatchTo')} className={inputClass} />
                             </div>
                             <div>
                                 <label className={labelClass}>State</label>
-                                <input name="state" value={formData.invoiceTo.state} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                                <input name="state" value={formData.dispatchTo.state} onChange={(e) => handleNestedChange(e, 'dispatchTo')} className={inputClass} />
                             </div>
                             <div>
                                 <label className={labelClass}>Pin</label>
-                                <input name="pin" value={formData.invoiceTo.pin} onChange={(e) => handleNestedChange(e, 'invoiceTo')} className={inputClass} />
+                                <input name="pin" value={formData.dispatchTo.pin} onChange={(e) => handleNestedChange(e, 'dispatchTo')} className={inputClass} />
                             </div>
                         </div>
                     </div>
@@ -562,35 +589,40 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
                     </div>
                 </div>
 
-                {formData.items.map((item, index) => (
-                    <div key={index} className="grid grid-cols-5 gap-4 mb-4">
-                        <div>
-                            <label className={labelClass}>Part Code</label>
-                            <input name="partCode" value={item.partCode} readOnly className={inputClass} />
-                        </div>
-                        <div>
-                            <label className={labelClass}>Master Item Name</label>
-                            <input name="masterItemName" value={item.masterItemName} readOnly className={inputClass} />
-                        </div>
-                        <div>
-                            <label className={labelClass}>Quantity</label>
-                            <input type="number" name="quantity" value={item.quantity} readOnly className={inputClass} />
-                        </div>
-                        <div>
-                            <label className={labelClass}>Unit Price</label>
-                            <input type="number" name="unitPrice" value={item.unitPrice} readOnly className={inputClass} />
-                        </div>
-                        <div className="flex items-end">
-                            <button
-                                type="button"
-                                onClick={() => removeItem(index)}
-                                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                            >
-                                Remove
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                {formData.items.length > 0 && (
+                    <table className="w-full mt-4">
+                        <thead>
+                            <tr className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                                <th className="p-2 text-left">Part Code</th>
+                                <th className="p-2 text-left">Master Item Name</th>
+                                <th className="p-2 text-left">Quantity</th>
+                                <th className="p-2 text-left">Unit Price</th>
+                                <th className="p-2 text-left">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {formData.items.map((item, index) => (
+                                item.partCode && (
+                                    <tr key={index} className={`border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                                        <td className="p-2">{item.partCode}</td>
+                                        <td className="p-2">{item.masterItemName}</td>
+                                        <td className="p-2">{item.quantity}</td>
+                                        <td className="p-2">{item.unitPrice}</td>
+                                        <td className="p-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => removeItem(index)}
+                                                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                                            >
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                )
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </fieldset>
 
             <div className="grid grid-cols-2 gap-6">
@@ -629,7 +661,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
 
             <div className="flex justify-end space-x-4 mt-8">
                 <button
-                    type="button"
+                    type="button"c
                     onClick={onCancel}
                     className="px-6 py-3 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-base"
                     disabled={isLoading}

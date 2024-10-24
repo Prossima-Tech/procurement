@@ -122,11 +122,11 @@ const PartForm = ({ onSubmit, onCancel, initialData = {} }) => {
     const { isDarkMode } = useTheme();
     const { makeRequest } = useApi();
     const [formData, setFormData] = useState({
-        partCodeNumber: '',
-        itemCode: '',
+        PartCodeNumber: '',
+        ItemCode: '',
         sizeName: '',
         colourName: '',
-        serialNumber: '',
+        SerialNumber: '',
         itemMakeName: '',
         measurementUnit: '',
         ...initialData
@@ -258,8 +258,8 @@ const PartForm = ({ onSubmit, onCancel, initialData = {} }) => {
                     <label className={labelClass}>Part Code Number</label>
                     <input
                         type="text"
-                        value={formData.partCodeNumber}
-                        onChange={handleInputChange('partCodeNumber')}
+                        value={formData.PartCodeNumber}
+                        onChange={handleInputChange('PartCodeNumber')}
                         className={inputClass}
                         required
                     />
@@ -267,8 +267,8 @@ const PartForm = ({ onSubmit, onCancel, initialData = {} }) => {
                 <div className="mb-4">
                     <label className={labelClass}>Item Code</label>
                     <select
-                        value={formData.itemCode}
-                        onChange={handleInputChange('itemCode')}
+                        value={formData.ItemCode}
+                        onChange={handleInputChange('ItemCode')}
                         className={inputClass}
                         required
                     >
@@ -309,8 +309,8 @@ const PartForm = ({ onSubmit, onCancel, initialData = {} }) => {
                 <label className={labelClass}>Serial Number</label>
                 <input
                     type="text"
-                    value={formData.serialNumber}
-                    onChange={handleInputChange('serialNumber')}
+                    value={formData.SerialNumber}
+                    onChange={handleInputChange('SerialNumber')}
                     className={inputClass}
                     required
                 />
