@@ -84,12 +84,12 @@ const PartMasterComponent = () => {
 
         try {
             setIsLoading(true);
-            const response = await axios.get(
-                `http://localhost:5000/api/parts/allParts?page=${page}${query ? `&search=${query}` : ''}`,
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
+            const endpoint = `http://localhost:5000/api/parts/allParts?page=${page}${query ? `&search=${query}` : ''}`;
+        
+            const response = await axios.get(endpoint, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            console.log("response.data from getall parts", response.data.data);
             setParts(response.data.data);
             setPagination(response.data.pagination);
         } catch (error) {
