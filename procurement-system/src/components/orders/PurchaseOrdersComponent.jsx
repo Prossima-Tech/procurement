@@ -231,12 +231,14 @@ const PurchaseOrdersComponent = () => {
         <div className={`rounded-lg ${isDarkMode ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-white text-gray-900'}`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div className="flex justify-between items-center mb-6">
-                    <div className="flex justify-center ">
-                        <Link to="/" className={`flex justify-center p-2 mr-2 rounded-full ${isDarkMode ? ' hover:bg-gray-800' : 'hover:bg-gray-200'} transition duration-150 ease-in-out`}>
-                            <button onClick={handleCancel}>
-                                <ChevronLeft size={24} />
-                            </button>
-                        </Link>
+                    <div className="flex justify-center">
+                        {isCreatingNew && (
+                            <Link to="/" className={`flex justify-center p-2 mr-2 rounded-full ${isDarkMode ? ' hover:bg-gray-800' : 'hover:bg-gray-200'} transition duration-150 ease-in-out`}>
+                                <button onClick={handleCancel}>
+                                    <ChevronLeft size={24} />
+                                </button>
+                            </Link>
+                        )}
                         <h1 className="text-2xl font-bold">Purchase Orders</h1>
                     </div>
 
@@ -256,7 +258,7 @@ const PurchaseOrdersComponent = () => {
                     </div>
                 )}
                 <div className={`${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <div className="p-6">
+                    <div className="">
                         {isCreatingNew ? (
                             <PurchaseOrderForm
                                 onSubmit={handleSubmit}

@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useState ,useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import axios from 'axios'; // Make sure to install and import axios
 import { toast, ToastContainer } from 'react-toastify';
@@ -212,7 +212,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
         }
 
         // Filter out empty items
-        const validItems = formData.items.filter(item => 
+        const validItems = formData.items.filter(item =>
             item.partCode && item.quantity && item.unitPrice
         );
 
@@ -661,7 +661,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
 
             <div className="flex justify-end space-x-4 mt-8">
                 <button
-                    type="button"c
+                    type="button" c
                     onClick={onCancel}
                     className="px-6 py-3 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-base"
                     disabled={isLoading}

@@ -124,26 +124,26 @@ const PartForm = ({ onSubmit, onCancel, initialData = {} }) => {
     const [formData, setFormData] = useState({
         PartCodeNumber: '',
         ItemCode: '',
-        sizeName: '',
-        colourName: '',
+        SizeName: '',
+        ColourName: '',
         SerialNumber: '',
-        itemMakeName: '',
-        measurementUnit: '',
+        ItemMakeName: '',
+        MeasurementUnit: '',
         ...initialData
     });
 
     const [items, setItems] = useState([]);
     const [dropdownOptions, setDropdownOptions] = useState({
-        sizeName: [],
-        colourName: [],
-        itemMakeName: [],
-        measurementUnit: []
+        SizeName: [],
+        ColourName: [],
+        ItemMakeName: [],
+        MeasurementUnit: []
     });
     const [loading, setLoading] = useState({
-        sizeName: false,
-        colourName: false,
-        itemMakeName: false,
-        measurementUnit: false
+        SizeName: false,
+        ColourName: false,
+        ItemMakeName: false,
+        MeasurementUnit: false
     });
 
     useEffect(() => {
@@ -167,16 +167,16 @@ const PartForm = ({ onSubmit, onCancel, initialData = {} }) => {
         try {
             let endpoint;
             switch (field) {
-                case 'sizeName':
+                case 'SizeName':
                     endpoint = searchTerm ? `${BASE_URL}/sizes/searchSizeNames` : `${BASE_URL}/sizes/allSizeNames`;
                     break;
-                case 'colourName':
+                case 'ColourName':
                     endpoint = searchTerm ? `${BASE_URL}/colours/searchColourNames` : `${BASE_URL}/colours/allColourNames`;
                     break;
-                case 'itemMakeName':
+                case 'ItemMakeName':
                     endpoint = searchTerm ? `${BASE_URL}/makers/searchMakerNames` : `${BASE_URL}/makers/allMakerNames`;
                     break;
-                case 'measurementUnit':
+                case 'MeasurementUnit':
                     endpoint = searchTerm ? `${BASE_URL}/units/searchMeasurementUnits` : `${BASE_URL}/units/allMeasurementUnits`;
                     break;
                 default:
@@ -200,16 +200,16 @@ const PartForm = ({ onSubmit, onCancel, initialData = {} }) => {
         try {
             let endpoint;
             switch (field) {
-                case 'sizeName':
+                case 'SizeName':
                     endpoint = `${BASE_URL}/sizes/createSizeName`;
                     break;
-                case 'colourName':
+                case 'ColourName':
                     endpoint = `${BASE_URL}/colours/createColourName`;
                     break;
-                case 'itemMakeName':
+                case 'ItemMakeName':
                     endpoint = `${BASE_URL}/makers/createMakerName`;
                     break;
-                case 'measurementUnit':
+                case 'MeasurementUnit':
                     endpoint = `${BASE_URL}/units/createMeasurementUnit`;
                     break;
                 default:
@@ -285,22 +285,22 @@ const PartForm = ({ onSubmit, onCancel, initialData = {} }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Dropdown
                     label="Size"
-                    value={formData.sizeName}
-                    onChange={(value) => setFormData(prev => ({ ...prev, sizeName: value }))}
-                    onSearch={(term) => handleDropdownSearch('sizeName', term)}
-                    onCreate={(name) => handleCreateNew('sizeName', name)}
-                    options={dropdownOptions.sizeName}
-                    loading={loading.sizeName}
+                    value={formData.SizeName}
+                    onChange={(value) => setFormData(prev => ({ ...prev, SizeName: value }))}
+                    onSearch={(term) => handleDropdownSearch('SizeName', term)}
+                    onCreate={(name) => handleCreateNew('SizeName', name)}
+                    options={dropdownOptions.SizeName}
+                    loading={loading.SizeName}
                     isDarkMode={isDarkMode}
                 />
                 <Dropdown
                     label="Colour"
-                    value={formData.colourName}
-                    onChange={(value) => setFormData(prev => ({ ...prev, colourName: value }))}
-                    onSearch={(term) => handleDropdownSearch('colourName', term)}
-                    onCreate={(name) => handleCreateNew('colourName', name)}
-                    options={dropdownOptions.colourName}
-                    loading={loading.colourName}
+                    value={formData.ColourName}
+                    onChange={(value) => setFormData(prev => ({ ...prev, ColourName: value }))}
+                    onSearch={(term) => handleDropdownSearch('ColourName', term)}
+                    onCreate={(name) => handleCreateNew('ColourName', name)}
+                    options={dropdownOptions.ColourName}
+                    loading={loading.ColourName}
                     isDarkMode={isDarkMode}
                 />
             </div>
@@ -319,22 +319,22 @@ const PartForm = ({ onSubmit, onCancel, initialData = {} }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Dropdown
                     label="Maker"
-                    value={formData.itemMakeName}
-                    onChange={(value) => setFormData(prev => ({ ...prev, itemMakeName: value }))}
-                    onSearch={(term) => handleDropdownSearch('itemMakeName', term)}
-                    onCreate={(name) => handleCreateNew('itemMakeName', name)}
-                    options={dropdownOptions.itemMakeName}
-                    loading={loading.itemMakeName}
+                    value={formData.ItemMakeName}
+                    onChange={(value) => setFormData(prev => ({ ...prev, ItemMakeName: value }))}
+                    onSearch={(term) => handleDropdownSearch('ItemMakeName', term)}
+                    onCreate={(name) => handleCreateNew('ItemMakeName', name)}
+                    options={dropdownOptions.ItemMakeName}
+                    loading={loading.ItemMakeName}
                     isDarkMode={isDarkMode}
                 />
                 <Dropdown
                     label="Measurement Unit"
-                    value={formData.measurementUnit}
-                    onChange={(value) => setFormData(prev => ({ ...prev, measurementUnit: value }))}
-                    onSearch={(term) => handleDropdownSearch('measurementUnit', term)}
-                    onCreate={(name) => handleCreateNew('measurementUnit', name)}
-                    options={dropdownOptions.measurementUnit}
-                    loading={loading.measurementUnit}
+                    value={formData.MeasurementUnit}
+                    onChange={(value) => setFormData(prev => ({ ...prev, MeasurementUnit: value }))}
+                    onSearch={(term) => handleDropdownSearch('MeasurementUnit', term)}
+                    onCreate={(name) => handleCreateNew('MeasurementUnit', name)}
+                    options={dropdownOptions.MeasurementUnit}
+                    loading={loading.MeasurementUnit}
                     isDarkMode={isDarkMode}
                 />
             </div>

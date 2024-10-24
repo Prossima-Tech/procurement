@@ -76,7 +76,7 @@ const PartMasterComponent = () => {
         }
     }, []);
 
-    const fetchParts = async (page = 1, query = '') => {
+    const fetchParts = async (page = 1, limit = 10, query = '') => {
         if (!token) {
             toast.error('Authentication required', toastConfig);
             return;
@@ -84,8 +84,8 @@ const PartMasterComponent = () => {
 
         try {
             setIsLoading(true);
-            const endpoint = `http://localhost:5000/api/parts/allParts?page=${page}${query ? `&search=${query}` : ''}`;
-        
+            const endpoint = `http://localhost:5000/api/parts/allParts?page=${page}& {limit=${limit}}${query ? `&search=${query}` : ''}`;
+
             const response = await axios.get(endpoint, {
                 headers: { Authorization: `Bearer ${token}` }
             });

@@ -1,5 +1,5 @@
-const {PartCode, SizeName, ColourName, MakerName, MeasurementUnit} = require('../models/part.model');
-const {Item} = require('../models/item.model');
+const { PartCode, SizeName, ColourName, MakerName, MeasurementUnit } = require('../models/part.model');
+const { Item } = require('../models/item.model');
 
 exports.createPart = async (req, res) => {
   console.log(req.body);
@@ -65,6 +65,7 @@ exports.getAllParts = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 15;
     const search = req.query.search || '';
+
     console.log("search", search);
 
     let query = {};
@@ -73,10 +74,10 @@ exports.getAllParts = async (req, res) => {
         $or: [
           { PartCodeNumber: { $regex: search, $options: 'i' } },
           { SerialNumber: { $regex: search, $options: 'i' } },
-          // { SizeName: { $regex: search, $options: 'i' } },
-          // { ColourName: { $regex: search, $options: 'i' } },
-          // { ItemMakeName: { $regex: search, $options: 'i' } },
-          // { MeasurementUnit: { $regex: search, $options: 'i' } },
+          { SizeName: { $regex: search, $options: 'i' } },
+          { ColourName: { $regex: search, $options: 'i' } },
+          { ItemMakeName: { $regex: search, $options: 'i' } },
+          { MeasurementUnit: { $regex: search, $options: 'i' } },
         ],
       };
     }
@@ -158,11 +159,11 @@ exports.deletePart = async (req, res) => {
 
 exports.getPartByCode = async (req, res) => {
   try {
-    console.log("req recieved for ",req.params);
+    console.log("req recieved for ", req.params);
     const code = req.params.code;
     const part = await PartCode.findOne({ PartCodeNumber: code }).populate('ItemCode');
     // console.log(part);
-    if(!part){
+    if (!part) {
       console.log("Part not found");
       return res.status(404).json({ success: false, error: 'Part not found' });
     }
