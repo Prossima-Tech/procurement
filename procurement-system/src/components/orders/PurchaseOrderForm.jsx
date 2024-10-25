@@ -1,11 +1,11 @@
 /* eslint-disable react/prop-types */
-import { useState ,useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import axios from 'axios'; // Make sure to install and import axios
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
+const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading, initialData }) => {
     const { isDarkMode } = useTheme();
     const [formData, setFormData] = useState({
         vendorId: '',
@@ -52,7 +52,24 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
     const [vendorSuggestions, setVendorSuggestions] = useState([]);
     const [newItem, setNewItem] = useState({ partCode: '', quantity: '', unitPrice: '' });
 
-
+    useEffect(() => {
+        if (initialData) {
+            const formattedData = {
+                ...initialData,
+                poDate: initialData.poDate ? new Date(initialData.poDate).toISOString().split('T')[0] : '',
+                validUpto: initialData.validUpto ? new Date(initialData.validUpto).toISOString().split('T')[0] : '',
+                deliveryDate: initialData.deliveryDate ? new Date(initialData.deliveryDate).toISOString().split('T')[0] : '',
+                items: initialData.items.map(item => ({
+                    partCode: item.partCode.PartCodeNumber || item.partCode,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    masterItemName: item.masterItemName,
+                    totalPrice: item.totalPrice
+                }))
+            };
+            setFormData(formattedData);
+        }
+    }, [initialData]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -212,7 +229,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
         }
 
         // Filter out empty items
-        const validItems = formData.items.filter(item => 
+        const validItems = formData.items.filter(item =>
             item.partCode && item.quantity && item.unitPrice
         );
 
@@ -661,7 +678,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
 
             <div className="flex justify-end space-x-4 mt-8">
                 <button
-                    type="button"c
+                    type="button"
                     onClick={onCancel}
                     className="px-6 py-3 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-base"
                     disabled={isLoading}
@@ -673,7 +690,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading }) => {
                     className="px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 text-base"
                     disabled={isLoading}
                 >
-                    {isLoading ? 'Creating...' : 'Create Purchase Order'}
+                    {isLoading ? 'Saving...' : initialData ? 'Update Purchase Order' : 'Create Purchase Order'}
                 </button>
             </div>
         </form>

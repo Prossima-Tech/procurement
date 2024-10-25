@@ -4,7 +4,7 @@ import ListComponent from '../common/ListComponent';
 import { useTheme } from '../../contexts/ThemeContext';
 import axios from 'axios';
 import ItemForm from './ItemForm';
-import { Trash2, X } from 'lucide-react';
+import { Trash2, X, Pencil } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const ItemModal = ({ isOpen, onClose, title, children }) => {
@@ -53,6 +53,7 @@ const ItemMasterComponent = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [token, setToken] = useState(null);
+    const [editingItem, setEditingItem] = useState(null);
 
     // Toast configuration
     const toastConfig = {
@@ -66,6 +67,11 @@ const ItemMasterComponent = () => {
             background: isDarkMode ? '#1F2937' : '#ffffff',
             color: isDarkMode ? '#ffffff' : '#1F2937',
         }
+    };
+
+    const handleEdit = (item) => {
+        setEditingItem(item);
+        setIsModalOpen(true);
     };
 
     useEffect(() => {
@@ -108,20 +114,45 @@ const ItemMasterComponent = () => {
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
+        setEditingItem(null);
     };
-
     const handleSubmit = async (formData) => {
         try {
             setIsLoading(true);
-            const response = await axios.post('http://localhost:5000/api/items', formData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            toast.success('Item created successfully', toastConfig);
+
+            if (editingItem) {
+                // Update existing item
+                await axios.put(
+                    `http://localhost:5000/api/items/${editingItem._id}`,
+                    formData,
+                    {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+                toast.success('Item updated successfully', toastConfig);
+            } else {
+                // Create new item
+                await axios.post(
+                    'http://localhost:5000/api/items',
+                    formData,
+                    {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+                toast.success('Item created successfully', toastConfig);
+            }
+
             setIsModalOpen(false);
-            fetchItems();
+            setEditingItem(null);
+            fetchItems(pagination.currentPage);
         } catch (error) {
-            console.error('Error creating item:', error);
-            toast.error(error.response?.data?.message || 'Failed to create item', toastConfig);
+            console.error('Error saving item:', error);
+            toast.error(
+                error.response?.data?.error ||
+                error.response?.data?.message ||
+                `Failed to ${editingItem ? 'update' : 'create'} item`,
+                toastConfig
+            );
         } finally {
             setIsLoading(false);
         }
@@ -203,14 +234,24 @@ const ItemMasterComponent = () => {
             header: 'Actions',
             key: 'actions',
             render: (item) => (
-                <button
-                    onClick={() => handleDeleteItem(item._id, item.ItemName)}
-                    className="text-red-600 hover:text-red-900 focus:outline-none p-1 hover:bg-red-50 rounded-full transition-colors"
-                    title="Delete Item"
-                    disabled={isLoading}
-                >
-                    <Trash2 size={16} />
-                </button>
+                <div className="flex items-center space-x-2">
+                    <button
+                        onClick={() => handleEdit(item)}
+                        className="text-blue-600 hover:text-blue-900 focus:outline-none p-1 hover:bg-blue-50 rounded-full transition-colors"
+                        title="Edit Item"
+                        disabled={isLoading}
+                    >
+                        <Pencil size={16} />
+                    </button>
+                    <button
+                        onClick={() => handleDeleteItem(item._id, item.ItemName)}
+                        className="text-red-600 hover:text-red-900 focus:outline-none p-1 hover:bg-red-50 rounded-full transition-colors"
+                        title="Delete Item"
+                        disabled={isLoading}
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </div>
             )
         }
     ];
@@ -224,19 +265,23 @@ const ItemMasterComponent = () => {
                     columns={columns}
                     onFetch={fetchItems}
                     pagination={pagination}
-                    onCreateNew={handleCreateNew}
+                    onCreateNew={() => {
+                        setEditingItem(null);
+                        setIsModalOpen(true);
+                    }}
                     isLoading={isLoading}
                 />
             </div>
             <ItemModal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
-                title="Create New Item"
+                title={editingItem ? "Edit Item" : "Create New Item"}
             >
                 <ItemForm
                     onSubmit={handleSubmit}
                     onCancel={handleCloseModal}
                     isLoading={isLoading}
+                    initialData={editingItem}
                 />
             </ItemModal>
         </>
