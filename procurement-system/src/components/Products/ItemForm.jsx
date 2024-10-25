@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import axios from 'axios';
-
+import { baseURL } from '../../utils/endpoint';
 const ItemForm = ({ onSubmit, onCancel, initialData = {} }) => {
     const { isDarkMode } = useTheme();
     const [formData, setFormData] = useState({
@@ -25,7 +25,7 @@ const ItemForm = ({ onSubmit, onCancel, initialData = {} }) => {
     const fetchCategories = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/items/allCategories', {
+            const response = await axios.get(`${baseURL}/items/allCategories`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             console.log("response",response);

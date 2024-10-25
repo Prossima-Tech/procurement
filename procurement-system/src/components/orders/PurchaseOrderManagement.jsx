@@ -3,7 +3,7 @@ import PurchaseOrderForm from './PurchaseOrderForm';
 import PurchaseOrderMaster from './PurchaseOrderMaster'; // Assuming this is your PO master component
 import axios from 'axios';
 import { toast } from 'react-toastify';
-
+import { baseURL } from '../../utils/endpoint';
 const PurchaseOrderManagement = () => {
     const [showForm, setShowForm] = useState(false);
     const [purchaseOrders, setPurchaseOrders] = useState([]);
@@ -12,7 +12,7 @@ const PurchaseOrderManagement = () => {
     const fetchPurchaseOrders = async () => {
         setIsLoading(true);
         try {
-            const response = await axios.get('http://localhost:5000/api/purchase-orders/getAllPOs', {
+            const response = await axios.get(`${baseURL}/purchase-orders/getAllPOs`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 }
@@ -33,7 +33,7 @@ const PurchaseOrderManagement = () => {
     const handleFormSubmit = async (formData) => {
         setIsLoading(true);
         try {
-            const response = await axios.post('http://localhost:5000/api/purchase-orders/createPO', formData, {
+            const response = await axios.post(`${baseURL}/purchase-orders/createPO`, formData, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     'Content-Type': 'application/json',

@@ -6,7 +6,7 @@ import axios from 'axios';
 import PartForm from './partForm';
 import { Trash2, X, Pencil } from 'lucide-react';
 import { toast } from 'react-toastify';
-
+import { baseURL } from '../../utils/endpoint';
 const PartModal = ({ isOpen, onClose, title, children }) => {
     const { isDarkMode } = useTheme();
 
@@ -85,7 +85,7 @@ const PartMasterComponent = () => {
 
         try {
             setIsLoading(true);
-            const endpoint = `http://localhost:5000/api/parts/allParts?page=${page}&limit=${limit}${query ? `&search=${query}` : ''}`;
+            const endpoint = `${baseURL}/parts/allParts?page=${page}&limit=${limit}${query ? `&search=${query}` : ''}`;
 
             const response = await axios.get(endpoint, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -127,7 +127,7 @@ const PartMasterComponent = () => {
             if (editingPart) {
                 // Update existing part
                 response = await axios.put(
-                    `http://localhost:5000/api/parts/updatePart/${editingPart._id}`,
+                    `${baseURL}/parts/updatePart/${editingPart._id}`,
                     formData,
                     {
                         headers: { Authorization: `Bearer ${token}` }
@@ -146,7 +146,7 @@ const PartMasterComponent = () => {
             } else {
                 // Create new part
                 response = await axios.post(
-                    'http://localhost:5000/api/parts/createPart',
+                    `${baseURL}/parts/createPart`,
                     formData,
                     {
                         headers: { Authorization: `Bearer ${token}` }
@@ -207,7 +207,7 @@ const PartMasterComponent = () => {
                                 try {
                                     setIsLoading(true);
                                     await axios.delete(
-                                        `http://localhost:5000/api/parts/deletePart/${partId}`,
+                                        `${baseURL}/parts/deletePart/${partId}`,
                                         {
                                             headers: { Authorization: `Bearer ${token}` }
                                         }
