@@ -37,14 +37,72 @@ exports.createPurchaseOrder = async (req, res) => {
 
     console.log(" Generating PO Code");
     // const poCode = await generatePoNumber(unitId);
-
+    // const generatePoCode = async (unitId) => {
+    //   const unit = await Unit.findById(unitId).select('unitCode');
+    //   if (!unit) {
+    //     throw new Error('Unit not found');
+    //   }
+    //   const randomNumber = Math.floor(10000 + Math.random() * 90000); // Generates a random 5-digit number
+    //   return `${unit.unitCode}-${(lastNumber + 1).toString().padStart(5, '0')}`;
+    // };
     // New function to generate PO code
     const generatePoCode = async (unitId) => {
-      const latestPo = await PurchaseOrder.findOne({ unitId }).sort('-createdAt');
-      const lastNumber = latestPo ? parseInt(latestPo.poCode.split('-')[1]) : 0;
-      // const unitCode = await Unit.findById(unitId).select('unitCode');
-      return `${(lastNumber + 1).toString().padStart(5, '0')}`;
+      const unit = await Unit.findById(unitId).select('unitCode');
+      if (!unit) {
+        throw new Error('Unit not found');
+      }
+      const randomNumber = Math.floor(10000 + Math.random() * 90000); // Generates a random 5-digit number
+      return `${unit.unitCode}-${randomNumber}`;
     };
+    // const generatePoCode = async (unitId, session) => {
+    //   // Step 1: Find the unit
+    //   const unit = await Unit.findById(unitId).select('unitCode');
+    //   if (!unit) {
+    //     throw new Error('Unit not found');
+    //   }
+    
+    //   let attempts = 0;
+    //   const maxAttempts = 5;
+    
+    //   while (attempts < maxAttempts) {
+    //     // Step 2: Find the latest PO for this unit
+    //     const latestPo = await PurchaseOrder.findOne({ unitId })
+    //       .sort('-poCode')
+    //       .select('poCode')
+    //       .session(session);
+    
+    //     // Step 3: Determine the next number
+    //     let nextNumber = 1;
+    //     if (latestPo) {
+    //       const lastNumber = parseInt(latestPo.poCode.split('-')[1]);
+    //       nextNumber = lastNumber + 1;
+    //     }
+    
+    //     // Step 4: Generate the new PO code
+    //     const newPoCode = `${unit.unitCode}-${nextNumber.toString().padStart(5, '0')}`;
+    
+    //     try {
+    //       // Step 5: Try to create a new PO with this code
+    //       const newPo = new PurchaseOrder({ poCode: newPoCode, unitId });
+    //       await newPo.save({ session });
+    
+    //       // Step 6: If successful, return the new PO code
+    //       return newPoCode;
+    //     } catch (error) {
+    //       if (error.code === 11000) {
+    //         // Step 7: Handle duplicate key error
+    //         attempts++;
+    //         console.log(`Attempt ${attempts}: PO code ${newPoCode} already exists. Retrying...`);
+    //       } else {
+    //         // Other error, throw it
+    //         throw error;
+    //       }
+    //     }
+    //   }
+    
+    //   // Step 8: If all attempts fail, throw an error
+    //   throw new Error('Failed to generate a unique PO code after multiple attempts');
+    // };
 
     const poCode = await generatePoCode(unitId);
     console.log(" Generated PO Code:", poCode);
@@ -170,6 +228,8 @@ exports.getPurchaseOrderById = async (req, res) => {
   try {
     const purchaseOrder = await PurchaseOrder.findById(req.params.id)
       .populate('vendorId')
+      .populate('projectId')
+      .populate('unitId')
       .populate({
         path: 'items.partCode',
         populate: {
@@ -184,6 +244,14 @@ exports.getPurchaseOrderById = async (req, res) => {
 
     const formattedPO = {
       ...purchaseOrder.toObject(),
+      vendorCode: purchaseOrder.vendorId.vendorCode,
+      vendorName: purchaseOrder.vendorId.name,
+      vendorAddress: `${purchaseOrder.vendorId.address.line1}, ${purchaseOrder.vendorId.address.line2}`,
+      vendorGst: purchaseOrder.vendorId.gstNumber,
+      projectCode: purchaseOrder.projectId.projectCode,
+      projectName: purchaseOrder.projectId.projectName,
+      unitCode: purchaseOrder.unitId.unitCode,
+      unitName: purchaseOrder.unitId.unitName,
       items: purchaseOrder.items.map(item => ({
         partCode: item.partCode?.PartCodeNumber || '',
         quantity: item.quantity,
