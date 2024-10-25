@@ -2,8 +2,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useTheme } from '../../contexts/ThemeContext';
+import { baseURL } from '../../utils/endpoint';
 
-const BASE_URL = 'http://localhost:5000/api/parts';
+const BASE_URL = `${baseURL}/parts`;
 
 const useApi = () => {
     const makeRequest = useCallback(async (method, url, data = null, params = null) => {
@@ -169,7 +170,7 @@ const PartForm = ({ onSubmit, onCancel, initialData = {} }) => {
     useEffect(() => {
         const fetchItems = async () => {
             try {
-                const response = await makeRequest('GET', 'http://localhost:5000/api/items');
+                const response = await makeRequest('GET', `${baseURL}/items`);
                 setItems(response.data.map(item => ({ value: item.ItemCode, label: `${item.ItemCode} - ${item.ItemName}` })));
             } catch (error) {
                 console.error('Error fetching items:', error);

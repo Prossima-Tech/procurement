@@ -4,7 +4,7 @@ import ListComponent from '../common/ListComponent';
 import PurchaseOrderForm from './PurchaseOrderForm';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Plus, ChevronLeft, Trash2, Pencil, X } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { api, baseURL } from '../../utils/endpoint';
 import axios from 'axios';
 
 const PurchaseOrdersComponent = () => {
@@ -38,11 +38,17 @@ const PurchaseOrdersComponent = () => {
             setIsLoading(true);
             setError(null);
 
-            const response = await axios.get(
-                `http://localhost:5000/api/purchase-orders/getAllPOs?page=${page}&limit=10`,
-                {
-                    headers: { 'Authorization': `Bearer ${getToken()}` }
-                }
+            // const response = await axios.get(
+            //     `http://localhost:5000/api/purchase-orders/getAllPOs?page=${page}&limit=10`,
+            //     {
+            //         headers: { 'Authorization': `Bearer ${getToken()}` }
+            //     }
+            // );
+            const response = await api(
+                `/purchase-orders/getAllPOs?page=${page}&limit=10`,
+                'get',
+                null,
+                { 'Authorization': `Bearer ${getToken()}` }
             );
 
             const { purchaseOrders, totalPages: totalPgs } = response.data;
@@ -55,7 +61,6 @@ const PurchaseOrdersComponent = () => {
                 vendor: {
                     name: po.vendorId?.name || 'N/A'
                 },
-                // Since preparedBy is not in schema, we'll skip it for now
                 total: po.items?.reduce((sum, item) => sum + (item.totalPrice || 0), 0) || 0,
                 status: po.status || 'Pending',
                 expectedArrival: po.deliveryDate ? new Date(po.deliveryDate).toLocaleDateString() : 'N/A',
@@ -92,7 +97,7 @@ const PurchaseOrdersComponent = () => {
         try {
             setIsLoading(true);
             const response = await axios.get(
-                `http://localhost:5000/api/purchase-orders/getPO/${orderId}`,
+                `${baseURL}/purchase-orders/getPO/${orderId}`,
                 {
                     headers: { 'Authorization': `Bearer ${getToken()}` }
                 }
@@ -134,7 +139,7 @@ const PurchaseOrdersComponent = () => {
             setIsLoading(true);
             try {
                 const response = await axios.delete(
-                    `http://localhost:5000/api/purchase-orders/deletePO/${orderId}`,
+                    `${baseURL}/purchase-orders/deletePO/${orderId}`,
                     {
                         headers: {
                             'Authorization': `Bearer ${getToken()}`,

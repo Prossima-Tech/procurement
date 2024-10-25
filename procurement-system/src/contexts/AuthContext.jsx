@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 import { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
-
+import { baseURL } from '../utils/endpoint';
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+            const response = await axios.post(`${baseURL}/auth/login`, { email, password });
             const { user, token } = response.data;
             localStorage.setItem('user', JSON.stringify(user));
             localStorage.setItem('token', token);
@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (username, email, password, role) => {
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/register', { username, email, password, role });
+            const response = await axios.post('${baseURL}/auth/register', { username, email, password, role });
             const { user, token } = response.data;
             localStorage.setItem('user', JSON.stringify(user));
             localStorage.setItem('token', token);

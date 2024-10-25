@@ -1,7 +1,8 @@
 
 import MasterComponent from './MasterComponent';
+import { baseURL } from '../../utils/endpoint';
 
-const BASE_URL = 'http://localhost:5000/api/parts';
+const BASE_URL = `${baseURL}/parts`;
 
 export const SizeMasterComponent = () => (
     <MasterComponent

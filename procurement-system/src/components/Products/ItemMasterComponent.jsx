@@ -6,7 +6,7 @@ import axios from 'axios';
 import ItemForm from './ItemForm';
 import { Trash2, X, Pencil } from 'lucide-react';
 import { toast } from 'react-toastify';
-
+import { baseURL } from '../../utils/endpoint';
 const ItemModal = ({ isOpen, onClose, title, children }) => {
     const { isDarkMode } = useTheme();
 
@@ -89,7 +89,7 @@ const ItemMasterComponent = () => {
 
         try {
             setIsLoading(true);
-            const response = await axios.get(`http://localhost:5000/api/items?page=${page}`, {
+            const response = await axios.get(`${baseURL}/items?page=${page}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setItems(response.data.data);
@@ -123,7 +123,7 @@ const ItemMasterComponent = () => {
             if (editingItem) {
                 // Update existing item
                 await axios.put(
-                    `http://localhost:5000/api/items/${editingItem._id}`,
+                    `${baseURL}/items/${editingItem._id}`,
                     formData,
                     {
                         headers: { Authorization: `Bearer ${token}` }
@@ -133,7 +133,7 @@ const ItemMasterComponent = () => {
             } else {
                 // Create new item
                 await axios.post(
-                    'http://localhost:5000/api/items',
+                    `${baseURL}/items`,
                     formData,
                     {
                         headers: { Authorization: `Bearer ${token}` }
@@ -186,7 +186,7 @@ const ItemMasterComponent = () => {
                             onClick={async () => {
                                 try {
                                     setIsLoading(true);
-                                    await axios.delete(`http://localhost:5000/api/items/${itemId}`, {
+                                    await axios.delete(`${baseURL}/items/${itemId}`, {
                                         headers: { Authorization: `Bearer ${token}` }
                                     });
                                     toast.success('Item deleted successfully', toastConfig);

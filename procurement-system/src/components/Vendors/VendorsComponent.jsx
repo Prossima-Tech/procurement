@@ -5,7 +5,7 @@ import axios from 'axios';
 import { Trash2, X, Pencil } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from 'react-toastify';
-
+import { baseURL } from '../../utils/endpoint';
 const VendorsComponent = () => {
     const { isDarkMode } = useTheme();
     const [vendors, setVendors] = useState([]);
@@ -35,7 +35,7 @@ const VendorsComponent = () => {
             setIsLoading(true);
             setError(null);
             const response = await axios.get(
-                `http://localhost:5000/api/vendors?page=${page}&limit=${limit}&search=${search}`,
+                `${baseURL}/vendors?page=${page}&limit=${limit}&search=${search}`,
                 {
                     headers: { 'Authorization': `Bearer ${getToken()}` }
                 }
@@ -101,7 +101,7 @@ const VendorsComponent = () => {
             if (editingVendor) {
                 // Update existing vendor
                 await axios.put(
-                    `http://localhost:5000/api/vendors/${editingVendor._id}`,
+                    `${baseURL}/vendors/${editingVendor._id}`,
                     formData,
                     {
                         headers: {
@@ -114,7 +114,7 @@ const VendorsComponent = () => {
             } else {
                 // Create new vendor
                 await axios.post(
-                    'http://localhost:5000/api/vendors/',
+                    `${baseURL}/vendors/`,
                     formData,
                     {
                         headers: {
@@ -168,7 +168,7 @@ const VendorsComponent = () => {
                                 try {
                                     setIsLoading(true);
                                     await axios.delete(
-                                        `http://localhost:5000/api/vendors/${vendorId}`,
+                                        `${baseURL}/vendors/${vendorId}`,
                                         {
                                             headers: { 'Authorization': `Bearer ${getToken()}` }
                                         }

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Alert from '../common/Alert'; // Ensure this path is correct
-
+import { baseURL } from '../../utils/endpoint';
 const AuthComponent = () => {
     const [isLogin, setIsLogin] = useState(true);
     const [username, setUsername] = useState('');
@@ -11,17 +11,16 @@ const AuthComponent = () => {
     const [role, setRole] = useState('employee');
     const [alert, setAlert] = useState({ show: false, type: '', message: '' });
     const navigate = useNavigate();
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setAlert({ show: false, type: '', message: '' });
         try {
-            const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+            const endpoint = isLogin ? 'auth/login' : 'auth/register';
             const payload = isLogin
                 ? { email, password }
                 : { username, email, password, role };
 
-            const response = await axios.post(`http://localhost:5000${endpoint}`, payload);
+            const response = await axios.post(`${baseURL}/${endpoint}`, payload);
 
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));

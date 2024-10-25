@@ -1,10 +1,11 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
-import axios from 'axios'; // Make sure to install and import axios
+import { api } from '../../utils/endpoint';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import { baseURL } from '../../utils/endpoint';
+import axios from 'axios';
 const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, setIsModalOpen,setIsCreatingNew }) => {
     const { isDarkMode } = useTheme();
     const [formData, setFormData] = useState({
@@ -83,7 +84,7 @@ const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, set
         }
 
         try {
-            const response = await axios.get(`http://localhost:5000/api/vendors/getByCode/${formData.vendorCode}`);
+            const response = await api(`/vendors/getByCode/${formData.vendorCode}`, 'get');
             const vendor = response.data;
 
             if (vendor) {
@@ -106,7 +107,7 @@ const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, set
 
     const searchVendors = async () => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/vendors/searchVendors?query=${formData.vendorCode}`);
+            const response = await api(`/vendors/searchVendors?query=${formData.vendorCode}`, 'get');
             setVendorSuggestions(response.data);
         } catch (error) {
             console.error('Error searching vendors:', error);
@@ -158,7 +159,7 @@ const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, set
         }
 
         try {
-            const response = await axios.get(`http://localhost:5000/api/parts/getPartByCode/${newItem.partCode}`);
+            const response = await api(`/parts/getPartByCode/${newItem.partCode}`, 'get');
             const partDetails = response.data.data;
             // toast.success("Toast checking");
             console.log("Part details", partDetails);
@@ -263,7 +264,7 @@ const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, set
         setIsLoading(true);
 
         try {
-            const response = await axios.post('http://localhost:5000/api/purchase-orders/createPO', dataToSend, {
+            const response = await axios.post(`${baseURL}/purchase-orders/createPO`, dataToSend, {
                 headers: {
                     'Authorization': `Bearer ${getToken()}`,
                     'Content-Type': 'application/json',
@@ -272,8 +273,6 @@ const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, set
 
             if (response.status === 201) {
                 toast.success("Purchase order created successfully");
-                // onSubmit(response.data); // Call the parent component's onSubmit with the created PO data
-                setIsLoading(false);
                 setIsCreatingNew(false);
                 setIsModalOpen(false);
             } else {
@@ -294,13 +293,13 @@ const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, set
         }
 
         try {
-            const response = await axios.get(`http://localhost:5000/api/projects/${formData.projectCode}`);
+            const response = await api(`/projects/${formData.projectCode}`, 'get');
             const project = response.data;
 
             if (project) {
                 setFormData(prev => ({
                     ...prev,
-                    projectId: project._id, // Store the project._id
+                    projectId: project._id,
                     projectName: project.projectName
                 }));
                 toast.success("Project details loaded successfully");
@@ -308,7 +307,8 @@ const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, set
                 toast.error("Project not found in database");
             }
         } catch (error) {
-            toast.error(`Error: ${error.response?.data?.message || "Failed to fetch project details"}`);
+            console.error('Error searching for project:', error);
+            toast.error("Failed to fetch project details");
         }
     };
 
@@ -324,7 +324,7 @@ const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, set
         }
 
         try {
-            const response = await axios.get(`http://localhost:5000/api/units/${formData.unitCode}`);
+            const response = await api(`/units/${formData.unitCode}`, 'get');
             const unit = response.data;
 
             if (unit) {
