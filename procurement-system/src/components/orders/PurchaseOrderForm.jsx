@@ -5,7 +5,7 @@ import axios from 'axios'; // Make sure to install and import axios
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading, initialData }) => {
+const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, setIsModalOpen,setIsCreatingNew }) => {
     const { isDarkMode } = useTheme();
     const [formData, setFormData] = useState({
         vendorId: '',
@@ -13,7 +13,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading, initialData }) => {
         vendorName: '',
         vendorAddress: '',
         vendorGst: '',
-        projectCode: '00',
+        projectCode: '001',
         projectName: '',
         projectId: '',
         unitId: '',
@@ -198,10 +198,22 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading, initialData }) => {
         toast.info("Item removed from order");
     };
 
-    const handleSubmit = async (e) => {
+    const handleSaveDraft = async (e) => {
         e.preventDefault();
-        console.log("Form data before processing", formData);
+        await handleSubmit(e, 'draft');
+    };
 
+    const handleCreatePO = async (e) => {
+        e.preventDefault();
+        await handleSubmit(e, 'created');
+    };
+
+    const handleSubmit = async (e, status) => {
+        e.preventDefault();
+        if (isLoading) return;
+
+        console.log("Form data before processing", formData);
+        console.log("Status", status);
         // Validate required fields
         if (!formData.vendorId) {
             toast.error("Please select a valid vendor");
@@ -241,10 +253,14 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading, initialData }) => {
         // Create a new object with valid items
         const dataToSend = {
             ...formData,
-            items: validItems
+            items: validItems,
+            status: status // Set the status based on which button was clicked
         };
 
         console.log("Data to send", dataToSend);
+
+        // Set loading state
+        setIsLoading(true);
 
         try {
             const response = await axios.post('http://localhost:5000/api/purchase-orders/createPO', dataToSend, {
@@ -256,13 +272,18 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading, initialData }) => {
 
             if (response.status === 201) {
                 toast.success("Purchase order created successfully");
-                onSubmit(response.data); // Call the parent component's onSubmit with the created PO data
+                // onSubmit(response.data); // Call the parent component's onSubmit with the created PO data
+                setIsLoading(false);
+                setIsCreatingNew(false);
+                setIsModalOpen(false);
             } else {
                 throw new Error('Failed to create Purchase Order');
             }
         } catch (error) {
             console.error('Error creating Purchase Order:', error);
             toast.error(`Failed to create purchase order: ${error.response?.data?.message || error.message}`);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -480,7 +501,7 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading, initialData }) => {
                             required
                         />
                     </div>
-                    <div>
+                    {/* <div>
                         <label className={labelClass}>Status</label>
                         <select
                             name="status"
@@ -489,11 +510,12 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading, initialData }) => {
                             className={inputClass}
                         >
                             <option value="draft">Draft</option>
+                            <option value="created">Created</option>
                             <option value="approved">Approved</option>
                             <option value="rejected">Rejected</option>
                             <option value="cancelled">Cancelled</option>
-                        </select>
-                    </div>
+                        </select> 
+                     </div> */}
                 </div>
             </fieldset>
 
@@ -686,11 +708,20 @@ const PurchaseOrderForm = ({ onSubmit, onCancel, isLoading, initialData }) => {
                     Cancel
                 </button>
                 <button
-                    type="submit"
+                    type="button"
+                    onClick={handleSaveDraft}
+                    className="px-6 py-3 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-base"
+                    disabled={isLoading}
+                >
+                    {isLoading ? 'Saving...' : 'Save PO'}
+                </button>
+                <button
+                    type="button"
+                    onClick={handleCreatePO}
                     className="px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 text-base"
                     disabled={isLoading}
                 >
-                    {isLoading ? 'Saving...' : initialData ? 'Update Purchase Order' : 'Create Purchase Order'}
+                    {isLoading ? 'Creating...' : initialData ? 'Update Purchase Order' : 'Create Purchase Order'}
                 </button>
             </div>
         </form>

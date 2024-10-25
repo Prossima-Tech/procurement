@@ -42,7 +42,7 @@ const PurchaseOrderSchema = new mongoose.Schema({
   poNarration: String,
   
   
-  status: { type: String, enum: ['draft', 'submitted', 'approved', 'cancelled'], default: 'draft' }
+  status: { type: String, enum: ['draft','created' ,'submitted', 'approved', 'cancelled'], default: 'draft' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('PurchaseOrder', PurchaseOrderSchema);

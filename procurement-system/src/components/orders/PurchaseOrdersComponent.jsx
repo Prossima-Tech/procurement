@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ListComponent from '../common/ListComponent';
 import PurchaseOrderForm from './PurchaseOrderForm';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Plus, ChevronLeft, Trash2, Pencil } from 'lucide-react';
+import { Plus, ChevronLeft, Trash2, Pencil, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 
@@ -15,6 +15,7 @@ const PurchaseOrdersComponent = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [editingPO, setEditingPO] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const { isDarkMode } = useTheme();
 
     // Toast configuration
@@ -81,7 +82,9 @@ const PurchaseOrdersComponent = () => {
     }, [currentPage]);
 
     const handleCreateNew = () => {
+        console.log("Creating new PO", isModalOpen);
         setIsCreatingNew(true);
+        setIsModalOpen(true);
         setError(null);
     };
 
@@ -96,13 +99,11 @@ const PurchaseOrdersComponent = () => {
             );
 
             if (response.data) {
-                // Format dates for the form
                 const formattedData = {
                     ...response.data,
                     poDate: response.data.poDate ? new Date(response.data.poDate).toISOString().split('T')[0] : '',
                     validUpto: response.data.validUpto ? new Date(response.data.validUpto).toISOString().split('T')[0] : '',
                     deliveryDate: response.data.deliveryDate ? new Date(response.data.deliveryDate).toISOString().split('T')[0] : '',
-                    // Ensure items are in the correct format for the form
                     items: response.data.items.map(item => ({
                         partCode: item.partCode,
                         quantity: item.quantity,
@@ -111,139 +112,61 @@ const PurchaseOrdersComponent = () => {
                         totalPrice: item.totalPrice
                     }))
                 };
+                console.log("formattedData", formattedData);
                 setEditingPO(formattedData);
-                setIsCreatingNew(true);
             }
         } catch (err) {
             console.error('Error fetching PO details:', err);
-            toast.error('Failed to fetch purchase order details', toastConfig);
+            toast.error('Failed to fetch purchase order details');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleSubmit = async (formData) => {
-        try {
+    useEffect(() => {
+        console.log("isModalOpen", isModalOpen);
+        console.log("isCreatingNew", isCreatingNew);
+    }, [isModalOpen]);
+
+    const handleDeletePurchaseOrder = async (orderId, reference) => {
+        const confirmDelete = window.confirm(`Are you sure you want to delete Purchase Order ${reference}?`);
+        
+        if (confirmDelete) {
             setIsLoading(true);
-            setError(null);
-            if (editingPO) {
-                // Update existing PO
-                await axios.put(
-                    `http://localhost:5000/api/purchase-orders/updatePO/${editingPO._id}`,
-                    formData,
+            try {
+                const response = await axios.delete(
+                    `http://localhost:5000/api/purchase-orders/deletePO/${orderId}`,
                     {
                         headers: {
                             'Authorization': `Bearer ${getToken()}`,
-                            'Content-Type': 'application/json'
                         }
                     }
                 );
-                toast.success('Purchase Order updated successfully!', toastConfig);
-            } else {
-                // Create new PO
-                await axios.post(
-                    'http://localhost:5000/api/purchase-orders/createPO',
-                    formData,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${getToken()}`,
-                            'Content-Type': 'application/json'
-                        }
-                    }
-                );
-                toast.success('Purchase Order created successfully!', toastConfig);
-            }
-
-            setIsCreatingNew(false);
-            setEditingPO(null);
-            await fetchPurchaseOrders(currentPage);
-        } catch (err) {
-            const errorMessage = err.response?.data?.message ||
-                `Failed to ${editingPO ? 'update' : 'create'} purchase order. Please try again.`;
-            console.error(`Error ${editingPO ? 'updating' : 'creating'} purchase order:`, err);
-            setError(errorMessage);
-            toast.error(errorMessage, toastConfig);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleDeletePurchaseOrder = (orderId, reference) => {
-        toast(
-            ({ closeToast }) => (
-                <div className="flex flex-col space-y-4">
-                    <div className="flex items-center space-x-2">
-                        <Trash2 className="w-5 h-5 text-red-500" />
-                        <span className="font-medium">Delete Purchase Order</span>
-                    </div>
-                    <p>Are you sure you want to delete this purchase order? This action cannot be undone.</p>
-                    {reference && (
-                        <div className={`p-2 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                            <span className="font-medium">PO Reference: {reference}</span>
-                        </div>
-                    )}
-                    <div className="flex justify-end space-x-2">
-                        <button
-                            onClick={closeToast}
-                            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors
-                            ${isDarkMode
-                                    ? 'bg-gray-600 hover:bg-gray-500 text-white'
-                                    : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={async () => {
-                                try {
-                                    setIsLoading(true);
-                                    await axios.delete(
-                                        `http://localhost:5000/api/purchase-orders/deletePO/${orderId}`,
-                                        {
-                                            headers: {
-                                                'Authorization': `Bearer ${getToken()}`,
-                                            }
-                                        }
-                                    );
-                                    toast.success('Purchase Order deleted successfully', toastConfig);
-                                    await fetchPurchaseOrders(
-                                        purchaseOrders.length === 1 && currentPage > 1
-                                            ? currentPage - 1
-                                            : currentPage
-                                    );
-                                } catch (err) {
-                                    const errorMessage = err.response?.data?.message || 'Failed to delete purchase order';
-                                    toast.error(errorMessage, toastConfig);
-                                    console.error('Error deleting purchase order:', err);
-                                } finally {
-                                    setIsLoading(false);
-                                    closeToast();
-                                }
-                            }}
-                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-medium transition-colors"
-                            disabled={isLoading}
-                        >
-                            {isLoading ? 'Deleting...' : 'Delete'}
-                        </button>
-                    </div>
-                </div>
-            ),
-            {
-                position: "top-center",
-                autoClose: false,
-                closeOnClick: false,
-                closeButton: false,
-                style: {
-                    background: isDarkMode ? '#1F2937' : '#ffffff',
-                    color: isDarkMode ? '#ffffff' : '#1F2937',
-                    minWidth: '320px',
+                
+                if (response.status === 200) {
+                    toast.success('Purchase Order deleted successfully');
+                    // Refresh the purchase orders list
+                    await fetchPurchaseOrders(
+                        purchaseOrders.length === 1 && currentPage > 1
+                            ? currentPage - 1
+                            : currentPage
+                    );
+                } else {
+                    throw new Error('Failed to delete purchase order');
                 }
+            } catch (error) {
+                console.error('Error deleting Purchase Order:', error);
+                toast.error('Failed to delete purchase order');
+            } finally {
+                setIsLoading(false);
             }
-        );
+        }
     };
 
     const handleCancel = () => {
         setIsCreatingNew(false);
         setEditingPO(null);
+        setIsModalOpen(false);
         setError(null);
     };
 
@@ -324,13 +247,14 @@ const PurchaseOrdersComponent = () => {
                 )}
                 <div className={`${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="">
-                        {isCreatingNew ? (
+                        {editingPO ? (
                             <PurchaseOrderForm
-                                onSubmit={handleSubmit}
                                 onCancel={handleCancel}
-                                isDarkMode={isDarkMode}
                                 isLoading={isLoading}
+                                setIsLoading={setIsLoading}
+                                setIsCreatingNew={setIsCreatingNew}
                                 initialData={editingPO}
+                                setIsModalOpen={setIsModalOpen}
                             />
                         ) : (
                             <ListComponent
