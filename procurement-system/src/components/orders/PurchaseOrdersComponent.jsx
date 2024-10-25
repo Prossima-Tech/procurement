@@ -82,10 +82,10 @@ const PurchaseOrdersComponent = () => {
     }, [currentPage]);
 
     const handleCreateNew = () => {
-        console.log("Creating new PO", isModalOpen);
         setIsCreatingNew(true);
         setIsModalOpen(true);
         setError(null);
+        setEditingPO(null); // Reset editingPO when creating new
     };
 
     const handleEdit = async (orderId) => {
@@ -114,19 +114,18 @@ const PurchaseOrdersComponent = () => {
                 };
                 console.log("formattedData", formattedData);
                 setEditingPO(formattedData);
+
             }
         } catch (err) {
             console.error('Error fetching PO details:', err);
             toast.error('Failed to fetch purchase order details');
         } finally {
             setIsLoading(false);
+            setIsCreatingNew(true);
+            setIsModalOpen(true);
         }
     };
 
-    useEffect(() => {
-        console.log("isModalOpen", isModalOpen);
-        console.log("isCreatingNew", isCreatingNew);
-    }, [isModalOpen]);
 
     const handleDeletePurchaseOrder = async (orderId, reference) => {
         const confirmDelete = window.confirm(`Are you sure you want to delete Purchase Order ${reference}?`);
@@ -221,10 +220,10 @@ const PurchaseOrdersComponent = () => {
                     <div className="flex justify-center">
                         {isCreatingNew && (
                             <Link to="/" className={`flex justify-center p-2 mr-2 rounded-full ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-200'} transition duration-150 ease-in-out`}>
-                                <button onClick={handleCancel}>
-                                    <ChevronLeft size={24} />
-                                </button>
-                            </Link>
+                            <button onClick={handleCancel}>
+                                <ChevronLeft size={24} />
+                            </button>
+                        </Link>
                         )}
                         <h1 className="text-2xl font-bold">
                             {isCreatingNew ? (editingPO ? 'Edit Purchase Order' : 'Create Purchase Order') : 'Purchase Orders'}
@@ -247,7 +246,7 @@ const PurchaseOrdersComponent = () => {
                 )}
                 <div className={`${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="">
-                        {editingPO ? (
+                        {isCreatingNew || editingPO ? (
                             <PurchaseOrderForm
                                 onCancel={handleCancel}
                                 isLoading={isLoading}
