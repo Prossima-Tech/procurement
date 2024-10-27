@@ -4,7 +4,7 @@ const indentController = require('../controllers/indent.controller');
 
 // Create and manage indents
 router.post('/', indentController.createIndent);
-// router.get('/', auth, indentController.getAllIndents);
+router.get('/', indentController.getAllIndents);
 // router.get('/:id', auth, indentController.getIndentById);
 
 // // Draft management
