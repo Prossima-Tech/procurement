@@ -3,7 +3,6 @@ import { toast } from "react-toastify"
 
 // export const baseURL = "http://localhost:5000/api" // local
 export const baseURL = "https://procurement-3j6q.onrender.com/api" // server
-// export const baseURL = "https://civil-guruji-api.onrender.com" // server
 
 const Axios = axios.create({
     baseURL: baseURL,
@@ -30,9 +29,9 @@ export const api = async (url, type, data, headers, options = {}) => {
         } catch (e) {
 
             if (e?.response?.status === 404) {
-                console.log("404 Error:", e); 
+                console.log("404 Error:", e);
             }
-            
+
             if (e?.response?.status == 403) {
                 try {
 
@@ -66,7 +65,7 @@ export const api = async (url, type, data, headers, options = {}) => {
                     return Promise.reject(e)
                 }
             }
-             else {
+            else {
                 return Promise.reject(e)
             }
 
