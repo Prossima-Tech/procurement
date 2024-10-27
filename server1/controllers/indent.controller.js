@@ -1,5 +1,8 @@
 const Indent = require('../models/indent.model');
 const User = require('../models/user.model');
+const Unit = require('../models/unit.model');
+const Project = require('../models/project.model');
+
 const mongoose = require('mongoose');
 
 // Helper function for error handling
@@ -14,157 +17,186 @@ const handleError = (res, error) => {
 
 // Create new indent
 exports.createIndent = async (req, res) => {
-    try {
-      const {
-        employeeId,  // User ObjectId
-        managerId,   // User ObjectId
-        existingItems,
-        newItems,
-        purpose,
-        priority = 'medium',  // Default value if not provided
-        status = 'draft'      // Default value if not provided
-      } = req.body;
-  
-      // Basic validation
-      if (!employeeId || !managerId || !purpose) {
-        return res.status(400).json({
-          success: false,
-          message: 'Employee ID, Manager ID, and Purpose are required fields'
-        });
-      }
-  
-      // Validate items (at least one item required)
-      if ((!existingItems || existingItems.length === 0) && 
-          (!newItems || newItems.length === 0)) {
-        return res.status(400).json({
-          success: false,
-          message: 'At least one item (existing or new) is required'
-        });
-      }
-  
-      // Create new indent
-      const indent = new Indent({
-        employee: employeeId,
-        manager: managerId,
-        items: {
-          existing: existingItems || [],
-          new: newItems || []
-        },
-        purpose,
-        priority,
-        status
+  try {
+    const {
+      employeeId,
+      managerId,
+      unitId,
+      projectId,
+      existingItems,
+      newItems,
+      purpose,
+      priority = 'medium',
+      status = 'draft'
+    } = req.body;
+
+    // Basic validation
+    if (!employeeId || !managerId || !unitId || !projectId || !purpose) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee ID, Manager ID, Unit ID, Project ID, and Purpose are required fields'
       });
-  
-      await indent.save();
-  
-      // Populate employee and manager references
-      const populatedIndent = await Indent.findById(indent._id)
-        .populate('employee', 'username email')  // Adjust fields based on your User model
-        .populate('manager', 'username email');  // Adjust fields based on your User model
-  
-      res.status(201).json({
-        success: true,
-        message: 'Indent created successfully',
-        data: populatedIndent
-      });
-  
-    } catch (error) {
-      // Handle specific MongoDB errors
-      if (error.code === 11000) {  // Duplicate key error
-        return res.status(400).json({
-          success: false,
-          message: 'Duplicate indent number'
-        });
-      }
-      handleError(res, error);
     }
-  };
-  
-  // Get all indents with optional filters
-  exports.getAllIndents = async (req, res) => {
-    try {
-      const {
-        status,
-        priority,
-        employeeId,
-        managerId,
-        startDate,
-        endDate,
-        sortBy = 'createdAt',
-        order = 'desc'
-      } = req.query;
-  
-      // Build filter object
-      const filter = {};
-  
-      if (status) filter.status = status;
-      if (priority) filter.priority = priority;
-      if (employeeId) filter.employee = employeeId;
-      if (managerId) filter.manager = managerId;
-  
-      // Add date range filter if provided
-      if (startDate || endDate) {
-        filter.createdAt = {};
-        if (startDate) filter.createdAt.$gte = new Date(startDate);
-        if (endDate) filter.createdAt.$lte = new Date(endDate);
-      }
-  
-      // Build sort object
-      const sortObject = {};
-      sortObject[sortBy] = order === 'desc' ? -1 : 1;
-  
-      const indents = await Indent.find(filter)
-        .populate('employee', 'username email')  // Adjust fields based on your User model
-        .populate('manager', 'username email')   // Adjust fields based on your User model
-        .sort(sortObject);
-  
-      // Get total count for pagination if needed
-      const totalCount = await Indent.countDocuments(filter);
-  
-      res.json({
-        success: true,
-        count: indents.length,
-        totalCount,
-        data: indents
+
+    // Validate Unit exists and is active
+    const unit = await Unit.findById(unitId);
+    if (!unit) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid Unit ID or Unit not found'
       });
-  
-    } catch (error) {
-      handleError(res, error);
     }
-  };
-  
-  // Get single indent by ID
-  exports.getIndentById = async (req, res) => {
-    try {
-      const { id } = req.params;
-  
-      const indent = await Indent.findById(id)
-        .populate('employee', 'username email')
-        .populate('manager', 'username email');
-  
-      if (!indent) {
-        return res.status(404).json({
-          success: false,
-          message: 'Indent not found'
-        });
-      }
-  
-      res.json({
-        success: true,
-        data: indent
+
+    // Validate Project exists and is active
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid Project ID or Project not found'
       });
-  
-    } catch (error) {
-      // Handle invalid ObjectId
-      if (error.kind === 'ObjectId') {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid indent ID format'
-        });
-      }
-      handleError(res, error);
     }
-  };
+
+    // Validate items (at least one item required)
+    if ((!existingItems || existingItems.length === 0) &&
+      (!newItems || newItems.length === 0)) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one item (existing or new) is required'
+      });
+    }
+
+    // Create new indent
+    const indent = new Indent({
+      employee: employeeId,
+      manager: managerId,
+      unit: unitId,
+      project: projectId,
+      items: {
+        existing: existingItems || [],
+        new: newItems || []
+      },
+      purpose,
+      priority,
+      status
+    });
+
+    await indent.save();
+
+    // Populate all references
+    const populatedIndent = await Indent.findById(indent._id)
+      .populate('employee', 'username email')
+      .populate('manager', 'username email')
+      .populate('unit', 'unitName unitCode')
+      .populate('project', 'projectName projectCode projectLocation');
+
+    res.status(201).json({
+      success: true,
+      message: 'Indent created successfully',
+      data: populatedIndent
+    });
+
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Duplicate indent number'
+      });
+    }
+    handleError(res, error);
+  }
+};
+
+// Get all indents with optional filters
+exports.getAllIndents = async (req, res) => {
+  try {
+    const {
+      status,
+      priority,
+      employeeId,
+      managerId,
+      unitId,
+      projectId,
+      startDate,
+      endDate,
+      sortBy = 'createdAt',
+      order = 'desc'
+    } = req.query;
+
+    // Build filter object
+    const filter = {};
+
+    if (status) filter.status = status;
+    if (priority) filter.priority = priority;
+    if (employeeId) filter.employee = employeeId;
+    if (managerId) filter.manager = managerId;
+    if (unitId) filter.unit = unitId;
+    if (projectId) filter.project = projectId;
+
+    // Add date range filter if provided
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) filter.createdAt.$gte = new Date(startDate);
+      if (endDate) filter.createdAt.$lte = new Date(endDate);
+    }
+
+    // Build sort object
+    const sortObject = {};
+    sortObject[sortBy] = order === 'desc' ? -1 : 1;
+
+    const indents = await Indent.find(filter)
+      .populate('employee', 'username email')
+      .populate('manager', 'username email')
+      .populate('unit', 'unitName unitCode')
+      .populate('project', 'projectName projectCode projectLocation')
+      .sort(sortObject);
+
+    const totalCount = await Indent.countDocuments(filter);
+
+    res.json({
+      success: true,
+      count: indents.length,
+      totalCount,
+      data: indents
+    });
+
+  } catch (error) {
+    handleError(res, error);
+  }
+};
+
+// Get single indent by ID
+exports.getIndentById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const indent = await Indent.findById(id)
+      .populate('employee', 'username email')
+      .populate('manager', 'username email')
+      .populate('unit', 'unitName unitCode')
+      .populate('project', 'projectName projectCode projectLocation');
+
+    if (!indent) {
+      return res.status(404).json({
+        success: false,
+        message: 'Indent not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: indent
+    });
+
+  } catch (error) {
+    if (error.kind === 'ObjectId') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid indent ID format'
+      });
+    }
+    handleError(res, error);
+  }
+};
 
 // exports.managerApproval = async (req, res) => {
 //   try {

@@ -75,6 +75,20 @@ const IndentSchema = new Schema({
         required: true
     },
 
+    // Unit reference
+    unit: {
+        type: Schema.Types.ObjectId,
+        ref: 'Unit',
+        required: true
+    },
+
+    // Project reference
+    project: {
+        type: Schema.Types.ObjectId,
+        ref: 'Project',
+        required: true
+    },
+
     // Separate sections for existing and new items
     items: {
         existing: [ExistingItemSchema],
@@ -109,18 +123,7 @@ const IndentSchema = new Schema({
             date: Date,
             remarks: String
         }
-    },
-
-    // expectedDeliveryDate: Date,
-
-    // attachments: [{
-    //     filename: String,
-    //     path: String,
-    //     uploadDate: Date
-    // }],
-
-    // remarks: String
-
+    }
 }, {
     timestamps: true
 });
