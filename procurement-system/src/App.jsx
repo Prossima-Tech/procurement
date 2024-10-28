@@ -7,46 +7,54 @@ import Layout from './components/layout/Layout';
 import LoginPage from './components/authentication/Login';
 import RegisterPage from './components/authentication/Register';
 import UnauthorizedPage from './components/authentication/Unauthorized';
-
-
+import ExternalForm from './components/orders/ExternalForm';
+import InternalForm from './components/orders/InternalForm';
 function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <Router>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/unauthorized" element={<UnauthorizedPage />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/*"
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/manager/*"
-              element={
-                <ProtectedRoute allowedRoles={['manager', 'admin']}>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Router>
-      </ThemeProvider>
-    </AuthProvider>
+    <Router>
+      <Routes>
+      <Route path="/external-form" element={<ExternalForm />} />
+      <Route path="/internal-form" element={<InternalForm />} />
+        <Route
+          path="/*"
+          element={
+            <AuthProvider>
+              <ThemeProvider>
+                <Routes>
+                  <Route path="login" element={<LoginPage />} />
+                  <Route path="register" element={<RegisterPage />} />
+                  <Route path="unauthorized" element={<UnauthorizedPage />} />
+                  <Route
+                    path="/"
+                    element={
+                      <ProtectedRoute>
+                        <Layout />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="admin/*"
+                    element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <Layout />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="manager/*"
+                    element={
+                      <ProtectedRoute allowedRoles={['manager', 'admin']}>
+                        <Layout />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
+              </ThemeProvider>
+            </AuthProvider>
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 
