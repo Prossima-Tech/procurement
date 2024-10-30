@@ -1,17 +1,17 @@
 /* eslint-disable react/prop-types */
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     const { user, loading } = useAuth();
-    const location = useLocation();
+    console.log(user);
 
     if (loading) {
         return <div>Loading...</div>;
     }
 
     if (!user) {
-        return <Navigate to="/login" state={{ from: location }} replace />;
+        return <Navigate to="/login" replace />;
     }
 
     if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
