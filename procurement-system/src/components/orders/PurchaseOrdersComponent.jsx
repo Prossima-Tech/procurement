@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ListComponent from '../common/ListComponent';
+import { toast, ToastContainer } from 'react-toastify';
 import PurchaseOrderForm from './PurchaseOrderForm';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Plus, ChevronLeft, Trash2, Pencil, X } from 'lucide-react';
@@ -34,6 +35,7 @@ const PurchaseOrdersComponent = () => {
     const getToken = () => localStorage.getItem('token');
 
     const fetchPurchaseOrders = async (page = 1) => {
+        console.log("fetching purchase orders");
         try {
             setIsLoading(true);
             setError(null);
@@ -150,6 +152,7 @@ const PurchaseOrdersComponent = () => {
                 if (response.status === 200) {
                     toast.success('Purchase Order deleted successfully');
                     // Refresh the purchase orders list
+                    console.log("fetching purchase orders after deletion");
                     await fetchPurchaseOrders(
                         purchaseOrders.length === 1 && currentPage > 1
                             ? currentPage - 1
@@ -220,6 +223,7 @@ const PurchaseOrdersComponent = () => {
 
     return (
         <div className={`rounded-lg ${isDarkMode ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-white text-gray-900'}`}>
+            <ToastContainer />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex justify-center">
@@ -259,6 +263,8 @@ const PurchaseOrdersComponent = () => {
                                 setIsCreatingNew={setIsCreatingNew}
                                 initialData={editingPO}
                                 setIsModalOpen={setIsModalOpen}
+                                fetchPurchaseOrders={fetchPurchaseOrders}
+                                setEditingPO={setEditingPO}
                             />
                         ) : (
                             <ListComponent
