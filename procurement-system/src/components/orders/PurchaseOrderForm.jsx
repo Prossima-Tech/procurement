@@ -6,7 +6,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { baseURL } from '../../utils/endpoint';
 import axios from 'axios';
-const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, setIsModalOpen,setIsCreatingNew }) => {
+const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, setIsModalOpen,setIsCreatingNew,fetchPurchaseOrders,setEditingPO }) => {
     const { isDarkMode } = useTheme();
     const [formData, setFormData] = useState({
         vendorId: '',
@@ -200,13 +200,74 @@ const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, set
     };
 
     const handleSaveDraft = async (e) => {
-        e.preventDefault();
-        await handleSubmit(e, 'draft');
+        if(formData._id){
+            console.log("updating purchase order");
+            try {
+                const response = await axios.put(`${baseURL}/purchase-orders/updatePO/${formData._id}`, 
+                    {...formData, status: 'draft'}, 
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${getToken()}`,
+                            'Content-Type': 'application/json',
+                        }
+                    }
+                );
+
+                if (response.data.success) {
+                    toast.success("Purchase order updated successfully");
+                    setIsCreatingNew(false);
+                    setIsModalOpen(false);
+                } else {
+                    throw new Error('Failed to update Purchase Order');
+                }
+            } catch (error) {
+                console.error('Error updating Purchase Order:', error);
+                toast.error(`Failed to update purchase order: ${error.response?.data?.message || error.message}`);
+            } finally {
+                setIsLoading(false);
+                fetchPurchaseOrders();
+                setEditingPO(null);
+            }
+        }else{
+            e.preventDefault();
+            await handleSubmit(e, 'draft');
+        }
     };
 
     const handleCreatePO = async (e) => {
-        e.preventDefault();
-        await handleSubmit(e, 'created');
+        if(formData._id){
+            console.log("updating purchase order");
+            try {
+                const response = await axios.put(`${baseURL}/purchase-orders/updatePO/${formData._id}`, 
+                    {...formData, status: 'created'}, 
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${getToken()}`,
+                            'Content-Type': 'application/json',
+                        }
+                    }
+                );
+
+                if (response.data.success) {
+                    toast.success("Purchase order updated successfully");
+                    setIsCreatingNew(false);
+                    setIsModalOpen(false);
+                } else {
+                    throw new Error('Failed to update Purchase Order');
+                }
+            } catch (error) {
+                console.error('Error updating Purchase Order:', error);
+                toast.error(`Failed to update purchase order: ${error.response?.data?.message || error.message}`);
+            } finally {
+                setIsLoading(false);
+                fetchPurchaseOrders();
+                setEditingPO(null);
+            }
+
+        }else{
+            e.preventDefault();
+            await handleSubmit(e, 'created');
+        }
     };
 
     const handleSubmit = async (e, status) => {
@@ -283,6 +344,7 @@ const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, set
             toast.error(`Failed to create purchase order: ${error.response?.data?.message || error.message}`);
         } finally {
             setIsLoading(false);
+            fetchPurchaseOrders();
         }
     };
 
