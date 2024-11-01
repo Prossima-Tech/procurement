@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-
+import React, { useState, useEffect } from 'react';
+import axios from 'axios'; // Make sure axios is installed
+import { baseURL } from '../../utils/endpoint';
 const InternalForm = () => {
   // Form state
   const [formData, setFormData] = useState({
@@ -8,7 +9,9 @@ const InternalForm = () => {
     employeeEmail: '',
     managerCode: '',
     unit: '',
+    unitId: '',
     project: '',
+    projectId: '',
   });
 
   // Item selection state
@@ -31,27 +34,45 @@ const InternalForm = () => {
     { code: 'MGR003', name: 'Mike Wilson' },
   ];
 
-  const availableUnits = [
-    'IT Department',
-    'Human Resources',
-    'Finance',
-    'Operations',
-  ];
+  const [availableUnits, setAvailableUnits] = useState([]);
+  const [isLoadingUnits, setIsLoadingUnits] = useState(false);
+  const [unitError, setUnitError] = useState(null);
 
-  const availableProjects = [
-    'Project Alpha',
-    'Project Beta',
-    'Project Gamma',
-    'Project Delta',
-  ];
+  const [availableProjects, setAvailableProjects] = useState([
+    { id: 'PRJ001', name: 'Project Alpha' },
+    { id: 'PRJ002', name: 'Project Beta' },
+    { id: 'PRJ003', name: 'Project Gamma' },
+    { id: 'PRJ004', name: 'Project Delta' }
+  ]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [projectError, setProjectError] = useState(null);
 
   // Form handlers
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    
+    if (name === 'unit') {
+      const selectedUnit = availableUnits.find(unit => unit.code === value);
+      setFormData(prev => ({
+        ...prev,
+        unit: value,
+        unitId: selectedUnit?._id || ''
+      }));
+    } 
+    else if (name === 'project') {
+      const selectedProject = availableProjects.find(project => project.id === value);
+      setFormData(prev => ({
+        ...prev,
+        project: value,
+        projectId: selectedProject?._id || ''
+      }));
+    }
+    else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   // Handle item selection and show quantity popup
@@ -122,6 +143,68 @@ const InternalForm = () => {
     });
     setSelectedItems([]);
   };
+
+  const fetchProjects = async () => {
+    setIsLoadingProjects(true);
+    setProjectError(null);
+    try {
+      const response = await axios.get(`${baseURL}/projects/`);
+      // Transform the API data to match our required format
+      const transformedProjects = response.data.map(project => ({
+        id: project.projectCode,
+        name: `${project.projectName} (${project.projectLocation || 'N/A'})`,
+        status: project.projectStatus,
+        _id: project._id
+      }));
+      setAvailableProjects(transformedProjects);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      setProjectError('Failed to load projects. Please try again later.');
+      // Fallback dummy data
+      setAvailableProjects([
+        { id: '001', name: 'Lucknow Office (LKO)', status: 'Active' },
+        { id: '002D', name: 'Delhi', status: 'Active' }
+      ]);
+    } finally {
+      setIsLoadingProjects(false);
+    }
+  };
+
+  const fetchUnits = async () => {
+    setIsLoadingUnits(true);
+    setUnitError(null);
+    try {
+      const response = await axios.get(`${baseURL}/units/`);
+      // Transform the API data to match our required format
+      const transformedUnits = response.data.map(unit => ({
+        id: unit._id,
+        code: unit.unitCode,
+        name: unit.unitName,
+        status: unit.unitStatus
+      }));
+      setAvailableUnits(transformedUnits);
+    } catch (error) {
+      console.error('Error fetching units:', error);
+      setUnitError('Failed to load units. Please try again later.');
+      // Fallback dummy data
+      setAvailableUnits([
+        { id: '1', code: 'IT', name: 'IT Department', status: 'Active' },
+        { id: '2', code: 'HR', name: 'Human Resources', status: 'Active' },
+        { id: '3', code: 'FIN', name: 'Finance', status: 'Active' }
+      ]);
+    } finally {
+      setIsLoadingUnits(false);
+    }
+  };
+
+  useEffect(() => {
+    console.log(formData);
+  }, [formData]);
+
+  useEffect(() => {
+    fetchUnits();
+    fetchProjects();
+  }, []);
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
@@ -325,30 +408,56 @@ const InternalForm = () => {
           {/* Unit and Project Selection */}
           <div className="bg-white shadow-lg mt-8 p-5 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <select
-                name="unit"
-                value={formData.unit}
-                onChange={handleInputChange}
-                className="bg-gray-100 p-3 rounded-md border border-gray-200"
-                required
-              >
-                <option value="" disabled>Select Unit ▼</option>
-                {availableUnits.map(unit => (
-                  <option key={unit} value={unit}>{unit}</option>
-                ))}
-              </select>
-              <select
-                name="project"
-                value={formData.project}
-                onChange={handleInputChange}
-                className="bg-gray-100 p-3 rounded-md border border-gray-200"
-                required
-              >
-                <option value="" disabled>Select Project ▼</option>
-                {availableProjects.map(project => (
-                  <option key={project} value={project}>{project}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  name="unit"
+                  value={formData.unit}
+                  onChange={handleInputChange}
+                  className="bg-gray-100 p-3 rounded-md border border-gray-200 w-full"
+                  required
+                  disabled={isLoadingUnits}
+                >
+                  <option value="" disabled>
+                    {isLoadingUnits ? 'Loading Units...' : 'Select Unit ▼'}
+                  </option>
+                  {availableUnits.map(unit => (
+                    <option 
+                      key={unit.id} 
+                      value={unit.code}
+                    >
+                      {unit.name} ({unit.code})
+                    </option>
+                  ))}
+                </select>
+                {unitError && (
+                  <p className="text-red-500 text-sm mt-1">{unitError}</p>
+                )}
+              </div>
+              <div className="relative">
+                <select
+                  name="project"
+                  value={formData.project}
+                  onChange={handleInputChange}
+                  className="bg-gray-100 p-3 rounded-md border border-gray-200 w-full"
+                  required
+                  disabled={isLoadingProjects}
+                >
+                  <option value="" disabled>
+                    {isLoadingProjects ? 'Loading Projects...' : 'Select Project ▼'}
+                  </option>
+                  {availableProjects.map(project => (
+                    <option 
+                      key={project._id} 
+                      value={project.id}
+                    >
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+                {projectError && (
+                  <p className="text-red-500 text-sm mt-1">{projectError}</p>
+                )}
+              </div>
             </div>
           </div>
 
