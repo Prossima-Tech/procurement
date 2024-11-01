@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios'; // Make sure axios is installed
+import axios from 'axios';
 import { baseURL } from '../../utils/endpoint';
+
 const InternalForm = () => {
   // Form state
   const [formData, setFormData] = useState({
@@ -22,11 +23,65 @@ const InternalForm = () => {
   const [quantityInput, setQuantityInput] = useState(1);
   const [showQuantityPopup, setShowQuantityPopup] = useState(false);
 
-  const availableItems = [
-    { id: 'LAP001', name: 'Laptop - Dell XPS 13' },
-    { id: 'MOU001', name: 'Wireless Mouse' },
-    { id: 'MON001', name: 'Monitor - 24 inch' },
-  ];
+  // Replace the static availableItems with state
+  const [availableItems, setAvailableItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Simplified new item state
+  const [newItemInput, setNewItemInput] = useState({
+    name: '',
+    quantity: 1
+  });
+
+  // Handle new item input change
+  const handleNewItemInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewItemInput(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle adding new custom item
+  const handleAddNewItem = () => {
+    if (newItemInput.name.trim()) {
+      setSelectedItems(prev => [
+        ...prev,
+        {
+          id: `CUSTOM-${Date.now()}`,
+          ItemName: newItemInput.name,
+          quantity: parseInt(newItemInput.quantity),
+          isCustom: true
+        }
+      ]);
+      // Reset input after adding
+      setNewItemInput({
+        name: '',
+        quantity: 1
+      });
+    }
+  };
+
+  // Fetch items from database
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`${baseURL}/items`);
+        console.log("response",response);
+        setAvailableItems(response.data.data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching items:', err);
+        setError('Failed to fetch items');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchItems();
+  }, []);
 
   const availableManagers = [
     { code: 'MGR001', name: 'John Smith' },
@@ -85,7 +140,17 @@ const InternalForm = () => {
   // Save selected item with quantity
   const handleSaveQuantity = () => {
     if (selectedItem && quantityInput > 0) {
-      setSelectedItems((prev) => [...prev, { ...selectedItem, quantity: quantityInput }]);
+      setSelectedItems((prev) => [
+        ...prev,
+        {
+          _id: selectedItem._id,
+          ItemCode: selectedItem.ItemCode,
+          ItemName: selectedItem.ItemName,
+          type: selectedItem.type,
+          ItemCategory: selectedItem.ItemCategory,
+          quantity: quantityInput
+        }
+      ]);
       setShowQuantityPopup(false);
       setSelectedItem(null);
       setQuantityInput(1);
@@ -248,53 +313,110 @@ const InternalForm = () => {
             <div className="bg-white shadow-md p-5 rounded-lg">
               <h3 className="font-bold text-lg text-gray-800 mb-4">Available Items</h3>
 
-              {/* Search Bar */}
+              {/* New Item Input Section */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-3">Add Custom Item</h4>
+                <div className="flex gap-3">
+                  <div className="flex-grow">
+                    <input
+                      type="text"
+                      name="name"
+                      placeholder="Enter item name"
+                      value={newItemInput.name}
+                      onChange={handleNewItemInputChange}
+                      className="w-full p-2 border rounded-md"
+                    />
+                  </div>
+                  <div className="w-24">
+                    <input
+                      type="number"
+                      name="quantity"
+                      min="1"
+                      value={newItemInput.quantity}
+                      onChange={handleNewItemInputChange}
+                      className="w-full p-2 border rounded-md"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddNewItem}
+                    className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              {/* Existing Items Search */}
               <div className="flex items-center bg-gray-100 p-3 rounded-md mb-4">
                 <span className="text-gray-500">🔍</span>
                 <input
                   type="text"
-                  placeholder="Search items..."
+                  placeholder="Search existing items..."
                   className="bg-transparent outline-none ml-3 text-sm w-full"
                   value={itemInput}
                   onChange={(e) => setItemInput(e.target.value)}
                 />
               </div>
 
-              {/* Filter Buttons */}
-              <div className="flex space-x-2 mb-4">
-                <button type="button" className="bg-indigo-500 text-white px-4 py-1 rounded-full">All Items</button>
-                <button type="button" className="bg-indigo-100 text-indigo-600 px-4 py-1 rounded-full border border-indigo-500">Electronics</button>
-                <button type="button" className="bg-indigo-100 text-indigo-600 px-4 py-1 rounded-full border border-indigo-500">Stationery</button>
-              </div>
+              {/* Loading and Error States */}
+              {loading && (
+                <div className="text-center py-4">Loading items...</div>
+              )}
+
+              {error && (
+                <div className="text-red-500 text-center py-4">{error}</div>
+              )}
 
               {/* Available Items List with Radio Buttons */}
               <div className="space-y-2">
                 {availableItems
-                  .filter((item) => item.name.toLowerCase().includes(itemInput.toLowerCase()))
+                  .filter((item) => 
+                    item.ItemName.toLowerCase().includes(itemInput.toLowerCase()) ||
+                    item.ItemCode.toLowerCase().includes(itemInput.toLowerCase())
+                  )
                   .map((item) => (
                     <div
-                      key={item.id}
+                      key={item._id}
                       className={`flex items-center bg-gray-100 p-4 rounded-md border ${
-                        selectedItem?.id === item.id ? 'border-indigo-500' : 'border-gray-200'
+                        selectedItem?._id === item._id ? 'border-indigo-500' : 'border-gray-200'
                       }`}
                     >
                       <input
                         type="radio"
-                        id={item.id}
+                        id={item._id}
                         name="itemSelection"
-                        checked={selectedItem?.id === item.id}
+                        checked={selectedItem?._id === item._id}
                         onChange={() => handleItemSelect(item)}
                         className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-full"
                       />
-                      <label htmlFor={item.id} className="ml-3 flex flex-row justify-between flex-grow cursor-pointer">
-                        <p className="text-gray-800">{item.name}</p>
-                        <p className="text-gray-500 text-sm ml-auto">ID: {item.id}</p>
+                      <label htmlFor={item._id} className="ml-3 flex flex-row justify-between flex-grow cursor-pointer">
+                        <div>
+                          <p className="text-gray-800 font-medium">{item.ItemName}</p>
+                          <p className="text-gray-500 text-sm">Type: {item.type}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-gray-500 text-sm">Code: {item.ItemCode}</p>
+                          {item.ItemCategory && (
+                            <p className="text-gray-500 text-sm">Category: {item.ItemCategory}</p>
+                          )}
+                        </div>
                       </label>
                     </div>
                   ))}
               </div>
 
-              {/* Keep existing custom item section */}
+              {/* No Results Message */}
+              {!loading && !error && availableItems.filter(item => 
+                item.ItemName.toLowerCase().includes(itemInput.toLowerCase()) ||
+                item.ItemCode.toLowerCase().includes(itemInput.toLowerCase())
+              ).length === 0 && (
+                <div className="text-center py-4 text-gray-500">
+                  No items found matching your search
+                </div>
+              )}
+
+              {/* Keep existing custom item section
               <input
                 type="text"
                 placeholder="New Item Description"
@@ -308,7 +430,7 @@ const InternalForm = () => {
                 className="w-full mt-2 bg-indigo-500 text-white p-2 rounded-md hover:bg-indigo-600"
               >
                 Add Custom Item
-              </button>
+              </button> */}
 
               {/* Keep existing quantity popup */}
               {showQuantityPopup && (
@@ -346,41 +468,51 @@ const InternalForm = () => {
           </div>
 
           {/* Selected Items */}
-          <div className="bg-white shadow-md mt-8 p-5 rounded-lg">
-            <h3 className="font-bold text-lg text-gray-800 mb-4">Selected Items</h3>
+          <div className="mt-6">
+            <h4 className="font-medium text-gray-700 mb-3">Selected Items</h4>
             {selectedItems.length > 0 ? (
-              selectedItems.map((item, index) => (
-                <div key={item.id} className="flex justify-between items-center bg-gray-100 p-4 rounded-lg mb-4">
-                  <div>
-                    <p className="font-medium text-gray-800">{item.name}</p>
-                    <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+              <div className="space-y-3">
+                {selectedItems.map((item, index) => (
+                  <div 
+                    key={item.id || item._id}
+                    className="flex justify-between items-center bg-gray-50 p-3 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium">
+                        {item.ItemName}
+                        {item.isCustom && <span className="ml-2 text-xs text-gray-500">(Custom)</span>}
+                      </p>
+                      {!item.isCustom && item.ItemCode && (
+                        <p className="text-sm text-gray-500">Code: {item.ItemCode}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => decrementQuantity(index)}
+                        className="px-2 py-1 border rounded"
+                      >
+                        -
+                      </button>
+                      <span>{item.quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => incrementQuantity(index)}
+                        className="px-2 py-1 border rounded"
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(index)}
+                        className="ml-2 text-red-500 hover:text-red-700"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <button
-                      type="button"
-                      onClick={() => decrementQuantity(index)}
-                      className="bg-white border border-gray-300 rounded px-2 py-1"
-                    >
-                      -
-                    </button>
-                    <span className="text-gray-800 font-semibold">{item.quantity}</span>
-                    <button
-                      type="button"
-                      onClick={() => incrementQuantity(index)}
-                      className="bg-white border border-gray-300 rounded px-2 py-1"
-                    >
-                      +
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeItem(index)}
-                      className="ml-4 bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-              ))
+                ))}
+              </div>
             ) : (
               <p className="text-center text-gray-500">No items selected</p>
             )}
