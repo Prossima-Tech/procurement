@@ -57,13 +57,24 @@ exports.createIndent = async (req, res) => {
     }
 
     // Validate items (at least one item required)
-    if ((!existingItems || existingItems.length === 0) &&
-      (!newItems || newItems.length === 0)) {
-      return res.status(400).json({
-        success: false,
-        message: 'At least one item (existing or new) is required'
-      });
-    }
+    // if ((!existingItems || existingItems.length === 0) &&
+    //   (!newItems || newItems.length === 0)) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: 'At least one item (existing or new) is required'
+    //   });
+    // }
+
+    const formattedExistingItems = existingItems.map(item => ({
+      name: item.name || item.ItemName, // Assuming ItemName comes from frontend
+      quantity: parseInt(item.quantity) || 1
+    }));
+
+    // Format new items with required fields
+    const formattedNewItems = newItems.map(item => ({
+      name: item.name || item.ItemName,
+      quantity: parseInt(item.quantity) || 1
+    }));
 
     // Create new indent
     const indent = new Indent({
@@ -72,8 +83,8 @@ exports.createIndent = async (req, res) => {
       unit: unitId,
       project: projectId,
       items: {
-        existing: existingItems || [],
-        new: newItems || []
+        existing: formattedExistingItems || [],
+        new: formattedNewItems || []
       },
       purpose,
       priority,

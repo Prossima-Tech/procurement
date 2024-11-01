@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { baseURL } from '../../utils/endpoint';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const InternalForm = () => {
   // Form state
   const [formData, setFormData] = useState({
     employeeCode: '',
-    employeeId: '',
+    employeeId: '671bacdb385cef712dfecb7c',
     employeeEmail: '',
-    managerCode: '',
+    managerId: '671da8ea459e3fc7de03d837',
     unit: '',
     unitId: '',
     project: '',
@@ -18,7 +20,7 @@ const InternalForm = () => {
   // Item selection state
   const [itemInput, setItemInput] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
-  const [customItem, setCustomItem] = useState('');
+  const [customItem, setCustomItem] = useState(''); 
   const [selectedItem, setSelectedItem] = useState(null);
   const [quantityInput, setQuantityInput] = useState(1);
   const [showQuantityPopup, setShowQuantityPopup] = useState(false);
@@ -55,11 +57,14 @@ const InternalForm = () => {
           isCustom: true
         }
       ]);
+      toast.success('Item added successfully');
       // Reset input after adding
       setNewItemInput({
         name: '',
         quantity: 1
       });
+    } else {
+      toast.warning('Please enter an item name');
     }
   };
 
@@ -69,11 +74,12 @@ const InternalForm = () => {
       try {
         setLoading(true);
         const response = await axios.get(`${baseURL}/items`);
-        console.log("response",response);
+        console.log("response for availabe item",response.data.data);
         setAvailableItems(response.data.data);
         setError(null);
       } catch (err) {
         console.error('Error fetching items:', err);
+        toast.error('Failed to fetch items');
         setError('Failed to fetch items');
       } finally {
         setLoading(false);
@@ -111,7 +117,7 @@ const InternalForm = () => {
       setFormData(prev => ({
         ...prev,
         unit: value,
-        unitId: selectedUnit?._id || ''
+        unitId: selectedUnit?.id || ''
       }));
     } 
     else if (name === 'project') {
@@ -151,9 +157,12 @@ const InternalForm = () => {
           quantity: quantityInput
         }
       ]);
+      toast.success('Item added successfully');
       setShowQuantityPopup(false);
       setSelectedItem(null);
       setQuantityInput(1);
+    } else {
+      toast.error('Please select a valid quantity');
     }
   };
 
@@ -189,24 +198,72 @@ const InternalForm = () => {
 
   const removeItem = (index) => {
     setSelectedItems(prevItems => prevItems.filter((_, i) => i !== index));
+    toast.info('Item removed');
   };
 
-  const handleSubmit = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const submitData = {
-      ...formData,
-      items: selectedItems,
-    };
-    console.log('Form Data:', submitData);
-    alert('Form submitted successfully!');
-    setFormData({
-      employeeCode: '',
-      employeeEmail: '',
-      managerCode: '',
-      unit: '',
-      project: '',
-    });
-    setSelectedItems([]);
+    
+    if (selectedItems.length === 0) {
+      toast.error('Please select at least one item');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      
+      const existingItems = selectedItems
+        .filter(item => !item.isCustom)
+        .map(item => ({
+          name: item.ItemName || item.name,
+          quantity: parseInt(item.quantity) || 1
+        }));
+
+      const newItems = selectedItems
+        .filter(item => item.isCustom)
+        .map(item => ({
+          name: item.ItemName || item.name,
+          quantity: parseInt(item.quantity) || 1
+        }));
+
+      const submitData = {
+        employeeId: formData.employeeId,
+        managerId: formData.managerId,
+        unitId: formData.unitId,
+        projectId: formData.projectId,
+        existingItems,
+        newItems,
+        purpose: "Regular procurement",
+        priority: "medium",
+        status: "draft"
+      };
+
+      const response = await axios.post(`${baseURL}/indents/`, submitData);
+
+      if (response.data.success) {
+        toast.success('Purchase indent created successfully!');
+        // Reset form
+        setFormData({
+          employeeCode: '',
+          employeeId: '',
+          employeeEmail: '',
+          managerId: '',
+          unit: '',
+          unitId: '',
+          project: '',
+          projectId: '',
+        });
+        setSelectedItems([]);
+      }
+
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast.error(error.response?.data?.message || 'Failed to create purchase indent');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const fetchProjects = async () => {
@@ -224,6 +281,7 @@ const InternalForm = () => {
       setAvailableProjects(transformedProjects);
     } catch (error) {
       console.error('Error fetching projects:', error);
+      toast.error('Failed to load projects');
       setProjectError('Failed to load projects. Please try again later.');
       // Fallback dummy data
       setAvailableProjects([
@@ -247,9 +305,11 @@ const InternalForm = () => {
         name: unit.unitName,
         status: unit.unitStatus
       }));
+      console.log("transformedUnits",transformedUnits);
       setAvailableUnits(transformedUnits);
     } catch (error) {
       console.error('Error fetching units:', error);
+      toast.error('Failed to load units');
       setUnitError('Failed to load units. Please try again later.');
       // Fallback dummy data
       setAvailableUnits([
@@ -273,6 +333,19 @@ const InternalForm = () => {
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+      
       <div className="bg-white w-full max-w-3xl p-8 rounded-lg shadow-lg">
         <h2 className="text-center text-2xl font-semibold text-gray-700 mb-8 border-b pb-4">
           Purchase Indent Form
@@ -522,8 +595,8 @@ const InternalForm = () => {
           <div className="bg-white shadow-lg mt-8 p-5 rounded-lg">
             <h3 className="font-bold text-lg text-gray-800 mb-2">Approval</h3>
             <select
-              name="managerCode"
-              value={formData.managerCode}
+              name="managerId"
+              value={formData.managerId}
               onChange={handleInputChange}
               className="w-full bg-gray-100 p-3 rounded-md border border-gray-200"
               required
@@ -596,9 +669,14 @@ const InternalForm = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-indigo-500 text-white py-2 rounded-md hover:bg-indigo-600 text-lg mt-8"
+            disabled={isSubmitting}
+            className={`w-full ${
+              isSubmitting 
+                ? 'bg-indigo-300 cursor-not-allowed' 
+                : 'bg-indigo-500 hover:bg-indigo-600'
+            } text-white py-2 rounded-md text-lg mt-8`}
           >
-            Submit Request
+            {isSubmitting ? 'Submitting...' : 'Submit Request'}
           </button>
         </form>
       </div>
