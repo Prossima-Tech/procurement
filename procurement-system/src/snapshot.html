@@ -1,0 +1,138 @@
+import React, { useState } from 'react';
+
+const PurchaseIndentForm = () => {
+  const [isPopupVisible, setPopupVisible] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+
+  const showPopup = () => {
+    setPopupVisible(true);
+  };
+
+  const hidePopup = () => {
+    setPopupVisible(false);
+  };
+
+  const incrementQuantity = () => {
+    setQuantity(quantity + 1);
+  };
+
+  const decrementQuantity = () => {
+    if (quantity > 1) {
+      setQuantity(quantity - 1);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center bg-gray-50 min-h-screen">
+      {/* Main Container */}
+      <div className="bg-white shadow-lg rounded-lg w-11/12 md:w-3/4 lg:w-1/2 mt-10 p-4">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-center py-4 rounded-t-lg">
+          <h2 className="text-xl font-bold">Purchase Indent Form</h2>
+        </div>
+
+        {/* Available Items Section */}
+        <div className="mt-6">
+          <h3 className="font-bold text-lg text-gray-800 mb-2">Available Items</h3>
+          {/* Search Bar */}
+          <div className="flex items-center bg-gray-100 p-2 rounded-md mb-4">
+            <span className="text-gray-400 text-lg">🔍</span>
+            <input
+              type="text"
+              placeholder="Search items..."
+              className="bg-transparent outline-none ml-2 text-sm w-full"
+            />
+          </div>
+          {/* Categories Pills */}
+          <div className="flex space-x-2 mb-4">
+            <button className="bg-indigo-500 text-white px-3 py-1 rounded-full text-xs">All Items</button>
+            <button className="bg-indigo-100 text-indigo-500 px-3 py-1 rounded-full text-xs border border-indigo-500">
+              Electronics
+            </button>
+            <button className="bg-indigo-100 text-indigo-500 px-3 py-1 rounded-full text-xs border border-indigo-500">
+              Stationery
+            </button>
+          </div>
+          {/* Items List */}
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <div
+              onClick={showPopup}
+              className="flex items-center justify-between bg-white p-4 rounded-md shadow-md cursor-pointer hover:bg-gray-50"
+            >
+              <div className="flex items-center space-x-4">
+                <input type="radio" name="item" className="form-radio h-5 w-5 text-indigo-500" />
+                <span className="text-gray-800 font-medium">Laptop - Dell XPS 13</span>
+              </div>
+              <span className="text-gray-500">ID: LAP001</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Selected Items Section */}
+        <div className="mt-8">
+          <h3 className="font-bold text-lg text-gray-800 mb-2">Selected Items</h3>
+          <p className="text-sm text-gray-500 mb-4">Add quantities for selected items</p>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <div className="flex items-center justify-between bg-white p-4 rounded-md shadow-md">
+              <div>
+                <h4 className="font-medium text-gray-800">Laptop - Dell XPS 13</h4>
+                <p className="text-sm text-gray-500">ID: LAP001</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button onClick={decrementQuantity} className="bg-white border border-gray-300 rounded px-2 py-1">
+                  -
+                </button>
+                <span className="w-10 text-center">{quantity}</span>
+                <button onClick={incrementQuantity} className="bg-white border border-gray-300 rounded px-2 py-1">
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+          <button className="mt-4 bg-red-100 text-red-600 px-4 py-2 rounded shadow-sm">Clear All</button>
+        </div>
+
+        {/* Submit Button */}
+        <div className="flex justify-end mt-10">
+          <button className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-full shadow-lg hover:from-indigo-700 hover:to-purple-700 transition duration-300">
+            Submit Request
+          </button>
+        </div>
+      </div>
+
+      {/* Popup for Quantity Selection */}
+      {isPopupVisible && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="bg-white p-6 rounded-lg shadow-lg relative w-80">
+            <h4 className="font-bold text-gray-800 text-center mb-4">Select Quantity</h4>
+            <div className="flex items-center justify-center mb-6">
+              <button onClick={decrementQuantity} className="bg-white border border-gray-300 rounded px-3 py-2">
+                -
+              </button>
+              <span className="w-16 text-center text-lg font-medium mx-4">{quantity}</span>
+              <button onClick={incrementQuantity} className="bg-white border border-gray-300 rounded px-3 py-2">
+                +
+              </button>
+            </div>
+            <div className="flex justify-between">
+              <button
+                onClick={hidePopup}
+                className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200 flex items-center"
+              >
+                <span className="mr-2">✖</span>Cancel
+              </button>
+              <button
+                onClick={hidePopup}
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-2 rounded-lg shadow-md hover:from-indigo-700 hover:to-purple-700 transition duration-200"
+              >
+                Add to List
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default PurchaseIndentForm;
