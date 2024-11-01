@@ -7,11 +7,11 @@ const ExistingItemSchema = new Schema({
         type: String,
         required: [true, 'Item name is required']
     },
-    // quantity: {
-    //     type: Number,
-    //     required: [true, 'Quantity is required'],
-    //     min: [1, 'Quantity must be at least 1']
-    // },
+    quantity: {
+        type: Number,
+        required: [true, 'Quantity is required'],
+        min: [1, 'Quantity must be at least 1']
+    },
     // specifications: {
     //     size: String,
     //     material: String,
@@ -35,11 +35,11 @@ const NewItemSchema = new Schema({
     //     type: String,
     //     required: [true, 'Description is required']
     // },
-    // quantity: {
-    //     type: Number,
-    //     required: [true, 'Quantity is required'],
-    //     min: [1, 'Quantity must be at least 1']
-    // },
+    quantity: {
+        type: Number,
+        required: [true, 'Quantity is required'],
+        min: [1, 'Quantity must be at least 1']
+    },
     // estimatedUnitPrice: {
     //     type: Number,
     //     required: [true, 'Estimated unit price is required'],
