@@ -273,13 +273,8 @@ exports.updatePurchaseOrder = async (req, res) => {
   try {
     const {
       vendorId,
-      vendorCode,
-      vendorName,
-      vendorAddress,
-      vendorGst,
-      projectCode,
+      projectId,
       unitId,
-      unitName,
       poDate,
       validUpto,
       status,
@@ -296,12 +291,6 @@ exports.updatePurchaseOrder = async (req, res) => {
       poNarration
     } = req.body;
 
-    // Validate project
-    const project = await Project.findOne({ projectCode });
-    if (!project) {
-      return res.status(400).json({ success: false, message: 'Project not found' });
-    }
-
     // Process items
     const processedItems = await Promise.all(items.map(async (item) => {
       const part = await PartCode.findOne({ PartCodeNumber: item.partCode });
@@ -317,19 +306,28 @@ exports.updatePurchaseOrder = async (req, res) => {
     }));
 
     const updateData = {
-      vendorId: mongoose.Types.ObjectId(vendorId),
-      vendorCode,
-      vendorName,
-      vendorAddress,
-      vendorGst,
-      projectId: project._id,
-      unitId: mongoose.Types.ObjectId(unitId),
-      unitName,
+      vendorId,
+      projectId,
+      unitId,
       poDate,
       validUpto,
       status,
-      invoiceTo,
-      dispatchTo,
+      invoiceTo: {
+        name: invoiceTo.name,
+        branchName: invoiceTo.branchName,
+        address: invoiceTo.address,
+        city: invoiceTo.city,
+        state: invoiceTo.state,
+        pin: invoiceTo.pin
+      },
+      dispatchTo: {
+        name: dispatchTo.name,
+        branchName: dispatchTo.branchName,
+        address: dispatchTo.address,
+        city: dispatchTo.city,
+        state: dispatchTo.state,
+        pin: dispatchTo.pin
+      },
       items: processedItems,
       deliveryDate,
       supplierRef,
@@ -338,13 +336,11 @@ exports.updatePurchaseOrder = async (req, res) => {
       destination,
       paymentTerms,
       deliveryTerms,
-      poNarration,
-      updatedBy: req.user._id,
-      updatedAt: new Date()
+      poNarration
     };
 
     // Calculate totals
-    const totals = calculateTotals(processedItems);
+    const totals = calculateTotals(updateData.items);
     updateData.subTotal = totals.subTotal;
     updateData.tax = totals.tax;
     updateData.total = totals.total;
@@ -352,7 +348,7 @@ exports.updatePurchaseOrder = async (req, res) => {
     const updatedPO = await PurchaseOrder.findByIdAndUpdate(
       req.params.id,
       updateData,
-      { new: true }
+      { new: true, runValidators: true }
     ).populate('items.partCode');
 
     if (!updatedPO) {

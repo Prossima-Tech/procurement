@@ -25,6 +25,26 @@ const InternalForm = () => {
     { id: 'MON001', name: 'Monitor - 24 inch' },
   ];
 
+  const availableManagers = [
+    { code: 'MGR001', name: 'John Smith' },
+    { code: 'MGR002', name: 'Sarah Johnson' },
+    { code: 'MGR003', name: 'Mike Wilson' },
+  ];
+
+  const availableUnits = [
+    'IT Department',
+    'Human Resources',
+    'Finance',
+    'Operations',
+  ];
+
+  const availableProjects = [
+    'Project Alpha',
+    'Project Beta',
+    'Project Gamma',
+    'Project Delta',
+  ];
+
   // Form handlers
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -69,10 +89,20 @@ const InternalForm = () => {
 
   const decrementQuantity = (index) => {
     setSelectedItems((prevItems) =>
-      prevItems.map((item, i) =>
-        i === index && item.quantity > 1 ? { ...item, quantity: item.quantity - 1 } : item
-      )
+      prevItems.map((item, i) => {
+        if (i === index) {
+          if (item.quantity <= 1) {
+            return null; // This item will be filtered out
+          }
+          return { ...item, quantity: item.quantity - 1 };
+        }
+        return item;
+      }).filter(Boolean) // Remove null items
     );
+  };
+
+  const removeItem = (index) => {
+    setSelectedItems(prevItems => prevItems.filter((_, i) => i !== index));
   };
 
   const handleSubmit = (e) => {
@@ -132,28 +162,56 @@ const InternalForm = () => {
           {/* Item Selection */}
           <div className="mb-6">
             <label className="block text-md font-medium text-gray-700 mb-2">Item Selection</label>
-            <div className="bg-gray-100 p-4 rounded-md">
-              <input
-                type="text"
-                placeholder="🔍 Search Items"
-                value={itemInput}
-                onChange={(e) => setItemInput(e.target.value)}
-                className="w-full p-2 mb-2 rounded-md border border-gray-300"
-              />
+            <div className="bg-white shadow-md p-5 rounded-lg">
+              <h3 className="font-bold text-lg text-gray-800 mb-4">Available Items</h3>
+
+              {/* Search Bar */}
+              <div className="flex items-center bg-gray-100 p-3 rounded-md mb-4">
+                <span className="text-gray-500">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search items..."
+                  className="bg-transparent outline-none ml-3 text-sm w-full"
+                  value={itemInput}
+                  onChange={(e) => setItemInput(e.target.value)}
+                />
+              </div>
+
+              {/* Filter Buttons */}
+              <div className="flex space-x-2 mb-4">
+                <button type="button" className="bg-indigo-500 text-white px-4 py-1 rounded-full">All Items</button>
+                <button type="button" className="bg-indigo-100 text-indigo-600 px-4 py-1 rounded-full border border-indigo-500">Electronics</button>
+                <button type="button" className="bg-indigo-100 text-indigo-600 px-4 py-1 rounded-full border border-indigo-500">Stationery</button>
+              </div>
+
+              {/* Available Items List with Radio Buttons */}
               <div className="space-y-2">
                 {availableItems
                   .filter((item) => item.name.toLowerCase().includes(itemInput.toLowerCase()))
                   .map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center bg-gray-100 p-4 rounded-md border border-gray-200 cursor-pointer"
-                      onClick={() => handleItemSelect(item)}
+                      className={`flex items-center bg-gray-100 p-4 rounded-md border ${
+                        selectedItem?.id === item.id ? 'border-indigo-500' : 'border-gray-200'
+                      }`}
                     >
-                      <p className="text-gray-800">{item.name}</p>
+                      <input
+                        type="radio"
+                        id={item.id}
+                        name="itemSelection"
+                        checked={selectedItem?.id === item.id}
+                        onChange={() => handleItemSelect(item)}
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-full"
+                      />
+                      <label htmlFor={item.id} className="ml-3 flex flex-row justify-between flex-grow cursor-pointer">
+                        <p className="text-gray-800">{item.name}</p>
+                        <p className="text-gray-500 text-sm ml-auto">ID: {item.id}</p>
+                      </label>
                     </div>
                   ))}
               </div>
 
+              {/* Keep existing custom item section */}
               <input
                 type="text"
                 placeholder="New Item Description"
@@ -169,7 +227,7 @@ const InternalForm = () => {
                 Add Custom Item
               </button>
 
-              {/* Quantity Popup */}
+              {/* Keep existing quantity popup */}
               {showQuantityPopup && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <div className="bg-white p-6 rounded-lg shadow-xl w-96">
@@ -230,12 +288,68 @@ const InternalForm = () => {
                     >
                       +
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(index)}
+                      className="ml-4 bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200"
+                    >
+                      ✕
+                    </button>
                   </div>
                 </div>
               ))
             ) : (
               <p className="text-center text-gray-500">No items selected</p>
             )}
+          </div>
+
+          {/* Approval Section */}
+          <div className="bg-white shadow-lg mt-8 p-5 rounded-lg">
+            <h3 className="font-bold text-lg text-gray-800 mb-2">Approval</h3>
+            <select
+              name="managerCode"
+              value={formData.managerCode}
+              onChange={handleInputChange}
+              className="w-full bg-gray-100 p-3 rounded-md border border-gray-200"
+              required
+            >
+              <option value="" disabled>Select Manager ▼</option>
+              {availableManagers.map(manager => (
+                <option key={manager.code} value={manager.code}>
+                  {manager.name} ({manager.code})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Unit and Project Selection */}
+          <div className="bg-white shadow-lg mt-8 p-5 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <select
+                name="unit"
+                value={formData.unit}
+                onChange={handleInputChange}
+                className="bg-gray-100 p-3 rounded-md border border-gray-200"
+                required
+              >
+                <option value="" disabled>Select Unit ▼</option>
+                {availableUnits.map(unit => (
+                  <option key={unit} value={unit}>{unit}</option>
+                ))}
+              </select>
+              <select
+                name="project"
+                value={formData.project}
+                onChange={handleInputChange}
+                className="bg-gray-100 p-3 rounded-md border border-gray-200"
+                required
+              >
+                <option value="" disabled>Select Project ▼</option>
+                {availableProjects.map(project => (
+                  <option key={project} value={project}>{project}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Submit Button */}
