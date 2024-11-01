@@ -11,55 +11,55 @@ import ExternalForm from './components/orders/ExternalForm';
 import InternalForm from './components/orders/InternalForm';
 
 import { useEffect } from 'react';
-import { useAuth } from './hooks/useAuth'; 
+import { useAuth } from './hooks/useAuth';
 
 function App() {
   return (
     <Router>
-        <Routes>
-          <Route path="/external-form" element={<ExternalForm />} />
-          <Route path="/internal-form" element={<InternalForm />} />
+      <Routes>
+        <Route path="/external-form" element={<ExternalForm />} />
+        <Route path="/internal-form" element={<InternalForm />} />
         <Route
           path="/*"
           element={
             <AuthProvider>
               <ThemeProvider>
-              <TokenExpirationChecker>
-                <Routes>
-                  <Route path="login" element={<LoginPage />} />
-                  <Route path="register" element={<RegisterPage />} />
-                  <Route path="unauthorized" element={<UnauthorizedPage />} />
-                  <Route
-                    path="/"
-                    element={
-                      <ProtectedRoute>
-                        <Layout />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="admin/*"
-                    element={
-                      <ProtectedRoute allowedRoles={['admin']}>
-                        <Layout />
-                      </ProtectedRoute>
-                    }
+                <TokenExpirationChecker>
+                  <Routes>
+                    <Route path="login" element={<LoginPage />} />
+                    <Route path="register" element={<RegisterPage />} />
+                    <Route path="unauthorized" element={<UnauthorizedPage />} />
+                    <Route
+                      path="/"
+                      element={
+                        <ProtectedRoute>
+                          <Layout />
+                        </ProtectedRoute>
+                      }
                     />
-                  <Route
-                    path="manager/*"
-                    element={
-                      <ProtectedRoute allowedRoles={['manager', 'admin']}>
-                        <Layout />
-                      </ProtectedRoute>
-                    }
+                    <Route
+                      path="admin/*"
+                      element={
+                        <ProtectedRoute allowedRoles={['admin']}>
+                          <Layout />
+                        </ProtectedRoute>
+                      }
                     />
-                </Routes>
-                  </TokenExpirationChecker>
+                    <Route
+                      path="manager/*"
+                      element={
+                        <ProtectedRoute allowedRoles={['manager', 'admin']}>
+                          <Layout />
+                        </ProtectedRoute>
+                      }
+                    />
+                  </Routes>
+                </TokenExpirationChecker>
               </ThemeProvider>
             </AuthProvider>
           }
         />
-        </Routes>
+      </Routes>
     </Router>
   );
 }

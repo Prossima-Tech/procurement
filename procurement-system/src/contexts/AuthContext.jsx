@@ -6,16 +6,23 @@ import { baseURL } from '../utils/endpoint';
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem('user');
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
-    }
-  }, [user]);
+    const initializeAuth = () => {
+      const storedUser = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      
+      if (storedUser && token) {
+        setUser(JSON.parse(storedUser));
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+      setLoading(false);
+    };
+
+    initializeAuth();
+  }, []);
 
   const login = async (email, password) => {
     try {
@@ -75,11 +82,11 @@ export const AuthProvider = ({ children }) => {
 
   const value = useMemo(() => ({
     user,
-    loading: user === null,
+    loading,
     login,
     register,
     logout
-  }), [user]);
+  }), [user, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
