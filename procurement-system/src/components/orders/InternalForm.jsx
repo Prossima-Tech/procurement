@@ -89,12 +89,6 @@ const InternalForm = () => {
     fetchItems();
   }, []);
 
-  const availableManagers = [
-    { code: 'MGR001', name: 'John Smith' },
-    { code: 'MGR002', name: 'Sarah Johnson' },
-    { code: 'MGR003', name: 'Mike Wilson' },
-  ];
-
   const [availableUnits, setAvailableUnits] = useState([]);
   const [isLoadingUnits, setIsLoadingUnits] = useState(false);
   const [unitError, setUnitError] = useState(null);
@@ -108,11 +102,54 @@ const InternalForm = () => {
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [projectError, setProjectError] = useState(null);
 
+  // Add these state variables at the top with your other states
+  const [employees, setEmployees] = useState([]);
+  const [managers, setManagers] = useState([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+
+  // Add this function to fetch users
+  const fetchUsers = async () => {
+    setIsLoadingUsers(true);
+    try {
+      const response = await axios.get(`${baseURL}/users`);
+      
+      // Filter users based on their roles
+      const employeesList = response.data.filter(user => user.role === 'employee');
+      const managersList = response.data.filter(user => user.role === 'manager');
+      
+      setEmployees(employeesList);
+      setManagers(managersList);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to load users');
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  // Add this useEffect to fetch users when component mounts
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
   // Form handlers
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    if (name === 'unit') {
+    if (name === 'employeeCode') {
+      const selectedEmployee = employees.find(emp => emp._id === value);
+      setFormData(prev => ({
+        ...prev,
+        employeeCode: value,
+        employeeId: selectedEmployee?._id || '',
+        employeeEmail: selectedEmployee?.email || ''
+      }));
+    } else if (name === 'managerId') {
+      setFormData(prev => ({
+        ...prev,
+        managerId: value
+      }));
+    } else if (name === 'unit') {
       const selectedUnit = availableUnits.find(unit => unit.code === value);
       setFormData(prev => ({
         ...prev,
@@ -362,20 +399,24 @@ const InternalForm = () => {
                 onChange={handleInputChange}
                 className="bg-white p-2 rounded-md border border-gray-300"
                 required
+                disabled={isLoadingUsers}
               >
-                <option value="" disabled>Employee Code ▼</option>
-                <option value="EMP001">EMP001</option>
-                <option value="EMP002">EMP002</option>
-                <option value="EMP003">EMP003</option>
+                <option value="">
+                  {isLoadingUsers ? 'Loading Employees...' : 'Select Employee ▼'}
+                </option>
+                {employees.map(employee => (
+                  <option key={employee._id} value={employee._id}>
+                    {employee.username} 
+                  </option>
+                ))}
               </select>
               <input
                 type="email"
                 name="employeeEmail"
                 value={formData.employeeEmail}
-                onChange={handleInputChange}
-                placeholder="Employee Email"
                 className="bg-gray-100 p-2 rounded-md border border-gray-300"
-                required
+                placeholder="Employee Email"
+                readOnly
               />
             </div>
           </div>
@@ -600,11 +641,14 @@ const InternalForm = () => {
               onChange={handleInputChange}
               className="w-full bg-gray-100 p-3 rounded-md border border-gray-200"
               required
+              disabled={isLoadingUsers}
             >
-              <option value="" disabled>Select Manager ▼</option>
-              {availableManagers.map(manager => (
-                <option key={manager.code} value={manager.code}>
-                  {manager.name} ({manager.code})
+              <option value="">
+                {isLoadingUsers ? 'Loading Managers...' : 'Select Manager ▼'}
+              </option>
+              {managers.map(manager => (
+                <option key={manager._id} value={manager._id}>
+                  {manager.username} - {manager.email}
                 </option>
               ))}
             </select>
