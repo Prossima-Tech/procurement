@@ -3,73 +3,64 @@ import axios from 'axios';
 import { baseURL } from '../../utils/endpoint';
 
 const InternalForm = () => {
-  // Form state
+  // Form Data State
   const [formData, setFormData] = useState({
     employeeCode: '',
     employeeId: '',
     employeeEmail: '',
     managerCode: '',
+    managerId: '',
     unit: '',
-    unitId: '',
     project: '',
-    projectId: '',
   });
 
-  // Item selection state
-  const [itemInput, setItemInput] = useState('');
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [customItem, setCustomItem] = useState('');
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [quantityInput, setQuantityInput] = useState(1);
-  const [showQuantityPopup, setShowQuantityPopup] = useState(false);
+  // Users State
+  const [employees, setEmployees] = useState([]);
+  const [managers, setManagers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [userError, setUserError] = useState(null);
 
-  // Replace the static availableItems with state
+  // Items State
   const [availableItems, setAvailableItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [itemInput, setItemInput] = useState('');
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Simplified new item state
+  // New Item Input State
   const [newItemInput, setNewItemInput] = useState({
     name: '',
     quantity: 1
   });
 
-  // Handle new item input change
-  const handleNewItemInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewItemInput(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  // Fetch Users
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoadingUsers(true);
+        const response = await axios.get(`${baseURL}/users`);
+        const allUsers = response.data;
+        
+        setEmployees(allUsers.filter(user => user.role === 'employee'));
+        setManagers(allUsers.filter(user => user.role === 'manager'));
+        setUserError(null);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        setUserError('Failed to load users');
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
 
-  // Handle adding new custom item
-  const handleAddNewItem = () => {
-    if (newItemInput.name.trim()) {
-      setSelectedItems(prev => [
-        ...prev,
-        {
-          id: `CUSTOM-${Date.now()}`,
-          ItemName: newItemInput.name,
-          quantity: parseInt(newItemInput.quantity),
-          isCustom: true
-        }
-      ]);
-      // Reset input after adding
-      setNewItemInput({
-        name: '',
-        quantity: 1
-      });
-    }
-  };
+    fetchUsers();
+  }, []);
 
-  // Fetch items from database
+  // Fetch Items
   useEffect(() => {
     const fetchItems = async () => {
       try {
         setLoading(true);
         const response = await axios.get(`${baseURL}/items`);
-        console.log("response",response);
         setAvailableItems(response.data.data);
         setError(null);
       } catch (err) {
@@ -83,520 +74,275 @@ const InternalForm = () => {
     fetchItems();
   }, []);
 
-  const availableManagers = [
-    { code: 'MGR001', name: 'John Smith' },
-    { code: 'MGR002', name: 'Sarah Johnson' },
-    { code: 'MGR003', name: 'Mike Wilson' },
-  ];
+  // Handlers
+  const handleEmployeeSelect = (e) => {
+    const selectedEmployee = employees.find(emp => emp._id === e.target.value);
+    setFormData(prev => ({
+      ...prev,
+      employeeCode: selectedEmployee?.username || '',
+      employeeId: selectedEmployee?._id || '',
+      employeeEmail: selectedEmployee?.email || ''
+    }));
+  };
 
-  const [availableUnits, setAvailableUnits] = useState([]);
-  const [isLoadingUnits, setIsLoadingUnits] = useState(false);
-  const [unitError, setUnitError] = useState(null);
+  const handleManagerSelect = (e) => {
+    const selectedManager = managers.find(mgr => mgr._id === e.target.value);
+    setFormData(prev => ({
+      ...prev,
+      managerCode: selectedManager?.username || '',
+      managerId: selectedManager?._id || ''
+    }));
+  };
 
-  const [availableProjects, setAvailableProjects] = useState([
-    { id: 'PRJ001', name: 'Project Alpha' },
-    { id: 'PRJ002', name: 'Project Beta' },
-    { id: 'PRJ003', name: 'Project Gamma' },
-    { id: 'PRJ004', name: 'Project Delta' }
-  ]);
-  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
-  const [projectError, setProjectError] = useState(null);
-
-  // Form handlers
-  const handleInputChange = (e) => {
+  const handleNewItemInputChange = (e) => {
     const { name, value } = e.target;
-    
-    if (name === 'unit') {
-      const selectedUnit = availableUnits.find(unit => unit.code === value);
-      setFormData(prev => ({
-        ...prev,
-        unit: value,
-        unitId: selectedUnit?._id || ''
-      }));
-    } 
-    else if (name === 'project') {
-      const selectedProject = availableProjects.find(project => project.id === value);
-      setFormData(prev => ({
-        ...prev,
-        project: value,
-        projectId: selectedProject?._id || ''
-      }));
-    }
-    else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    setNewItemInput(prev => ({
+      ...prev,
+      [name]: name === 'quantity' ? Math.max(1, parseInt(value) || 1) : value
+    }));
   };
 
-  // Handle item selection and show quantity popup
-  const handleItemSelect = (item) => {
-    setSelectedItem(item);
-    setQuantityInput(1);
-    setShowQuantityPopup(true);
-  };
-
-  // Save selected item with quantity
-  const handleSaveQuantity = () => {
-    if (selectedItem && quantityInput > 0) {
-      setSelectedItems((prev) => [
+  const handleAddNewItem = () => {
+    if (newItemInput.name.trim()) {
+      setSelectedItems(prev => [
         ...prev,
         {
-          _id: selectedItem._id,
-          ItemCode: selectedItem.ItemCode,
-          ItemName: selectedItem.ItemName,
-          type: selectedItem.type,
-          ItemCategory: selectedItem.ItemCategory,
-          quantity: quantityInput
+          id: `CUSTOM-${Date.now()}`,
+          ItemName: newItemInput.name,
+          quantity: parseInt(newItemInput.quantity),
+          isCustom: true
         }
       ]);
-      setShowQuantityPopup(false);
-      setSelectedItem(null);
-      setQuantityInput(1);
+      setNewItemInput({ name: '', quantity: 1 });
     }
   };
 
-  const handleAddCustomItem = () => {
-    if (customItem.trim()) {
-      setSelectedItems((prev) => [
-        ...prev,
-        { id: `CUSTOM-${Date.now()}`, name: customItem, quantity: 1, isCustom: true },
-      ]);
-      setCustomItem('');
-    }
+  const handleItemSelect = (item) => {
+    setSelectedItems(prev => [
+      ...prev,
+      { ...item, quantity: 1 }
+    ]);
   };
 
   const incrementQuantity = (index) => {
-    setSelectedItems((prevItems) =>
-      prevItems.map((item, i) => (i === index ? { ...item, quantity: item.quantity + 1 } : item))
-    );
+    setSelectedItems(prev => prev.map((item, i) => 
+      i === index ? { ...item, quantity: item.quantity + 1 } : item
+    ));
   };
 
   const decrementQuantity = (index) => {
-    setSelectedItems((prevItems) =>
-      prevItems.map((item, i) => {
-        if (i === index) {
-          if (item.quantity <= 1) {
-            return null; // This item will be filtered out
-          }
-          return { ...item, quantity: item.quantity - 1 };
-        }
-        return item;
-      }).filter(Boolean) // Remove null items
-    );
+    setSelectedItems(prev => prev.map((item, i) => 
+      i === index ? { ...item, quantity: Math.max(1, item.quantity - 1) } : item
+    ));
   };
 
   const removeItem = (index) => {
-    setSelectedItems(prevItems => prevItems.filter((_, i) => i !== index));
+    setSelectedItems(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const submitData = {
+    // Add your submit logic here
+    console.log('Form Data:', {
       ...formData,
-      items: selectedItems,
-    };
-    console.log('Form Data:', submitData);
-    alert('Form submitted successfully!');
-    setFormData({
-      employeeCode: '',
-      employeeEmail: '',
-      managerCode: '',
-      unit: '',
-      project: '',
+      items: selectedItems
     });
-    setSelectedItems([]);
   };
-
-  const fetchProjects = async () => {
-    setIsLoadingProjects(true);
-    setProjectError(null);
-    try {
-      const response = await axios.get(`${baseURL}/projects/`);
-      // Transform the API data to match our required format
-      const transformedProjects = response.data.map(project => ({
-        id: project.projectCode,
-        name: `${project.projectName} (${project.projectLocation || 'N/A'})`,
-        status: project.projectStatus,
-        _id: project._id
-      }));
-      setAvailableProjects(transformedProjects);
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-      setProjectError('Failed to load projects. Please try again later.');
-      // Fallback dummy data
-      setAvailableProjects([
-        { id: '001', name: 'Lucknow Office (LKO)', status: 'Active' },
-        { id: '002D', name: 'Delhi', status: 'Active' }
-      ]);
-    } finally {
-      setIsLoadingProjects(false);
-    }
-  };
-
-  const fetchUnits = async () => {
-    setIsLoadingUnits(true);
-    setUnitError(null);
-    try {
-      const response = await axios.get(`${baseURL}/units/`);
-      // Transform the API data to match our required format
-      const transformedUnits = response.data.map(unit => ({
-        id: unit._id,
-        code: unit.unitCode,
-        name: unit.unitName,
-        status: unit.unitStatus
-      }));
-      setAvailableUnits(transformedUnits);
-    } catch (error) {
-      console.error('Error fetching units:', error);
-      setUnitError('Failed to load units. Please try again later.');
-      // Fallback dummy data
-      setAvailableUnits([
-        { id: '1', code: 'IT', name: 'IT Department', status: 'Active' },
-        { id: '2', code: 'HR', name: 'Human Resources', status: 'Active' },
-        { id: '3', code: 'FIN', name: 'Finance', status: 'Active' }
-      ]);
-    } finally {
-      setIsLoadingUnits(false);
-    }
-  };
-
-  useEffect(() => {
-    console.log(formData);
-  }, [formData]);
-
-  useEffect(() => {
-    fetchUnits();
-    fetchProjects();
-  }, []);
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="bg-white w-full max-w-3xl p-8 rounded-lg shadow-lg">
-        <h2 className="text-center text-2xl font-semibold text-gray-700 mb-8 border-b pb-4">
-          Purchase Indent Form
-        </h2>
+    <div className="max-w-3xl mx-auto p-4 bg-gray-50 min-h-screen">
+      <div className="bg-white rounded-lg shadow p-6">
+        <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
+          Request Materials & Services
+        </h1>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Employee Details */}
-          <div className="mb-6">
-            <label className="block text-md font-medium text-gray-700 mb-2">Employee Details</label>
-            <div className="grid grid-cols-2 gap-4">
-              <select
-                name="employeeCode"
-                value={formData.employeeCode}
-                onChange={handleInputChange}
-                className="bg-white p-2 rounded-md border border-gray-300"
-                required
-              >
-                <option value="" disabled>Employee Code ▼</option>
-                <option value="EMP001">EMP001</option>
-                <option value="EMP002">EMP002</option>
-                <option value="EMP003">EMP003</option>
-              </select>
-              <input
-                type="email"
-                name="employeeEmail"
-                value={formData.employeeEmail}
-                onChange={handleInputChange}
-                placeholder="Employee Email"
-                className="bg-gray-100 p-2 rounded-md border border-gray-300"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Item Selection */}
-          <div className="mb-6">
-            <label className="block text-md font-medium text-gray-700 mb-2">Item Selection</label>
-            <div className="bg-white shadow-md p-5 rounded-lg">
-              <h3 className="font-bold text-lg text-gray-800 mb-4">Available Items</h3>
-
-              {/* New Item Input Section */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium text-gray-700 mb-3">Add Custom Item</h4>
-                <div className="flex gap-3">
-                  <div className="flex-grow">
-                    <input
-                      type="text"
-                      name="name"
-                      placeholder="Enter item name"
-                      value={newItemInput.name}
-                      onChange={handleNewItemInputChange}
-                      className="w-full p-2 border rounded-md"
-                    />
-                  </div>
-                  <div className="w-24">
-                    <input
-                      type="number"
-                      name="quantity"
-                      min="1"
-                      value={newItemInput.quantity}
-                      onChange={handleNewItemInputChange}
-                      className="w-full p-2 border rounded-md"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAddNewItem}
-                    className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h2 className="text-lg font-semibold mb-4">1. Your Details</h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium mb-1">Select Employee</label>
+                {loadingUsers ? (
+                  <div className="p-2 text-gray-500">Loading employees...</div>
+                ) : userError ? (
+                  <div className="p-2 text-red-500">{userError}</div>
+                ) : (
+                  <select
+                    value={formData.employeeId}
+                    onChange={handleEmployeeSelect}
+                    className="w-full p-2 border rounded-md bg-white"
+                    required
                   >
-                    Add
-                  </button>
-                </div>
+                    <option value="">Select your name</option>
+                    {employees.map(employee => (
+                      <option key={employee._id} value={employee._id}>
+                        {employee.username}  
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
-
-              {/* Existing Items Search */}
-              <div className="flex items-center bg-gray-100 p-3 rounded-md mb-4">
-                <span className="text-gray-500">🔍</span>
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
                 <input
-                  type="text"
-                  placeholder="Search existing items..."
-                  className="bg-transparent outline-none ml-3 text-sm w-full"
-                  value={itemInput}
-                  onChange={(e) => setItemInput(e.target.value)}
+                  type="email"
+                  value={formData.employeeEmail}
+                  className="w-full p-2 border rounded-md bg-gray-100"
+                  disabled
+                  readOnly
                 />
               </div>
-
-              {/* Loading and Error States */}
-              {loading && (
-                <div className="text-center py-4">Loading items...</div>
-              )}
-
-              {error && (
-                <div className="text-red-500 text-center py-4">{error}</div>
-              )}
-
-              {/* Available Items List with Radio Buttons */}
-              <div className="space-y-2">
-                {availableItems
-                  .filter((item) => 
-                    item.ItemName.toLowerCase().includes(itemInput.toLowerCase()) ||
-                    item.ItemCode.toLowerCase().includes(itemInput.toLowerCase())
-                  )
-                  .map((item) => (
-                    <div
-                      key={item._id}
-                      className={`flex items-center bg-gray-100 p-4 rounded-md border ${
-                        selectedItem?._id === item._id ? 'border-indigo-500' : 'border-gray-200'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        id={item._id}
-                        name="itemSelection"
-                        checked={selectedItem?._id === item._id}
-                        onChange={() => handleItemSelect(item)}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-full"
-                      />
-                      <label htmlFor={item._id} className="ml-3 flex flex-row justify-between flex-grow cursor-pointer">
-                        <div>
-                          <p className="text-gray-800 font-medium">{item.ItemName}</p>
-                          <p className="text-gray-500 text-sm">Type: {item.type}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-gray-500 text-sm">Code: {item.ItemCode}</p>
-                          {item.ItemCategory && (
-                            <p className="text-gray-500 text-sm">Category: {item.ItemCategory}</p>
-                          )}
-                        </div>
-                      </label>
-                    </div>
-                  ))}
-              </div>
-
-              {/* No Results Message */}
-              {!loading && !error && availableItems.filter(item => 
-                item.ItemName.toLowerCase().includes(itemInput.toLowerCase()) ||
-                item.ItemCode.toLowerCase().includes(itemInput.toLowerCase())
-              ).length === 0 && (
-                <div className="text-center py-4 text-gray-500">
-                  No items found matching your search
-                </div>
-              )}
-
-              {/* Keep existing custom item section
-              <input
-                type="text"
-                placeholder="New Item Description"
-                value={customItem}
-                onChange={(e) => setCustomItem(e.target.value)}
-                className="w-full p-2 mt-4 rounded-md border border-gray-300"
-              />
-              <button
-                type="button"
-                onClick={handleAddCustomItem}
-                className="w-full mt-2 bg-indigo-500 text-white p-2 rounded-md hover:bg-indigo-600"
-              >
-                Add Custom Item
-              </button> */}
-
-              {/* Keep existing quantity popup */}
-              {showQuantityPopup && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-white p-6 rounded-lg shadow-xl w-96">
-                    <h3 className="text-lg font-semibold mb-4">Select Quantity</h3>
-                    <p className="text-gray-600 mb-4">{selectedItem?.name}</p>
-                    <input
-                      type="number"
-                      min="1"
-                      value={quantityInput}
-                      onChange={(e) => setQuantityInput(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-full p-2 border rounded-md mb-4"
-                    />
-                    <div className="flex justify-end space-x-3">
-                      <button
-                        type="button"
-                        onClick={() => setShowQuantityPopup(false)}
-                        className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleSaveQuantity}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                      >
-                        Save
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Selected Items */}
-          <div className="mt-6">
-            <h4 className="font-medium text-gray-700 mb-3">Selected Items</h4>
-            {selectedItems.length > 0 ? (
-              <div className="space-y-3">
-                {selectedItems.map((item, index) => (
-                  <div 
-                    key={item.id || item._id}
-                    className="flex justify-between items-center bg-gray-50 p-3 rounded-lg"
-                  >
-                    <div>
-                      <p className="font-medium">
-                        {item.ItemName}
-                        {item.isCustom && <span className="ml-2 text-xs text-gray-500">(Custom)</span>}
-                      </p>
-                      {!item.isCustom && item.ItemCode && (
-                        <p className="text-sm text-gray-500">Code: {item.ItemCode}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => decrementQuantity(index)}
-                        className="px-2 py-1 border rounded"
-                      >
-                        -
-                      </button>
-                      <span>{item.quantity}</span>
-                      <button
-                        type="button"
-                        onClick={() => incrementQuantity(index)}
-                        className="px-2 py-1 border rounded"
-                      >
-                        +
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(index)}
-                        className="ml-2 text-red-500 hover:text-red-700"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                ))}
+          {/* Items Section */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h2 className="text-lg font-semibold mb-4">2. What do you need?</h2>
+            
+            {/* Add New Item */}
+            <div className="mb-4 bg-white p-4 rounded-md shadow-sm">
+              <h3 className="text-md font-medium mb-2">Request New Item</h3>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="What item do you need?"
+                  value={newItemInput.name}
+                  onChange={handleNewItemInputChange}
+                  className="flex-grow p-2 border rounded-md"
+                />
+                <input
+                  type="number"
+                  name="quantity"
+                  min="1"
+                  value={newItemInput.quantity}
+                  onChange={handleNewItemInputChange}
+                  className="w-20 p-2 border rounded-md"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddNewItem}
+                  className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                >
+                  Add
+                </button>
               </div>
-            ) : (
-              <p className="text-center text-gray-500">No items selected</p>
+            </div>
+
+            {/* Search Existing Items */}
+            <div className="mb-4">
+              <h3 className="text-md font-medium mb-2">Or select from available items:</h3>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search available items..."
+                  value={itemInput}
+                  onChange={(e) => setItemInput(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                />
+                
+                {/* Scrollable Items List */}
+                <div className="mt-2 max-h-[300px] overflow-y-auto rounded-md border border-gray-200 bg-white">
+                  {loading ? (
+                    <div className="text-center py-4">Loading items...</div>
+                  ) : error ? (
+                    <div className="text-red-500 text-center py-4">{error}</div>
+                  ) : (
+                    availableItems
+                      .filter(item => 
+                        item.ItemName.toLowerCase().includes(itemInput.toLowerCase()) ||
+                        item.ItemCode.toLowerCase().includes(itemInput.toLowerCase())
+                      )
+                      .map(item => (
+                        <button
+                          key={item._id}
+                          type="button"
+                          onClick={() => handleItemSelect(item)}
+                          className="w-full text-left p-3 hover:bg-gray-50 border-b last:border-b-0"
+                        >
+                          <div className="font-medium">{item.ItemName}</div>
+                          <div className="text-sm text-gray-500">Code: {item.ItemCode}</div>
+                        </button>
+                      ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Selected Items */}
+            {selectedItems.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-md font-medium mb-2">Your Selected Items:</h3>
+                <div className="space-y-2">
+                  {selectedItems.map((item, index) => (
+                    <div 
+                      key={item.id || item._id}
+                      className="flex items-center justify-between bg-white p-3 rounded-md shadow-sm"
+                    >
+                      <div>
+                        <div className="font-medium">{item.ItemName}</div>
+                        {!item.isCustom && <div className="text-sm text-gray-500">Code: {item.ItemCode}</div>}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => decrementQuantity(index)}
+                          className="w-8 h-8 flex items-center justify-center border rounded-full"
+                        >
+                          -
+                        </button>
+                        <span className="w-8 text-center">{item.quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => incrementQuantity(index)}
+                          className="w-8 h-8 flex items-center justify-center border rounded-full"
+                        >
+                          +
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(index)}
+                          className="ml-2 text-red-500 hover:text-red-700"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 
-          {/* Approval Section */}
-          <div className="bg-white shadow-lg mt-8 p-5 rounded-lg">
-            <h3 className="font-bold text-lg text-gray-800 mb-2">Approval</h3>
-            <select
-              name="managerCode"
-              value={formData.managerCode}
-              onChange={handleInputChange}
-              className="w-full bg-gray-100 p-3 rounded-md border border-gray-200"
-              required
-            >
-              <option value="" disabled>Select Manager ▼</option>
-              {availableManagers.map(manager => (
-                <option key={manager.code} value={manager.code}>
-                  {manager.name} ({manager.code})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Unit and Project Selection */}
-          <div className="bg-white shadow-lg mt-8 p-5 rounded-lg">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="relative">
-                <select
-                  name="unit"
-                  value={formData.unit}
-                  onChange={handleInputChange}
-                  className="bg-gray-100 p-3 rounded-md border border-gray-200 w-full"
-                  required
-                  disabled={isLoadingUnits}
-                >
-                  <option value="" disabled>
-                    {isLoadingUnits ? 'Loading Units...' : 'Select Unit ▼'}
+          {/* Manager Approval */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h2 className="text-lg font-semibold mb-4">3. Manager Approval</h2>
+            {loadingUsers ? (
+              <div className="p-2 text-gray-500">Loading managers...</div>
+            ) : userError ? (
+              <div className="p-2 text-red-500">{userError}</div>
+            ) : (
+              <select
+                value={formData.managerId}
+                onChange={handleManagerSelect}
+                className="w-full p-2 border rounded-md bg-white"
+                required
+              >
+                <option value="">Select approving manager</option>
+                {managers.map(manager => (
+                  <option key={manager._id} value={manager._id}>
+                    {manager.username} ({manager.email})
                   </option>
-                  {availableUnits.map(unit => (
-                    <option 
-                      key={unit.id} 
-                      value={unit.code}
-                    >
-                      {unit.name} ({unit.code})
-                    </option>
-                  ))}
-                </select>
-                {unitError && (
-                  <p className="text-red-500 text-sm mt-1">{unitError}</p>
-                )}
-              </div>
-              <div className="relative">
-                <select
-                  name="project"
-                  value={formData.project}
-                  onChange={handleInputChange}
-                  className="bg-gray-100 p-3 rounded-md border border-gray-200 w-full"
-                  required
-                  disabled={isLoadingProjects}
-                >
-                  <option value="" disabled>
-                    {isLoadingProjects ? 'Loading Projects...' : 'Select Project ▼'}
-                  </option>
-                  {availableProjects.map(project => (
-                    <option 
-                      key={project._id} 
-                      value={project.id}
-                    >
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
-                {projectError && (
-                  <p className="text-red-500 text-sm mt-1">{projectError}</p>
-                )}
-              </div>
-            </div>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-indigo-500 text-white py-2 rounded-md hover:bg-indigo-600 text-lg mt-8"
+            className="w-full bg-green-500 text-white py-3 rounded-lg text-lg font-medium hover:bg-green-600 transition-colors"
           >
             Submit Request
           </button>
