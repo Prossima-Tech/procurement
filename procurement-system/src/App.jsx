@@ -8,7 +8,7 @@ import RegisterPage from './components/authentication/Register';
 import UnauthorizedPage from './components/authentication/Unauthorized';
 import ExternalForm from './components/orders/ExternalForm';
 import InternalForm from './components/orders/InternalForm';
-import ManagerDashboard from './components/Manager/Managerdashboard';
+import ManagerDashboard from './components/Manager/ManagerDashboard';
 import { useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
 
