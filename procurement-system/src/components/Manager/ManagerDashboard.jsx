@@ -166,9 +166,112 @@ const IndentItemsModal = ({ visible, indent, onClose }) => {
   );
 };
 
+// Tab configuration with predefined color classes
+const tabConfig = {
+  submitted: {
+    key: 'submitted',
+    label: 'Pending Approvals',
+    icon: Clock,
+    bgColor: 'bg-indigo-50',
+    textColor: 'text-indigo-600',
+    borderColor: 'border-indigo-500',
+    badgeBg: 'bg-indigo-100',
+    badgeText: 'text-indigo-600',
+    status: 'submitted'
+  },
+  approved: {
+    key: 'approved',
+    label: 'Approved Indents',
+    icon: CheckCircle2,
+    bgColor: 'bg-green-50',
+    textColor: 'text-green-600',
+    borderColor: 'border-green-500',
+    badgeBg: 'bg-green-100',
+    badgeText: 'text-green-600',
+    status: 'manager_approved'
+  },
+  rejected: {
+    key: 'rejected',
+    label: 'Rejected Indents',
+    icon: XCircle,
+    bgColor: 'bg-red-50',
+    textColor: 'text-red-600',
+    borderColor: 'border-red-500',
+    badgeBg: 'bg-red-100',
+    badgeText: 'text-red-600',
+    status: 'manager_rejected'
+  }
+};
+
+// Updated TabButton component
+const TabButton = ({ tab, isActive, count, onClick }) => {
+  const config = tabConfig[tab];
+  const Icon = config.icon;
+  
+  return (
+    <button
+      onClick={() => onClick(tab)}
+      className={`
+        relative py-4 px-6 border-b-2 font-medium text-sm
+        transition-all duration-200 ease-in-out
+        ${isActive 
+          ? `${config.borderColor} ${config.textColor} ${config.bgColor}` 
+          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+        }
+      `}
+    >
+      <div className="flex items-center gap-2">
+        <Icon 
+          size={16} 
+          className={isActive ? config.textColor : ''} 
+        />
+        <span>{config.label}</span>
+        {count > 0 && (
+          <span 
+            className={`
+              absolute top-3 right-1
+              py-0.5 px-2.5 rounded-full text-xs font-medium
+              ${isActive 
+                ? `${config.badgeBg} ${config.badgeText}` 
+                : 'bg-gray-100 text-gray-600'
+              }
+              transition-all duration-200
+            `}
+          >
+            {count}
+          </span>
+        )}
+      </div>
+    </button>
+  );
+};
+
+// Updated StatsCard component
+const StatsCard = ({ label, value, icon: Icon, type }) => {
+  const config = tabConfig[type];
+  
+  return (
+    <div className={`
+      bg-white p-6 rounded-lg shadow-sm border border-gray-200 
+      hover:border-${type === 'submitted' ? 'indigo' : type === 'approved' ? 'green' : 'red'}-500 
+      transition-colors duration-200
+    `}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-gray-600 mb-1">{label}</p>
+          <p className={config.textColor + ' text-2xl font-semibold'}>{value}</p>
+        </div>
+        <div className={`p-3 rounded-full ${config.badgeBg}`}>
+          <Icon size={24} className={config.textColor} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ManagerDashboard = () => {
   const [indents, setIndents] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndent, setSelectedIndent] = useState(null);
   const [remarks, setRemarks] = useState('');
@@ -180,6 +283,9 @@ const ManagerDashboard = () => {
     pageSize: 10,
     total: 0
   });
+  const [activeTab, setActiveTab] = useState('submitted');
+  const [filterLoading, setFilterLoading] = useState(false);
+  const [searchText, setSearchText] = useState('');
   const { logout } = useAuth();
 
   // Create memoized debounce function
@@ -199,15 +305,17 @@ const ManagerDashboard = () => {
   }, [debouncedFetch]);
 
   // Fetch indents
-  const fetchIndents = async (page = 1, pageSize = 10) => {
+  const fetchIndents = async (status, page = 1, pageSize = 10, search = '') => {
     try {
-      setLoading(true);
+      setFilterLoading(true);
       const token = localStorage.getItem('token');
+      
       const response = await axios.get(`${baseURL}/indents`, {
         params: {
-          status: 'submitted',
+          status,
           page,
-          limit: pageSize
+          limit: pageSize,
+          search
         },
         headers: {
           Authorization: `Bearer ${token}`
@@ -228,12 +336,13 @@ const ManagerDashboard = () => {
         message.error('Failed to fetch indents');
       }
     } finally {
+      setFilterLoading(false);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchIndents();
+    fetchIndents(activeTab, pagination.current, pagination.pageSize);
   }, []);
 
   // Handle approval/rejection
@@ -280,6 +389,72 @@ const ManagerDashboard = () => {
     submitted: { color: 'gold', icon: <Clock size={14} /> },
     manager_approved: { color: 'green', icon: <CheckCircle2 size={14} /> },
     manager_rejected: { color: 'red', icon: <XCircle size={14} /> }
+  };
+
+  const getActionColumn = () => {
+    if (activeTab === 'submitted') {
+      return {
+        title: 'Actions',
+        key: 'actions',
+        render: (_, record) => (
+          <Space>
+            <Button
+              type="default"
+              icon={<Eye size={16} />}
+              onClick={() => {
+                setSelectedIndentForItems(record);
+                setItemsModalVisible(true);
+              }}
+            >
+              View Items
+            </Button>
+            <Button
+              type="primary"
+              icon={<CheckCircle2 size={16} />}
+              className="bg-green-500 hover:bg-green-600"
+              onClick={() => {
+                setSelectedIndent(record);
+                setActionType('approve');
+                setModalVisible(true);
+              }}
+              disabled={record.status !== 'submitted'}
+            >
+              Approve
+            </Button>
+            <Button
+              danger
+              icon={<XCircle size={16} />}
+              onClick={() => {
+                setSelectedIndent(record);
+                setActionType('reject');
+                setModalVisible(true);
+              }}
+              disabled={record.status !== 'submitted'}
+            >
+              Reject
+            </Button>
+          </Space>
+        ),
+      };
+    }
+    
+    // For rejected indents, only show view button
+    return {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Button
+          type="default"
+          icon={<Eye size={16} />}
+          onClick={() => {
+            setSelectedIndentForItems(record);
+            setItemsModalVisible(true);
+          }}
+        >
+          View Items
+        </Button>
+      ),
+    };
   };
 
   const columns = [
@@ -365,49 +540,7 @@ const ManagerDashboard = () => {
         </Tag>
       ),
     },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="default"
-            icon={<Eye size={16} />}
-            onClick={() => {
-              setSelectedIndentForItems(record);
-              setItemsModalVisible(true);
-            }}
-          >
-            View Items
-          </Button>
-          <Button
-            type="primary"
-            icon={<CheckCircle2 size={16} />}
-            className="bg-green-500 hover:bg-green-600"
-            onClick={() => {
-              setSelectedIndent(record);
-              setActionType('approve');
-              setModalVisible(true);
-            }}
-            disabled={record.status !== 'submitted'}
-          >
-            Approve
-          </Button>
-          <Button
-            danger
-            icon={<XCircle size={16} />}
-            onClick={() => {
-              setSelectedIndent(record);
-              setActionType('reject');
-              setModalVisible(true);
-            }}
-            disabled={record.status !== 'submitted'}
-          >
-            Reject
-          </Button>
-        </Space>
-      ),
-    },
+    getActionColumn()
   ];
 
   // Add pagination change handler
@@ -425,6 +558,20 @@ const ManagerDashboard = () => {
 
   const handleLogout = () => {
     logout();
+  };
+
+  // Create a separate tab change handler
+  const handleTabChange = async (newTab) => {
+    setLoading(true);  // Start loading immediately
+    setIndents([]); // Clear current indents
+    setActiveTab(newTab); // Update active tab
+    await fetchIndents(newTab, 1, pagination.pageSize); // Fetch new data
+  };
+
+  // Add search handler
+  const handleSearch = (value) => {
+    setSearchText(value);
+    debouncedFetch(activeTab, pagination.current, pagination.pageSize, value);
   };
 
   return (
@@ -445,47 +592,72 @@ const ManagerDashboard = () => {
         </Button>
       </div>
       
-      {loading ? loadingSkeleton : (
+      {/* Search Input */}
+      <div className="mb-4">
+        <Input.Search
+          placeholder="Search by indent number or employee name"
+          allowClear
+          enterButton
+          onChange={(e) => handleSearch(e.target.value)}
+          className="max-w-md"
+        />
+      </div>
+
+      {/* Updated Tabs */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            {Object.values(tabConfig).map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => handleTabChange(tab.status)}
+                className={`
+                  py-4 px-6 border-b-2 font-medium text-sm
+                  transition-all duration-200
+                  ${activeTab === tab.status
+                    ? `${tab.borderColor} ${tab.textColor} ${tab.bgColor}`
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }
+                `}
+              >
+                <div className="flex items-center gap-2">
+                  <tab.icon size={16} />
+                  {tab.label}
+                </div>
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      {/* Existing Table */}
+      <div className="bg-white rounded-lg shadow">
         <Table
           columns={columns}
           dataSource={indents}
-          loading={loading}
           rowKey="_id"
-          className="shadow-sm rounded-lg"
+          loading={loading || filterLoading}
           pagination={{
-            current: pagination.current,
-            pageSize: 10,
-            total: pagination.total,
-            showSizeChanger: false,
-            showQuickJumper: false,
+            ...pagination,
+            onChange: (page, pageSize) => {
+              fetchIndents(activeTab, page, pageSize, searchText);
+            },
             showTotal: (total, range) => (
               <span className="text-gray-600">
                 Showing {range[0]}-{range[1]} of {total} indents
               </span>
             ),
-            position: ['bottomRight'],
-            className: "px-4",
-            itemRender: (page, type, originalElement) => {
-              if (type === 'prev') {
-                return <a>Previous</a>;
-              }
-              if (type === 'next') {
-                return <a>Next</a>;
-              }
-              return originalElement;
-            }
           }}
-          onChange={handleTableChange}
           locale={{
             emptyText: (
               <div className="py-8 text-center text-gray-500">
                 <FolderKanban size={40} className="mx-auto mb-4 opacity-50" />
-                <p>No indents found</p>
+                <p>No {activeTab === 'submitted' ? 'pending' : 'rejected'} indents found</p>
               </div>
             )
           }}
         />
-      )}
+      </div>
 
       <Modal
         title={

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
+import { Spin } from 'antd';
 
 const RegisterPage = () => {
     const [username, setUsername] = useState('');
@@ -13,9 +14,10 @@ const RegisterPage = () => {
     const { register } = useAuth();
     const navigate = useNavigate();
     const { isDarkMode } = useTheme();
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        e.preventDefault(); 
         setError('');
 
         if (password !== confirmPassword) {
@@ -23,12 +25,15 @@ const RegisterPage = () => {
             return;
         }
 
+        setLoading(true);
         try {
             await register(username, email, password, role);
             navigate('/');
         } catch (err) {
             setError('Failed to register');
             console.error('Registration error:', err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -119,9 +124,16 @@ const RegisterPage = () => {
                     <div>
                         <button
                             type="submit"
-                            className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${isDarkMode ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-indigo-600 hover:bg-indigo-700'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+                            disabled={loading}
+                            className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white 
+                            ${isDarkMode ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-indigo-600 hover:bg-indigo-700'}
+                            ${loading ? 'opacity-70 cursor-not-allowed' : ''}
+                            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
                         >
-                            Register
+                            {loading ? (
+                                <Spin size="small" className="mr-2" />
+                            ) : null}
+                            {loading ? 'Creating account...' : 'Register'}
                         </button>
                     </div>
                 </form>

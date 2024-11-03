@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
+import { Spin } from 'antd';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
     const { isDarkMode } = useTheme();
@@ -14,12 +16,15 @@ const LoginPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
         try {
             await login(email, password);
             navigate('/');
         } catch (err) {
             setError('Failed to log in');
             console.error('Login error:', err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -68,9 +73,16 @@ const LoginPage = () => {
                     <div>
                         <button
                             type="submit"
-                            className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${isDarkMode ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-indigo-600 hover:bg-indigo-700'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+                            disabled={loading}
+                            className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white 
+                            ${isDarkMode ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-indigo-600 hover:bg-indigo-700'}
+                            ${loading ? 'opacity-70 cursor-not-allowed' : ''}
+                            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
                         >
-                            Sign in
+                            {loading ? (
+                                <Spin size="small" className="mr-2" />
+                            ) : null}
+                            {loading ? 'Signing in...' : 'Sign in'}
                         </button>
                     </div>
                 </form>
