@@ -21,9 +21,11 @@ import {
   FolderKanban,
   FileText,
   Calendar,
-  Eye
+  Eye,
+  LogOut
 } from 'lucide-react';
 import { baseURL } from '../../utils/endpoint';
+import { useAuth } from '../../hooks/useAuth';
 
 // Add Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -178,6 +180,7 @@ const ManagerDashboard = () => {
     pageSize: 10,
     total: 0
   });
+  const { logout } = useAuth();
 
   // Create memoized debounce function
   const debouncedFetch = React.useMemo(
@@ -420,11 +423,26 @@ const ManagerDashboard = () => {
     </div>
   );
 
+  const handleLogout = () => {
+    logout();
+  };
+
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Manager Dashboard</h1>
-        <p className="text-gray-600">Manage indent approvals and rejections</p>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Manager Dashboard</h1>
+          <p className="text-gray-600">Manage indent approvals and rejections</p>
+        </div>
+        <Button 
+          type="primary" 
+          danger 
+          icon={<LogOut size={16} />}
+          onClick={handleLogout}
+          className="flex items-center gap-2"
+        >
+          Logout
+        </Button>
       </div>
       
       {loading ? loadingSkeleton : (

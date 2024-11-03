@@ -15,6 +15,8 @@ const InternalForm = () => {
     unitId: '',
     project: '',
     projectId: '',
+    purpose: '',
+    priority: 'medium'
   });
 
   // Item selection state
@@ -248,6 +250,11 @@ const InternalForm = () => {
       return;
     }
 
+    if (!formData.purpose.trim()) {
+      toast.error('Please provide a purpose for the request');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       
@@ -270,18 +277,19 @@ const InternalForm = () => {
         managerId: formData.managerId,
         unitId: formData.unitId,
         projectId: formData.projectId,
-        existingItems,
-        newItems,
-        purpose: "Regular procurement",
-        priority: "medium",
-        status: "draft"
+        items: {
+          existing: existingItems,
+          new: newItems
+        },
+        purpose: formData.purpose,
+        priority: formData.priority,
+        status: "submitted"
       };
 
       const response = await axios.post(`${baseURL}/indents/`, submitData);
 
       if (response.data.success) {
         toast.success('Purchase indent created successfully!');
-        // Reset form
         setFormData({
           employeeCode: '',
           employeeId: '',
@@ -291,6 +299,8 @@ const InternalForm = () => {
           unitId: '',
           project: '',
           projectId: '',
+          purpose: '',
+          priority: 'medium'
         });
         setSelectedItems([]);
       }
@@ -630,6 +640,45 @@ const InternalForm = () => {
             ) : (
               <p className="text-center text-gray-500">No items selected</p>
             )}
+          </div>
+
+          {/* Request Details Section - New Addition */}
+          <div className="bg-white shadow-lg mt-8 p-5 rounded-lg">
+            <h3 className="font-bold text-lg text-gray-800 mb-4">Request Details</h3>
+            
+            {/* Purpose Field */}
+            <div className="mb-4">
+              <label className="block text-md font-medium text-gray-700 mb-2">
+                Purpose
+              </label>
+              <textarea
+                name="purpose"
+                value={formData.purpose}
+                onChange={handleInputChange}
+                className="w-full p-3 rounded-md border border-gray-300 min-h-[100px]"
+                placeholder="Please describe the purpose of this procurement request"
+                required
+              />
+            </div>
+
+            {/* Priority Field */}
+            <div className="mb-4">
+              <label className="block text-md font-medium text-gray-700 mb-2">
+                Priority Level
+              </label>
+              <select
+                name="priority"
+                value={formData.priority}
+                onChange={handleInputChange}
+                className="w-full bg-gray-100 p-3 rounded-md border border-gray-300"
+                required
+              >
+                <option value="low">Low Priority</option>
+                <option value="medium">Medium Priority</option>
+                <option value="high">High Priority</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
           </div>
 
           {/* Approval Section */}
