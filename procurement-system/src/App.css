@@ -1,0 +1,13 @@
+/* Add these styles if not already present */
+.ant-modal-content {
+    border-radius: 8px;
+  }
+  
+  .ant-table-thead > tr > th {
+    background: #f9fafb !important;
+  }
+  
+  .ant-table {
+    border-radius: 8px;
+    overflow: hidden;
+  } 

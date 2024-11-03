@@ -23,8 +23,7 @@ exports.createIndent = async (req, res) => {
       managerId,
       unitId,
       projectId,
-      existingItems,
-      newItems,
+      items,
       purpose,
       priority = 'medium',
       status = 'draft'
@@ -56,35 +55,15 @@ exports.createIndent = async (req, res) => {
       });
     }
 
-    // Validate items (at least one item required)
-    // if ((!existingItems || existingItems.length === 0) &&
-    //   (!newItems || newItems.length === 0)) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: 'At least one item (existing or new) is required'
-    //   });
-    // }
-
-    const formattedExistingItems = existingItems.map(item => ({
-      name: item.name || item.ItemName, // Assuming ItemName comes from frontend
-      quantity: parseInt(item.quantity) || 1
-    }));
-
-    // Format new items with required fields
-    const formattedNewItems = newItems.map(item => ({
-      name: item.name || item.ItemName,
-      quantity: parseInt(item.quantity) || 1
-    }));
-
-    // Create new indent
+    // Create new indent with the items structure matching the model
     const indent = new Indent({
       employee: employeeId,
       manager: managerId,
       unit: unitId,
       project: projectId,
       items: {
-        existing: formattedExistingItems || [],
-        new: formattedNewItems || []
+        existing: items.existing || [],
+        new: items.new || []
       },
       purpose,
       priority,
@@ -207,6 +186,61 @@ exports.getIndentById = async (req, res) => {
     }
     handleError(res, error);
   }
+};
+
+exports.managerApproval = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { approved, remarks } = req.body;
+        
+        // First check the current status
+        const currentIndent = await Indent.findById(id);
+        
+        if (!currentIndent) {
+            return res.status(404).json({
+                success: false,
+                message: 'Indent not found'
+            });
+        }
+
+        if (currentIndent.status !== 'submitted') {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid indent status for manager approval'
+            });
+        }
+
+        // Proceed with update
+        const updatedIndent = await Indent.findByIdAndUpdate(
+            id,
+            {
+                $set: {
+                    status: approved ? 'manager_approved' : 'manager_rejected',
+                    managerRemarks: remarks,
+                    managerId: req.user._id,
+                    managerActionDate: new Date()
+                }
+            },
+            { 
+                new: true,
+                runValidators: false
+            }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `Indent ${approved ? 'approved' : 'rejected'} successfully`,
+            data: updatedIndent
+        });
+
+    } catch (error) {
+        console.error('Manager approval error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error processing manager approval',
+            error: error.message
+        });
+    }
 };
 
 // exports.managerApproval = async (req, res) => {
