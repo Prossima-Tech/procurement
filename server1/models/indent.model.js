@@ -12,17 +12,13 @@ const ExistingItemSchema = new Schema({
         required: [true, 'Quantity is required'],
         min: [1, 'Quantity must be at least 1']
     },
-    // specifications: {
-    //     size: String,
-    //     material: String,
-    //     unit: String
-    // },
-    // urgency: {
-    //     type: String,
-    //     enum: ['normal', 'urgent'],
-    //     default: 'normal'
-    // },
-    // remarks: String
+    reference: {
+        type: Schema.Types.ObjectId,
+        ref: 'Item',
+    },
+    itemCode: {
+        type: String,
+    }
 });
 
 // Schema for new items
@@ -31,28 +27,11 @@ const NewItemSchema = new Schema({
         type: String,
         required: [true, 'Item name is required']
     },
-    // description: {
-    //     type: String,
-    //     required: [true, 'Description is required']
-    // },
     quantity: {
         type: Number,
         required: [true, 'Quantity is required'],
         min: [1, 'Quantity must be at least 1']
     },
-    // estimatedUnitPrice: {
-    //     type: Number,
-    //     required: [true, 'Estimated unit price is required'],
-    //     min: [0, 'Price cannot be negative']
-    // },
-    // specifications: {
-    //     size: String,
-    //     material: String,
-    //     make: String,
-    //     model: String,
-    //     unit: String
-    // },
-    // remarks: String
 });
 
 const IndentSchema = new Schema({

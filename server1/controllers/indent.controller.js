@@ -18,6 +18,7 @@ const handleError = (res, error) => {
 // Create new indent
 exports.createIndent = async (req, res) => {
   try {
+    console.log("req.body",req.body);
     const {
       employeeId,
       managerId,
@@ -45,7 +46,6 @@ exports.createIndent = async (req, res) => {
         message: 'Invalid Unit ID or Unit not found'
       });
     }
-
     // Validate Project exists and is active
     const project = await Project.findById(projectId);
     if (!project) {
@@ -62,7 +62,12 @@ exports.createIndent = async (req, res) => {
       unit: unitId,
       project: projectId,
       items: {
-        existing: items.existing || [],
+        existing: items.existing.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          reference: item.reference,
+          itemCode: item.itemCode
+        })),
         new: items.new || []
       },
       purpose,

@@ -193,9 +193,12 @@ const InternalForm = () => {
           ItemName: selectedItem.ItemName,
           type: selectedItem.type,
           ItemCategory: selectedItem.ItemCategory,
-          quantity: quantityInput
+          quantity: quantityInput,
+          reference: selectedItem._id,
+          itemCode: selectedItem.ItemCode
         }
       ]);
+      console.log("selectedItems",selectedItems);
       toast.success('Item added successfully');
       setShowQuantityPopup(false);
       setSelectedItem(null);
@@ -262,7 +265,9 @@ const InternalForm = () => {
         .filter(item => !item.isCustom)
         .map(item => ({
           name: item.ItemName || item.name,
-          quantity: parseInt(item.quantity) || 1
+          quantity: parseInt(item.quantity) || 1,
+          reference: item.reference,
+          itemCode: item.itemCode
         }));
 
       const newItems = selectedItems
@@ -285,7 +290,7 @@ const InternalForm = () => {
         priority: formData.priority,
         status: "submitted"
       };
-
+      console.log("submitData",submitData);
       const response = await axios.post(`${baseURL}/indents/`, submitData);
 
       if (response.data.success) {

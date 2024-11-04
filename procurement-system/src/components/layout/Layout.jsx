@@ -7,7 +7,7 @@ import { Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useTheme } from '../../contexts/ThemeContext';
-
+import IndentList from '../dashboard/indentList';
 import {
     ItemMasterComponent,
 } from '../Products/ItemMasterComponent';
@@ -41,6 +41,7 @@ const DashboardComponent = () => {
         <div className={`p-6 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'} rounded-lg shadow-md`}>
             <h2 className="text-2xl font-bold mb-4">Dashboard</h2>
             <p>Welcome to your dashboard. Here you can see an overview of your system.</p>
+            <IndentList /> 
         </div>
     );
 };

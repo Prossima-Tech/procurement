@@ -1,10 +1,10 @@
 import Layout from "../layout/Layout"
-import ManagerDashboard from './ManagerDashboard'
+import IndentList from './indentList'
 
 function Dashboard() {
     return (
         <Layout>
-            <ManagerDashboard />
+            <IndentList />
         </Layout>
     )
 }
