@@ -11,5 +11,5 @@ router.post('/:id/manager-approval',
   authorize('manager'),
   indentController.managerApproval
 );
-
+router.get('/getIndent/:id', authenticate, indentController.getIndentById);
 module.exports = router;
