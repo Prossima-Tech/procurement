@@ -255,3 +255,269 @@ exports.createOrUpdateItemVendors = async (req, res) => {
     res.status(500).json({ message: "Error updating item vendors.", error });
     }
 };
+
+
+const RFQ = require('../models/rfq.model');
+const Vendor = require('../models/vendor.model');
+
+// Get RFQ details for vendor quote form
+exports.getVendorQuoteForm = async (req, res) => {
+    try {
+        const { vendorId } = req.params;
+        const { rfq: rfqId } = req.query;
+
+        // Validate if vendor exists
+        const vendor = await Vendor.findById(vendorId);
+        if (!vendor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+
+        // Get RFQ details
+        const rfq = await RFQ.findOne({
+            _id: rfqId,
+            'selectedVendors.vendor': vendorId,
+            submissionDeadline: { $gt: new Date() }
+        });
+
+        if (!rfq) {
+            return res.status(404).json({
+                success: false,
+                message: 'RFQ not found or submission deadline passed'
+            });
+        }
+
+        // Check if vendor has already submitted a quote
+        const existingQuote = rfq.vendorQuotes.find(
+            quote => quote.vendor.toString() === vendorId
+        );
+
+        if (existingQuote) {
+            return res.status(400).json({
+                success: false,
+                message: 'Quote already submitted'
+            });
+        }
+
+        // Return RFQ details for the form
+        return res.json({
+            success: true,
+            data: {
+                rfqNumber: rfq.rfqNumber,
+                items: rfq.items,
+                submissionDeadline: rfq.submissionDeadline,
+                generalTerms: rfq.generalTerms
+            }
+        });
+
+    } catch (error) {
+        console.error('Error getting vendor quote form:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+// Submit vendor quote
+exports.submitVendorQuote = async (req, res) => {
+    try {
+        const { vendorId } = req.params;
+        const { rfq: rfqId } = req.query;
+        const quoteData = req.body;
+
+        // Basic validation
+        if (!quoteData.items || !Array.isArray(quoteData.items)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid quote data'
+            });
+        }
+
+        // Find RFQ and validate
+        const rfq = await RFQ.findOne({
+            _id: rfqId,
+            'selectedVendors.vendor': vendorId,
+            submissionDeadline: { $gt: new Date() }
+        });
+
+        if (!rfq) {
+            return res.status(404).json({
+                success: false,
+                message: 'RFQ not found or submission deadline passed'
+            });
+        }
+
+        // Create vendor quote object
+        const vendorQuote = {
+            vendor: vendorId,
+            quotationReference: quoteData.quotationReference,
+            items: quoteData.items.map(item => ({
+                rfqItem: item.rfqItemId,
+                unitPrice: item.unitPrice,
+                quantity: item.quantity,
+                totalPrice: item.unitPrice * item.quantity,
+                deliveryTime: item.deliveryTime,
+                specifications: item.specifications,
+                technicalRemarks: item.technicalRemarks,
+                commercialRemarks: item.commercialRemarks,
+                alternativeOffering: item.alternativeOffering
+            })),
+            totalAmount: quoteData.items.reduce((sum, item) => 
+                sum + (item.unitPrice * item.quantity), 0),
+            currency: quoteData.currency || 'INR',
+            paymentTerms: quoteData.paymentTerms,
+            deliveryTerms: quoteData.deliveryTerms,
+            warranty: quoteData.warranty,
+            validityPeriod: quoteData.validityPeriod,
+            documents: quoteData.documents || [],
+            status: 'submitted',
+            submissionDate: new Date()
+        };
+
+        // Add quote to RFQ
+        rfq.vendorQuotes.push(vendorQuote);
+        
+        // Update vendor status
+        const vendorIndex = rfq.selectedVendors.findIndex(
+            v => v.vendor.toString() === vendorId
+        );
+        if (vendorIndex !== -1) {
+            rfq.selectedVendors[vendorIndex].status = 'accepted';
+            rfq.selectedVendors[vendorIndex].responseDate = new Date();
+        }
+
+        await rfq.save();
+
+        return res.status(201).json({
+            success: true,
+            message: 'Quote submitted successfully',
+            data: {
+                rfqNumber: rfq.rfqNumber,
+                quotationReference: vendorQuote.quotationReference
+            }
+        });
+
+    } catch (error) {
+        console.error('Error submitting vendor quote:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+
+exports.getRFQDetails = async (req, res) => {
+    try {
+        const { rfqId } = req.params;
+
+        const rfq = await RFQ.findById(rfqId)
+            .populate('unit', 'name')
+            .populate('project', 'name')
+            .populate('selectedVendors.vendor', 'name email contact')
+            .populate('selectedQuote.vendor', 'name')
+            .populate({
+                path: 'vendorQuotes',
+                populate: {
+                    path: 'vendor',
+                    select: 'name email contact'
+                }
+            });
+
+        if (!rfq) {
+            return res.status(404).json({
+                success: false,
+                message: 'RFQ not found'
+            });
+        }
+
+        // Calculate comparison metrics for vendor quotes
+        const quotesComparison = rfq.vendorQuotes.map(quote => ({
+            vendor: quote.vendor,
+            quotationReference: quote.quotationReference,
+            totalAmount: quote.totalAmount,
+            currency: quote.currency,
+            averageDeliveryTime: quote.items.reduce((sum, item) => 
+                sum + item.deliveryTime, 0) / quote.items.length,
+            evaluationScores: quote.evaluationScores,
+            status: quote.status
+        }));
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                rfq,
+                quotesComparison
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching RFQ details:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+// Get vendor quote comparison for specific RFQ
+exports.getQuotesComparison = async (req, res) => {
+    try {
+        const { rfqId } = req.params;
+
+        const rfq = await RFQ.findById(rfqId)
+            .populate('vendorQuotes.vendor', 'name')
+            .select('vendorQuotes items');
+
+        if (!rfq) {
+            return res.status(404).json({
+                success: false,
+                message: 'RFQ not found'
+            });
+        }
+
+        // Create item-wise comparison
+        const itemComparison = rfq.items.map(rfqItem => {
+            const itemQuotes = rfq.vendorQuotes.map(quote => {
+                const quoteItem = quote.items.find(
+                    item => item.rfqItem.toString() === rfqItem._id.toString()
+                );
+                return {
+                    vendor: quote.vendor,
+                    unitPrice: quoteItem?.unitPrice,
+                    deliveryTime: quoteItem?.deliveryTime,
+                    specifications: quoteItem?.specifications,
+                    alternativeOffering: quoteItem?.alternativeOffering
+                };
+            });
+
+            return {
+                itemName: rfqItem.name,
+                itemCode: rfqItem.itemCode,
+                requiredQuantity: rfqItem.quantity,
+                quotes: itemQuotes
+            };
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                itemComparison,
+                vendors: rfq.vendorQuotes.map(q => ({
+                    vendor: q.vendor,
+                    totalAmount: q.totalAmount,
+                    currency: q.currency,
+                    evaluationScores: q.evaluationScores
+                }))
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching quotes comparison:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};

@@ -10,4 +10,9 @@ router.delete('/deleteRFQ/:id', authenticate, rfqController.deleteRFQ);
 // router.get('/getRFQById/:id', authenticate, rfqController.getRFQById);
 // router.put('/updateRFQ/:id', authenticate, rfqController.updateRFQ);
 router.post('/ItemVendorsRelation', authenticate, rfqController.createOrUpdateItemVendors);// required list of items and list of vendors with price and availability
+
+router.get('/getVendorQuoteForm', authenticate, rfqController.getVendorQuoteForm);
+router.post('/submitVendorQuote', authenticate, rfqController.submitVendorQuote); 
+
+
 module.exports = router;
