@@ -5,9 +5,12 @@ const Project = require('../models/project.model');
 const RFQ = require('../models/rfq.model');
 const ItemVendors = require('../models/itemVendors.model');
 const mongoose = require('mongoose');
-
+const Vendor = require('../models/vendor.model');
 // Create new RFQ
 exports.createRFQ = async (req, res) => {
+    // console.log('🚀 Starting createRFQ process');
+    // console.log('📥 Request body:', JSON.stringify(req.body, null, 2));
+
     try {
         const {
             indent,
@@ -20,8 +23,27 @@ exports.createRFQ = async (req, res) => {
             generalTerms
         } = req.body;
 
+        // console.log('🔍 Extracted request data:', {
+        //     indent,
+        //     unit,
+        //     project,
+        //     itemsCount: items?.length,
+        //     vendorsCount: selectedVendors?.length,
+        //     submissionDeadline,
+        //     publishDate
+        // });
+
         // 1. Validate required fields
+        // console.log('✅ Validating required fields...');
         if (!indent || !unit || !project || !items || !selectedVendors || !submissionDeadline) {
+            // console.log('❌ Missing required fields:', {
+            //     indent: !!indent,
+            //     unit: !!unit,
+            //     project: !!project,
+            //     items: !!items,
+            //     selectedVendors: !!selectedVendors,
+            //     submissionDeadline: !!submissionDeadline
+            // });
             return res.status(400).json({
                 success: false,
                 message: 'Missing required fields'
@@ -29,7 +51,9 @@ exports.createRFQ = async (req, res) => {
         }
 
         // 2. Validate items array
+        // console.log('✅ Validating items array...');
         if (!Array.isArray(items) || items.length === 0) {
+            // console.log('❌ Invalid items array:', { isArray: Array.isArray(items), length: items?.length });
             return res.status(400).json({
                 success: false,
                 message: 'Items must be a non-empty array'
@@ -37,15 +61,24 @@ exports.createRFQ = async (req, res) => {
         }
 
         // 3. Validate items structure
+        // console.log('✅ Validating individual items...');
         for (const item of items) {
-            if (!item.indentItemType || !item.indentItemId || !item.name || !item.quantity) {
+            // console.log('🔍 Checking item:', item);
+            
+            if (!item.indentItemType || !item.name || !item.quantity) {
+                // console.log('❌ Invalid item structure:', {
+                //     hasType: !!item.indentItemType,
+                //     hasName: !!item.name,
+                //     hasQuantity: !!item.quantity
+                // });
                 return res.status(400).json({
                     success: false,
-                    message: 'Each item must have indentItemType, indentItemId, name, and quantity'
+                    message: 'Each item must have indentItemType, name, and quantity'
                 });
             }
 
             if (item.indentItemType === 'existing' && !item.itemCode) {
+                // console.log('❌ Existing item missing itemCode:', item);
                 return res.status(400).json({
                     success: false,
                     message: 'Existing items must have an itemCode'
@@ -53,6 +86,7 @@ exports.createRFQ = async (req, res) => {
             }
 
             if (item.quantity < 1) {
+                // console.log('❌ Invalid quantity:', item.quantity);
                 return res.status(400).json({
                     success: false,
                     message: 'Item quantity must be at least 1'
@@ -61,8 +95,10 @@ exports.createRFQ = async (req, res) => {
         }
 
         // 4. Validate submission deadline
+        // console.log('✅ Validating submission deadline...');
         const submissionDeadlineDate = new Date(submissionDeadline);
         if (submissionDeadlineDate <= new Date()) {
+            // console.log('❌ Invalid submission deadline:', { deadline: submissionDeadlineDate, now: new Date() });
             return res.status(400).json({
                 success: false,
                 message: 'Submission deadline must be in the future'
@@ -70,7 +106,9 @@ exports.createRFQ = async (req, res) => {
         }
 
         // 5. Validate selected vendors
+        // console.log('✅ Validating selected vendors...');
         if (!Array.isArray(selectedVendors) || selectedVendors.length === 0) {
+            // console.log('❌ Invalid vendors array:', { isArray: Array.isArray(selectedVendors), length: selectedVendors?.length });
             return res.status(400).json({
                 success: false,
                 message: 'At least one vendor must be selected'
@@ -78,8 +116,10 @@ exports.createRFQ = async (req, res) => {
         }
 
         // 6. Check if indent exists
+        // console.log('✅ Checking indent existence...');
         const indentExists = await Indent.findById(indent);
         if (!indentExists) {
+            // console.log('❌ Indent not found:', indent);
             return res.status(404).json({
                 success: false,
                 message: 'Indent not found'
@@ -87,10 +127,16 @@ exports.createRFQ = async (req, res) => {
         }
 
         // 7. Validate vendors exist
+        // console.log('✅ Validating vendor existence...');
         const vendorIds = selectedVendors.map(v => v.vendor);
+        // console.log('🔍 Checking vendors:', vendorIds);
         const validVendors = await Vendor.find({ _id: { $in: vendorIds } });
         
         if (validVendors.length !== vendorIds.length) {
+            // console.log('❌ Some vendors not found:', {
+            //     requested: vendorIds.length,
+            //     found: validVendors.length
+            // });
             return res.status(404).json({
                 success: false,
                 message: 'One or more selected vendors not found'
@@ -98,7 +144,23 @@ exports.createRFQ = async (req, res) => {
         }
 
         // 8. Create RFQ object
+        // console.log('✅ Creating RFQ object...');
+        const date = new Date();
+        const year = date.getFullYear().toString().slice(-2);
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+
+        // Get count of RFQs created this month
+        const count = await RFQ.countDocuments({
+            createdAt: {
+                $gte: new Date(date.getFullYear(), date.getMonth(), 1),
+                $lt: new Date(date.getFullYear(), date.getMonth() + 1, 1)
+            }
+        });
+
+        const rfqNumber = `RFQ-${year}${month}-${(count + 1).toString().padStart(4, '0')}`;
+
         const rfqData = {
+            rfqNumber,
             indent,
             unit,
             project,
@@ -116,12 +178,19 @@ exports.createRFQ = async (req, res) => {
             generalTerms,
             status: 'published'
         };
+        // console.log('📝 RFQ Data prepared:', JSON.stringify(rfqData, null, 2));
 
         // 9. Save RFQ
+        // console.log('💾 Saving RFQ...');
         const newRFQ = new RFQ(rfqData);
         await newRFQ.save();
+        // console.log('✅ RFQ saved successfully:', {
+        //     id: newRFQ._id,
+        //     rfqNumber: newRFQ.rfqNumber
+        // });
 
         // 10. Send response
+        // console.log('📤 Sending success response');
         return res.status(201).json({
             success: true,
             message: 'RFQ created successfully',
@@ -132,14 +201,14 @@ exports.createRFQ = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error in createRFQ:', error);
+        // console.error('❌ Error in createRFQ:', error);
+        // console.error('Stack trace:', error.stack);
         return res.status(500).json({
             success: false,
             message: 'Internal server error',
             error: error.message
         });
     }
-
 };
 
 exports.getallRFQ = async (req, res) => {
@@ -167,9 +236,8 @@ exports.getallRFQ = async (req, res) => {
         const total = await RFQ.countDocuments(query);
 
         const rfq = await RFQ.find(query)
-            .populate('indentId')
-            .populate('items.itemId')
-            .populate('createdBy', 'name email')
+            .populate('indent')
+            .populate('items.indentItemId')
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit);
@@ -257,13 +325,12 @@ exports.createOrUpdateItemVendors = async (req, res) => {
 };
 
 
-const RFQ = require('../models/rfq.model');
-const Vendor = require('../models/vendor.model');
 
 // Get RFQ details for vendor quote form
 exports.getVendorQuoteForm = async (req, res) => {
     try {
-        const { vendorId } = req.params;
+        const { id } = req.params;
+        const vendorId = id;
         const { rfq: rfqId } = req.query;
 
         // Validate if vendor exists

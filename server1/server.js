@@ -14,6 +14,7 @@ const purchaseOrderRoutes = require('./routes/purchaseOrder.routes');
 const projectRoutes = require('./routes/project.routes');
 const unitRoutes = require('./routes/unit.routes');
 const indentRoutes = require('./routes/indent.routes');
+const rfqRoutes = require('./routes/rfq.routes');
 const app = express();
 
 // Connect to database
@@ -33,7 +34,7 @@ app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/units', unitRoutes);
 app.use('/api/indents', indentRoutes);
-
+app.use('/api/rfq', rfqRoutes);
 // Error handling middleware
 app.use(errorHandler);
 

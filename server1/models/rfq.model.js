@@ -51,30 +51,17 @@ const VendorQuoteSchema = new Schema({
         type: Number,
         required: true
     },
-    currency: {
-        type: String,
-        default: 'INR'
-    },
     paymentTerms: String,
     deliveryTerms: String,
     warranty: String,
     validityPeriod: {
         type: Number,  // in days
-        required: true
+        required: false
     },
-    documents: [{
-        type: {
-            type: String,
-            enum: ['technical', 'commercial', 'compliance', 'other']
-        },
-        name: String,
-        file: String
-    }],
     status: {
         type: String,
-        enum: ['draft', 'submitted', 'under_review', 'technical_approved', 'technical_rejected', 
-               'commercial_approved', 'commercial_rejected', 'selected', 'not_selected'],
-        default: 'draft'
+        enum: [ 'submitted', 'under_review', 'selected', 'not_selected'],
+        default: 'submitted'
     },
     submissionDate: Date,
     evaluationScores: {
@@ -96,7 +83,7 @@ const RFQItemSchema = new Schema({
     },
     indentItemId: {
         type: Schema.Types.ObjectId,
-        required: true
+        required: false
     },
     name: {
         type: String,
