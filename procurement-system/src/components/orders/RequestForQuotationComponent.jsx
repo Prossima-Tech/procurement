@@ -243,14 +243,14 @@ export const RequestForQuotationComponent = () => {
                     >
                         View
                     </button>
-                    {record.status === 'published' && (
+                    {/* {record.status === 'published' && (
                         <button
                             onClick={() => handleOpenQuoteForm(record, record.selectedVendors[0])}
                             className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
                         >
                             Submit Quote
                         </button>
-                    )}
+                    )} */}
                 </div>
             )
         }
