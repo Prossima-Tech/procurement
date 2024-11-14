@@ -3,8 +3,11 @@ import axios from 'axios';
 import { baseURL } from '../../utils/endpoint';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from 'react-router-dom';
 
 const InternalForm = () => {
+  const navigate = useNavigate();
+
   // Form state
   const [formData, setFormData] = useState({
     employeeCode: '',
@@ -383,400 +386,422 @@ const InternalForm = () => {
     fetchProjects();
   }, []);
 
-  return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-      
-      <div className="bg-white w-full max-w-3xl p-8 rounded-lg shadow-lg">
-        <h2 className="text-center text-2xl font-semibold text-gray-700 mb-8 border-b pb-4">
-          Purchase Indent Form
-        </h2>
+  const handleLogout = () => {
+    // Clear any stored tokens/user data
+    localStorage.removeItem('token');
+    localStorage.removeItem('userData');
+    // Redirect to login page
+    navigate('/login');
+  };
 
-        <form onSubmit={handleSubmit}>
-          {/* Employee Details */}
-          <div className="mb-6">
-            <label className="block text-md font-medium text-gray-700 mb-2">Employee Details</label>
-            <div className="grid grid-cols-2 gap-4">
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Add Navigation Bar */}
+      <nav className="bg-white shadow-md px-8 py-4 flex justify-between items-center">
+        <h1 className="text-xl font-semibold text-gray-800">Procurement System</h1>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+        >
+          Logout
+        </button>
+      </nav>
+
+      {/* Wrap existing content */}
+      <div className="flex justify-center items-center py-8">
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+        
+        <div className="bg-white w-full max-w-3xl p-8 rounded-lg shadow-lg">
+          <h2 className="text-center text-2xl font-semibold text-gray-700 mb-8 border-b pb-4">
+            Purchase Indent Form
+          </h2>
+
+          <form onSubmit={handleSubmit}>
+            {/* Employee Details */}
+            <div className="mb-6">
+              <label className="block text-md font-medium text-gray-700 mb-2">Employee Details</label>
+              <div className="grid grid-cols-2 gap-4">
+                <select
+                  name="employeeCode"
+                  value={formData.employeeCode}
+                  onChange={handleInputChange}
+                  className="bg-white p-2 rounded-md border border-gray-300"
+                  required
+                  disabled={isLoadingUsers}
+                >
+                  <option value="">
+                    {isLoadingUsers ? 'Loading Employees...' : 'Select Employee ▼'}
+                  </option>
+                  {employees.map(employee => (
+                    <option key={employee._id} value={employee._id}>
+                      {employee.username} 
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="email"
+                  name="employeeEmail"
+                  value={formData.employeeEmail}
+                  className="bg-gray-100 p-2 rounded-md border border-gray-300"
+                  placeholder="Employee Email"
+                  readOnly
+                />
+              </div>
+            </div>
+
+            {/* Item Selection */}
+            <div className="mb-6">
+              <label className="block text-md font-medium text-gray-700 mb-2">Item Selection</label>
+              <div className="bg-white shadow-md p-5 rounded-lg">
+                <h3 className="font-bold text-lg text-gray-800 mb-4">Available Items</h3>
+
+                {/* New Item Input Section */}
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium text-gray-700 mb-3">Add Custom Item</h4>
+                  <div className="flex gap-3">
+                    <div className="flex-grow">
+                      <input
+                        type="text"
+                        name="name"
+                        placeholder="Enter item name"
+                        value={newItemInput.name}
+                        onChange={handleNewItemInputChange}
+                        className="w-full p-2 border rounded-md"
+                      />
+                    </div>
+                    <div className="w-24">
+                      <input
+                        type="number"
+                        name="quantity"
+                        min="1"
+                        value={newItemInput.quantity}
+                        onChange={handleNewItemInputChange}
+                        className="w-full p-2 border rounded-md"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddNewItem}
+                      className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
+                {/* Existing Items Search */}
+                <div className="flex items-center bg-gray-100 p-3 rounded-md mb-4">
+                  <span className="text-gray-500">🔍</span>
+                  <input
+                    type="text"
+                    placeholder="Search existing items..."
+                    className="bg-transparent outline-none ml-3 text-sm w-full"
+                    value={itemInput}
+                    onChange={(e) => setItemInput(e.target.value)}
+                  />
+                </div>
+
+                {/* Loading and Error States */}
+                {loading && (
+                  <div className="text-center py-4">Loading items...</div>
+                )}
+
+                {error && (
+                  <div className="text-red-500 text-center py-4">{error}</div>
+                )}
+
+                {/* Available Items List with Radio Buttons */}
+                <div className="space-y-2">
+                  {availableItems
+                    .filter((item) => 
+                      item.ItemName.toLowerCase().includes(itemInput.toLowerCase()) ||
+                      item.ItemCode.toLowerCase().includes(itemInput.toLowerCase())
+                    )
+                    .map((item) => (
+                      <div
+                        key={item._id}
+                        className={`flex items-center bg-gray-100 p-4 rounded-md border ${
+                          selectedItem?._id === item._id ? 'border-indigo-500' : 'border-gray-200'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          id={item._id}
+                          name="itemSelection"
+                          checked={selectedItem?._id === item._id}
+                          onChange={() => handleItemSelect(item)}
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-full"
+                        />
+                        <label htmlFor={item._id} className="ml-3 flex flex-row justify-between flex-grow cursor-pointer">
+                          <div>
+                            <p className="text-gray-800 font-medium">{item.ItemName}</p>
+                            <p className="text-gray-500 text-sm">Type: {item.type}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-gray-500 text-sm">Code: {item.ItemCode}</p>
+                            {item.ItemCategory && (
+                              <p className="text-gray-500 text-sm">Category: {item.ItemCategory}</p>
+                            )}
+                          </div>
+                        </label>
+                      </div>
+                    ))}
+                </div>
+
+                {/* No Results Message */}
+                {!loading && !error && availableItems.filter(item => 
+                  item.ItemName.toLowerCase().includes(itemInput.toLowerCase()) ||
+                  item.ItemCode.toLowerCase().includes(itemInput.toLowerCase())
+                ).length === 0 && (
+                  <div className="text-center py-4 text-gray-500">
+                    No items found matching your search
+                  </div>
+                )}
+
+                {/* Keep existing custom item section
+                <input
+                  type="text"
+                  placeholder="New Item Description"
+                  value={customItem}
+                  onChange={(e) => setCustomItem(e.target.value)}
+                  className="w-full p-2 mt-4 rounded-md border border-gray-300"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomItem}
+                  className="w-full mt-2 bg-indigo-500 text-white p-2 rounded-md hover:bg-indigo-600"
+                >
+                  Add Custom Item
+                </button> */}
+
+                {/* Keep existing quantity popup */}
+                {showQuantityPopup && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+                      <h3 className="text-lg font-semibold mb-4">Select Quantity</h3>
+                      <p className="text-gray-600 mb-4">{selectedItem?.name}</p>
+                      <input
+                        type="number"
+                        min="1"
+                        value={quantityInput}
+                        onChange={(e) => setQuantityInput(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-full p-2 border rounded-md mb-4"
+                      />
+                      <div className="flex justify-end space-x-3">
+                        <button
+                          type="button"
+                          onClick={() => setShowQuantityPopup(false)}
+                          className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveQuantity}
+                          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Selected Items */}
+            <div className="mt-6">
+              <h4 className="font-medium text-gray-700 mb-3">Selected Items</h4>
+              {selectedItems.length > 0 ? (
+                <div className="space-y-3">
+                  {selectedItems.map((item, index) => (
+                    <div 
+                      key={item.id || item._id}
+                      className="flex justify-between items-center bg-gray-50 p-3 rounded-lg"
+                    >
+                      <div>
+                        <p className="font-medium">
+                          {item.ItemName}
+                          {item.isCustom && <span className="ml-2 text-xs text-gray-500">(Custom)</span>}
+                        </p>
+                        {!item.isCustom && item.ItemCode && (
+                          <p className="text-sm text-gray-500">Code: {item.ItemCode}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => decrementQuantity(index)}
+                          className="px-2 py-1 border rounded"
+                        >
+                          -
+                        </button>
+                        <span>{item.quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => incrementQuantity(index)}
+                          className="px-2 py-1 border rounded"
+                        >
+                          +
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(index)}
+                          className="ml-2 text-red-500 hover:text-red-700"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-gray-500">No items selected</p>
+              )}
+            </div>
+
+            {/* Request Details Section - New Addition */}
+            <div className="bg-white shadow-lg mt-8 p-5 rounded-lg">
+              <h3 className="font-bold text-lg text-gray-800 mb-4">Request Details</h3>
+              
+              {/* Purpose Field */}
+              <div className="mb-4">
+                <label className="block text-md font-medium text-gray-700 mb-2">
+                  Purpose
+                </label>
+                <textarea
+                  name="purpose"
+                  value={formData.purpose}
+                  onChange={handleInputChange}
+                  className="w-full p-3 rounded-md border border-gray-300 min-h-[100px]"
+                  placeholder="Please describe the purpose of this procurement request"
+                  required
+                />
+              </div>
+
+              {/* Priority Field */}
+              <div className="mb-4">
+                <label className="block text-md font-medium text-gray-700 mb-2">
+                  Priority Level
+                </label>
+                <select
+                  name="priority"
+                  value={formData.priority}
+                  onChange={handleInputChange}
+                  className="w-full bg-gray-100 p-3 rounded-md border border-gray-300"
+                  required
+                >
+                  <option value="low">Low Priority</option>
+                  <option value="medium">Medium Priority</option>
+                  <option value="high">High Priority</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Approval Section */}
+            <div className="bg-white shadow-lg mt-8 p-5 rounded-lg">
+              <h3 className="font-bold text-lg text-gray-800 mb-2">Approval</h3>
               <select
-                name="employeeCode"
-                value={formData.employeeCode}
+                name="managerId"
+                value={formData.managerId}
                 onChange={handleInputChange}
-                className="bg-white p-2 rounded-md border border-gray-300"
+                className="w-full bg-gray-100 p-3 rounded-md border border-gray-200"
                 required
                 disabled={isLoadingUsers}
               >
                 <option value="">
-                  {isLoadingUsers ? 'Loading Employees...' : 'Select Employee ▼'}
+                  {isLoadingUsers ? 'Loading Managers...' : 'Select Manager ▼'}
                 </option>
-                {employees.map(employee => (
-                  <option key={employee._id} value={employee._id}>
-                    {employee.username} 
+                {managers.map(manager => (
+                  <option key={manager._id} value={manager._id}>
+                    {manager.username} - {manager.email}
                   </option>
                 ))}
               </select>
-              <input
-                type="email"
-                name="employeeEmail"
-                value={formData.employeeEmail}
-                className="bg-gray-100 p-2 rounded-md border border-gray-300"
-                placeholder="Employee Email"
-                readOnly
-              />
             </div>
-          </div>
 
-          {/* Item Selection */}
-          <div className="mb-6">
-            <label className="block text-md font-medium text-gray-700 mb-2">Item Selection</label>
-            <div className="bg-white shadow-md p-5 rounded-lg">
-              <h3 className="font-bold text-lg text-gray-800 mb-4">Available Items</h3>
-
-              {/* New Item Input Section */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium text-gray-700 mb-3">Add Custom Item</h4>
-                <div className="flex gap-3">
-                  <div className="flex-grow">
-                    <input
-                      type="text"
-                      name="name"
-                      placeholder="Enter item name"
-                      value={newItemInput.name}
-                      onChange={handleNewItemInputChange}
-                      className="w-full p-2 border rounded-md"
-                    />
-                  </div>
-                  <div className="w-24">
-                    <input
-                      type="number"
-                      name="quantity"
-                      min="1"
-                      value={newItemInput.quantity}
-                      onChange={handleNewItemInputChange}
-                      className="w-full p-2 border rounded-md"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAddNewItem}
-                    className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+            {/* Unit and Project Selection */}
+            <div className="bg-white shadow-lg mt-8 p-5 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="relative">
+                  <select
+                    name="unit"
+                    value={formData.unit}
+                    onChange={handleInputChange}
+                    className="bg-gray-100 p-3 rounded-md border border-gray-200 w-full"
+                    required
+                    disabled={isLoadingUnits}
                   >
-                    Add
-                  </button>
-                </div>
-              </div>
-
-              {/* Existing Items Search */}
-              <div className="flex items-center bg-gray-100 p-3 rounded-md mb-4">
-                <span className="text-gray-500">🔍</span>
-                <input
-                  type="text"
-                  placeholder="Search existing items..."
-                  className="bg-transparent outline-none ml-3 text-sm w-full"
-                  value={itemInput}
-                  onChange={(e) => setItemInput(e.target.value)}
-                />
-              </div>
-
-              {/* Loading and Error States */}
-              {loading && (
-                <div className="text-center py-4">Loading items...</div>
-              )}
-
-              {error && (
-                <div className="text-red-500 text-center py-4">{error}</div>
-              )}
-
-              {/* Available Items List with Radio Buttons */}
-              <div className="space-y-2">
-                {availableItems
-                  .filter((item) => 
-                    item.ItemName.toLowerCase().includes(itemInput.toLowerCase()) ||
-                    item.ItemCode.toLowerCase().includes(itemInput.toLowerCase())
-                  )
-                  .map((item) => (
-                    <div
-                      key={item._id}
-                      className={`flex items-center bg-gray-100 p-4 rounded-md border ${
-                        selectedItem?._id === item._id ? 'border-indigo-500' : 'border-gray-200'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        id={item._id}
-                        name="itemSelection"
-                        checked={selectedItem?._id === item._id}
-                        onChange={() => handleItemSelect(item)}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-full"
-                      />
-                      <label htmlFor={item._id} className="ml-3 flex flex-row justify-between flex-grow cursor-pointer">
-                        <div>
-                          <p className="text-gray-800 font-medium">{item.ItemName}</p>
-                          <p className="text-gray-500 text-sm">Type: {item.type}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-gray-500 text-sm">Code: {item.ItemCode}</p>
-                          {item.ItemCategory && (
-                            <p className="text-gray-500 text-sm">Category: {item.ItemCategory}</p>
-                          )}
-                        </div>
-                      </label>
-                    </div>
-                  ))}
-              </div>
-
-              {/* No Results Message */}
-              {!loading && !error && availableItems.filter(item => 
-                item.ItemName.toLowerCase().includes(itemInput.toLowerCase()) ||
-                item.ItemCode.toLowerCase().includes(itemInput.toLowerCase())
-              ).length === 0 && (
-                <div className="text-center py-4 text-gray-500">
-                  No items found matching your search
-                </div>
-              )}
-
-              {/* Keep existing custom item section
-              <input
-                type="text"
-                placeholder="New Item Description"
-                value={customItem}
-                onChange={(e) => setCustomItem(e.target.value)}
-                className="w-full p-2 mt-4 rounded-md border border-gray-300"
-              />
-              <button
-                type="button"
-                onClick={handleAddCustomItem}
-                className="w-full mt-2 bg-indigo-500 text-white p-2 rounded-md hover:bg-indigo-600"
-              >
-                Add Custom Item
-              </button> */}
-
-              {/* Keep existing quantity popup */}
-              {showQuantityPopup && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-white p-6 rounded-lg shadow-xl w-96">
-                    <h3 className="text-lg font-semibold mb-4">Select Quantity</h3>
-                    <p className="text-gray-600 mb-4">{selectedItem?.name}</p>
-                    <input
-                      type="number"
-                      min="1"
-                      value={quantityInput}
-                      onChange={(e) => setQuantityInput(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-full p-2 border rounded-md mb-4"
-                    />
-                    <div className="flex justify-end space-x-3">
-                      <button
-                        type="button"
-                        onClick={() => setShowQuantityPopup(false)}
-                        className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
+                    <option value="" disabled>
+                      {isLoadingUnits ? 'Loading Units...' : 'Select Unit ▼'}
+                    </option>
+                    {availableUnits.map(unit => (
+                      <option 
+                        key={unit.id} 
+                        value={unit.code}
                       >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleSaveQuantity}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                      >
-                        Save
-                      </button>
-                    </div>
-                  </div>
+                        {unit.name} ({unit.code})
+                      </option>
+                    ))}
+                  </select>
+                  {unitError && (
+                    <p className="text-red-500 text-sm mt-1">{unitError}</p>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Selected Items */}
-          <div className="mt-6">
-            <h4 className="font-medium text-gray-700 mb-3">Selected Items</h4>
-            {selectedItems.length > 0 ? (
-              <div className="space-y-3">
-                {selectedItems.map((item, index) => (
-                  <div 
-                    key={item.id || item._id}
-                    className="flex justify-between items-center bg-gray-50 p-3 rounded-lg"
+                <div className="relative">
+                  <select
+                    name="project"
+                    value={formData.project}
+                    onChange={handleInputChange}
+                    className="bg-gray-100 p-3 rounded-md border border-gray-200 w-full"
+                    required
+                    disabled={isLoadingProjects}
                   >
-                    <div>
-                      <p className="font-medium">
-                        {item.ItemName}
-                        {item.isCustom && <span className="ml-2 text-xs text-gray-500">(Custom)</span>}
-                      </p>
-                      {!item.isCustom && item.ItemCode && (
-                        <p className="text-sm text-gray-500">Code: {item.ItemCode}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => decrementQuantity(index)}
-                        className="px-2 py-1 border rounded"
+                    <option value="" disabled>
+                      {isLoadingProjects ? 'Loading Projects...' : 'Select Project ▼'}
+                    </option>
+                    {availableProjects.map(project => (
+                      <option 
+                        key={project._id} 
+                        value={project.id}
                       >
-                        -
-                      </button>
-                      <span>{item.quantity}</span>
-                      <button
-                        type="button"
-                        onClick={() => incrementQuantity(index)}
-                        className="px-2 py-1 border rounded"
-                      >
-                        +
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(index)}
-                        className="ml-2 text-red-500 hover:text-red-700"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                  {projectError && (
+                    <p className="text-red-500 text-sm mt-1">{projectError}</p>
+                  )}
+                </div>
               </div>
-            ) : (
-              <p className="text-center text-gray-500">No items selected</p>
-            )}
-          </div>
-
-          {/* Request Details Section - New Addition */}
-          <div className="bg-white shadow-lg mt-8 p-5 rounded-lg">
-            <h3 className="font-bold text-lg text-gray-800 mb-4">Request Details</h3>
-            
-            {/* Purpose Field */}
-            <div className="mb-4">
-              <label className="block text-md font-medium text-gray-700 mb-2">
-                Purpose
-              </label>
-              <textarea
-                name="purpose"
-                value={formData.purpose}
-                onChange={handleInputChange}
-                className="w-full p-3 rounded-md border border-gray-300 min-h-[100px]"
-                placeholder="Please describe the purpose of this procurement request"
-                required
-              />
             </div>
 
-            {/* Priority Field */}
-            <div className="mb-4">
-              <label className="block text-md font-medium text-gray-700 mb-2">
-                Priority Level
-              </label>
-              <select
-                name="priority"
-                value={formData.priority}
-                onChange={handleInputChange}
-                className="w-full bg-gray-100 p-3 rounded-md border border-gray-300"
-                required
-              >
-                <option value="low">Low Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="high">High Priority</option>
-                <option value="urgent">Urgent</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Approval Section */}
-          <div className="bg-white shadow-lg mt-8 p-5 rounded-lg">
-            <h3 className="font-bold text-lg text-gray-800 mb-2">Approval</h3>
-            <select
-              name="managerId"
-              value={formData.managerId}
-              onChange={handleInputChange}
-              className="w-full bg-gray-100 p-3 rounded-md border border-gray-200"
-              required
-              disabled={isLoadingUsers}
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`w-full ${
+                isSubmitting 
+                  ? 'bg-indigo-300 cursor-not-allowed' 
+                  : 'bg-indigo-500 hover:bg-indigo-600'
+              } text-white py-2 rounded-md text-lg mt-8`}
             >
-              <option value="">
-                {isLoadingUsers ? 'Loading Managers...' : 'Select Manager ▼'}
-              </option>
-              {managers.map(manager => (
-                <option key={manager._id} value={manager._id}>
-                  {manager.username} - {manager.email}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Unit and Project Selection */}
-          <div className="bg-white shadow-lg mt-8 p-5 rounded-lg">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="relative">
-                <select
-                  name="unit"
-                  value={formData.unit}
-                  onChange={handleInputChange}
-                  className="bg-gray-100 p-3 rounded-md border border-gray-200 w-full"
-                  required
-                  disabled={isLoadingUnits}
-                >
-                  <option value="" disabled>
-                    {isLoadingUnits ? 'Loading Units...' : 'Select Unit ▼'}
-                  </option>
-                  {availableUnits.map(unit => (
-                    <option 
-                      key={unit.id} 
-                      value={unit.code}
-                    >
-                      {unit.name} ({unit.code})
-                    </option>
-                  ))}
-                </select>
-                {unitError && (
-                  <p className="text-red-500 text-sm mt-1">{unitError}</p>
-                )}
-              </div>
-              <div className="relative">
-                <select
-                  name="project"
-                  value={formData.project}
-                  onChange={handleInputChange}
-                  className="bg-gray-100 p-3 rounded-md border border-gray-200 w-full"
-                  required
-                  disabled={isLoadingProjects}
-                >
-                  <option value="" disabled>
-                    {isLoadingProjects ? 'Loading Projects...' : 'Select Project ▼'}
-                  </option>
-                  {availableProjects.map(project => (
-                    <option 
-                      key={project._id} 
-                      value={project.id}
-                    >
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
-                {projectError && (
-                  <p className="text-red-500 text-sm mt-1">{projectError}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`w-full ${
-              isSubmitting 
-                ? 'bg-indigo-300 cursor-not-allowed' 
-                : 'bg-indigo-500 hover:bg-indigo-600'
-            } text-white py-2 rounded-md text-lg mt-8`}
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit Request'}
-          </button>
-        </form>
+              {isSubmitting ? 'Submitting...' : 'Submit Request'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

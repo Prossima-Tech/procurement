@@ -55,6 +55,8 @@ function RoleBasedComponent() {
       return <Layout />;
     case 'manager':
       return <ManagerDashboard />;
+    case 'employee':
+      return <InternalForm />;
     default:
       return <Navigate to="/unauthorized" replace />;
   }
