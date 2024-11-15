@@ -200,9 +200,24 @@ const CreateRfqModal = ({ isOpen, onClose, indent, onSuccess }) => {
                     'Content-Type': 'application/json'
                 }
             });
+            console.log("response after creation of rfq", response.data)
+            if (response.data.success === true) {
+                // Send emails to vendors
+                await axios.post(
+                    `${baseURL}/rfq/notify-vendors`,
+                    {
+                        rfqId: response.data.data.rfqId,
+                        vendorIds: selectedVendors,
+                        // items: formattedItems,
+                        submissionDeadline: rfqFormData.submissionDeadline,
+                        generalTerms: rfqFormData.generalTerms
+                    },
+                    {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
 
-            if (response.data.success) {
-                message.success('RFQ created successfully');
+                message.success('RFQ created and vendors notified successfully');
                 onSuccess();
                 handleClose();
             } else {
