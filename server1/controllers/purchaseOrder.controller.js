@@ -4,6 +4,83 @@ const Project = require('../models/project.model'); // Import the Project model
 const Unit = require('../models/unit.model'); // Import the Unit model
 const { PartCode } = require('../models/part.model'); // Make sure to import this
 const mongoose = require('mongoose');
+const ItemPriceHistory = require('../models/itemPriceHistory');
+
+// Add this function to handle price history updates
+const updateItemPriceHistory = async (purchaseOrder) => {
+    try {
+        console.log('📊 Starting price history update for PO:', purchaseOrder._id);
+
+        // Process each item in the purchase order
+        for (const item of purchaseOrder.items) {
+            console.log(`Processing item: ${item.partCode}`);
+
+            // Create the price entry object
+            const priceEntry = {
+                vendor: purchaseOrder.vendorId,
+                purchaseOrder: purchaseOrder._id,
+                unitPrice: item.unitPrice,
+                quantity: item.quantity,
+                totalPrice: item.totalPrice,
+                poDate: purchaseOrder.poDate || new Date(),
+                metadata: {
+                    project: purchaseOrder.projectId,
+                    unit: purchaseOrder.unitId,
+                    department: purchaseOrder.department
+                }
+            };
+
+            // Find existing price history or create new one
+            const existingHistory = await ItemPriceHistory.findOne({ item: item.partCode });
+
+            if (existingHistory) {
+                console.log('Updating existing price history');
+                
+                // Add new price entry to history array
+                existingHistory.priceHistory.push(priceEntry);
+                
+                // Calculate new statistics
+                const prices = existingHistory.priceHistory.map(entry => entry.unitPrice);
+                existingHistory.statistics = {
+                    averagePrice: prices.reduce((a, b) => a + b, 0) / prices.length,
+                    lowestPrice: Math.min(...prices),
+                    highestPrice: Math.max(...prices),
+                    lastPrice: item.unitPrice,
+                    totalOrders: existingHistory.priceHistory.length
+                };
+
+                existingHistory.lastUpdated = new Date();
+                await existingHistory.save();
+                
+                console.log(`✅ Updated price history for item: ${item.partCode}`);
+            } else {
+                console.log('Creating new price history record');
+                
+                // Create new price history document
+                const newPriceHistory = new ItemPriceHistory({
+                    item: item.partCode,
+                    priceHistory: [priceEntry],
+                    statistics: {
+                        averagePrice: item.unitPrice,
+                        lowestPrice: item.unitPrice,
+                        highestPrice: item.unitPrice,
+                        lastPrice: item.unitPrice,
+                        totalOrders: 1
+                    }
+                });
+
+                await newPriceHistory.save();
+                console.log(`✅ Created new price history for item: ${item.partCode}`);
+            }
+        }
+
+        console.log('✅ Price history update completed successfully');
+    } catch (error) {
+        console.error('❌ Error updating price history:', error);
+        // Don't throw the error - we don't want to fail the PO creation
+        // but we should log it for monitoring
+    }
+};
 
 exports.createPurchaseOrder = async (req, res) => {
   try {
@@ -172,6 +249,9 @@ exports.createPurchaseOrder = async (req, res) => {
     console.log(" Saving new PurchaseOrder");
     const savedPurchaseOrder = await newPurchaseOrder.save();
     console.log(" Saved PurchaseOrder:", savedPurchaseOrder._id);
+
+    // Add price history update after PO is saved
+    await updateItemPriceHistory(savedPurchaseOrder);
 
     res.status(201).json({
       success: true,

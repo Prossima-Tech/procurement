@@ -3,9 +3,11 @@ const User = require('../models/user.model');
 const Unit = require('../models/unit.model');
 const Project = require('../models/project.model');
 const RFQ = require('../models/rfq.model');
-const ItemVendors = require('../models/itemVendors.model');
+const ItemVendors = require('../models/itemPriceHistory');
 const mongoose = require('mongoose');
 const Vendor = require('../models/vendor.model');
+const { sendEmail } = require('../services/emailService');
+
 // Create new RFQ
 exports.createRFQ = async (req, res) => {
     // console.log('🚀 Starting createRFQ process');
@@ -324,7 +326,58 @@ exports.createOrUpdateItemVendors = async (req, res) => {
     }
 };
 
+//send notifications to vendors
+exports.notifyVendors = async (req,res) =>{
+    try {
+        const { rfqId, vendorIds, submissionDeadline, generalTerms } = req.body;
 
+        // Fetch RFQ details
+        const rfq = await RFQ.findById(rfqId)
+            .populate('items.indentItemId')
+            .populate('selectedVendors.vendor');
+
+        if (!rfq) {
+            return res.status(404).json({ success: false, message: 'RFQ not found' });
+        }
+
+        // Fetch vendor details
+        const vendors = await Vendor.find({ _id: { $in: vendorIds } });
+
+        // Send emails to each vendor
+        for (const vendor of vendors) {
+            const emailContent = {
+                to: vendor.email,
+                subject: `New RFQ Request - ${rfq._id}`,
+                html: `
+                    <h2>Request for Quotation</h2>
+                    <p>Dear ${vendor.name},</p>
+                    <p>You have been invited to submit a quotation for the following items:</p>
+                    <ul>
+                        ${rfq.items.map(item => `
+                            <li>
+                                ${item.name} - Quantity: ${item.quantity}
+                                ${item.itemCode ? `(Item Code: ${item.itemCode})` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
+                    <p><strong>Submission Deadline:</strong> ${new Date(submissionDeadline).toLocaleDateString()}</p>
+                    <p><strong>General Terms:</strong></p>
+                    <p>${generalTerms}</p>
+                    <p>Please log in to our portal to submit your quotation.</p>
+                    <p>Best regards,<br>Procurement Team</p>
+                `
+            };
+
+            // Send email using your email service
+            await sendEmail(emailContent);
+        }
+
+        res.json({ success: true, message: 'Vendors notified successfully' });
+    } catch (error) {
+        console.error('Error notifying vendors:', error);
+        res.status(500).json({ success: false, message: 'Failed to notify vendors' });
+    }
+}
 
 // Get RFQ details for vendor quote form
 exports.getVendorQuoteForm = async (req, res) => {
