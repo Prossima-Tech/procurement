@@ -1,10 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
-import Modal from '../common/Modal';
-import DatePicker from 'react-datepicker';
-import "react-datepicker/dist/react-datepicker.css";
 import axios from 'axios';
-import { AlertCircle } from 'lucide-react';
 import { message, Table } from 'antd';
 import { baseURL } from '../../utils/endpoint';
 import CreateRfqModal from './CreateRfqModal';
@@ -138,10 +134,9 @@ export const RequestForQuotationComponent = () => {
             dataIndex: 'status',
             key: 'status',
             render: (status) => (
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                    status === 'manager_approved' ? 'bg-green-100 text-green-800' :
+                <span className={`px-2 py-1 rounded-full text-xs ${status === 'manager_approved' ? 'bg-green-100 text-green-800' :
                     'bg-gray-100 text-gray-800'
-                }`}>
+                    }`}>
                     {status?.toUpperCase()}
                 </span>
             )
@@ -217,11 +212,10 @@ export const RequestForQuotationComponent = () => {
             dataIndex: 'status',
             key: 'status',
             render: (status) => (
-                <span className={`px-2 py-1 rounded-full text-sm ${
-                    status === 'published' ? 'bg-green-100 text-green-800' :
+                <span className={`px-2 py-1 rounded-full text-sm ${status === 'published' ? 'bg-green-100 text-green-800' :
                     status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                    'bg-blue-100 text-blue-800'
-                }`}>
+                        'bg-blue-100 text-blue-800'
+                    }`}>
                     {status.charAt(0).toUpperCase() + status.slice(1)}
                 </span>
             )
@@ -288,21 +282,19 @@ export const RequestForQuotationComponent = () => {
                 <div className="flex space-x-4">
                     <button
                         onClick={() => setActiveTab('rfqs')}
-                        className={`px-4 py-2 rounded-md ${
-                            activeTab === 'rfqs' 
-                                ? 'bg-blue-500 text-white' 
-                                : 'bg-gray-200 text-gray-700'
-                        }`}
+                        className={`px-4 py-2 rounded-md ${activeTab === 'rfqs'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 text-gray-700'
+                            }`}
                     >
                         RFQ List
                     </button>
                     <button
                         onClick={() => setActiveTab('indents')}
-                        className={`px-4 py-2 rounded-md ${
-                            activeTab === 'indents' 
-                                ? 'bg-blue-500 text-white' 
-                                : 'bg-gray-200 text-gray-700'
-                        }`}
+                        className={`px-4 py-2 rounded-md ${activeTab === 'indents'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 text-gray-700'
+                            }`}
                     >
                         Approved Indents
                     </button>
