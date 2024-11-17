@@ -6,9 +6,14 @@ const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['admin', 'manager', 'employee'], default: 'manager' },
+  role: { type: String, enum: ['admin', 'manager', 'employee','vendor'], default: 'manager' },
   permissions: [{ type: String }],
   isActive: { type: Boolean, default: true },
+  vendorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Vendor',
+    required: false
+  },
 }, { timestamps: true });
 
 UserSchema.pre('save', async function (next) {

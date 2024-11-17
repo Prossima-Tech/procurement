@@ -86,11 +86,19 @@ const LoginPage = () => {
                         </button>
                     </div>
                 </form>
-                <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Don&apos;t have an account?{' '}
-                    <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
-                        Register here
-                    </Link>
+                <div className={`flex flex-col space-y-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <div>
+                        Don&apos;t have an account?{' '}
+                        <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+                            Register here
+                        </Link>
+                    </div>
+                    <div>
+                        Are you a vendor?{' '}
+                        <Link to="/vendor-registration" className="font-medium text-indigo-600 hover:text-indigo-500">
+                            Register as Vendor
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>

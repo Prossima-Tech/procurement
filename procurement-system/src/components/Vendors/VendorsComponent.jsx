@@ -6,6 +6,7 @@ import { Trash2, X, Pencil } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from 'react-toastify';
 import { baseURL } from '../../utils/endpoint';
+import { Modal } from 'antd';
 const VendorsComponent = () => {
     const { isDarkMode } = useTheme();
     const [vendors, setVendors] = useState([]);
@@ -14,6 +15,13 @@ const VendorsComponent = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [editingVendor, setEditingVendor] = useState(null);
+    const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
+    const [tempFormData, setTempFormData] = useState(null);
+    const [passwordData, setPasswordData] = useState({
+        password: '',
+        confirmPassword: ''
+    });
+    const [passwordError, setPasswordError] = useState('');
 
     // Toast configuration
     const toastConfig = {
@@ -95,11 +103,11 @@ const VendorsComponent = () => {
 
     const handleSubmit = async (formData) => {
         try {
-            setIsLoading(true);
             setError(null);
-
+            
             if (editingVendor) {
-                // Update existing vendor
+                // Handle edit case directly
+                setIsLoading(true);
                 await axios.put(
                     `${baseURL}/vendors/${editingVendor._id}`,
                     formData,
@@ -111,27 +119,71 @@ const VendorsComponent = () => {
                     }
                 );
                 toast.success('Vendor updated successfully!', toastConfig);
+                await fetchVendors();
+                setIsModalOpen(false);
+                setEditingVendor(null);
             } else {
-                // Create new vendor
-                await axios.post(
-                    `${baseURL}/vendors/`,
-                    formData,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${getToken()}`,
-                            'Content-Type': 'application/json'
-                        }
-                    }
-                );
-                toast.success('Vendor created successfully!', toastConfig);
+                // For new vendor, show password modal
+                setTempFormData(formData);
+                setIsModalOpen(false); // Close the form modal
+                setIsPasswordModalVisible(true);
             }
-
-            await fetchVendors();
-            setIsModalOpen(false);
-            setEditingVendor(null);
         } catch (err) {
-            const errorMessage = err.response?.data?.message || `Failed to ${editingVendor ? 'update' : 'create'} vendor. Please try again.`;
-            console.error(`Error ${editingVendor ? 'updating' : 'creating'} vendor:`, err);
+            const errorMessage = err.response?.data?.message || `Failed to ${editingVendor ? 'update' : 'register'} vendor`;
+            setError(errorMessage);
+            toast.error(errorMessage, toastConfig);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handlePasswordChange = (e) => {
+        const { name, value } = e.target;
+        setPasswordData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+        setPasswordError('');
+    };
+
+    const handlePasswordSubmit = async () => {
+        if (passwordData.password !== passwordData.confirmPassword) {
+            setPasswordError("Passwords don't match");
+            return;
+        }
+        if (passwordData.password.length < 6) {
+            setPasswordError("Password must be at least 6 characters long");
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            const completeData = {
+                ...tempFormData,
+                password: passwordData.password
+            };
+
+            // Use vendor-register endpoint for creating new vendor
+            await axios.post(
+                `${baseURL}/auth/vendor-register`,
+                completeData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            toast.success('Vendor registered successfully!', toastConfig);
+            await fetchVendors();
+            setIsPasswordModalVisible(false);
+            setPasswordData({ password: '', confirmPassword: '' });
+            setTempFormData(null);
+        } catch (err) {
+            const errorMessage = err.response?.data?.message || 'Failed to register vendor';
             setError(errorMessage);
             toast.error(errorMessage, toastConfig);
         } finally {
@@ -297,6 +349,56 @@ const VendorsComponent = () => {
                     </div>
                 </>
             )}
+
+            {/* Password Modal */}
+            <Modal
+                title="Set Vendor Password"
+                open={isPasswordModalVisible}
+                onOk={handlePasswordSubmit}
+                onCancel={() => {
+                    setIsPasswordModalVisible(false);
+                    setPasswordData({ password: '', confirmPassword: '' });
+                    setPasswordError('');
+                }}
+                okText="Register Vendor"
+                cancelText="Cancel"
+                confirmLoading={isLoading}
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Password*</label>
+                        <input
+                            type="password"
+                            name="password"
+                            value={passwordData.password}
+                            onChange={handlePasswordChange}
+                            className="w-full p-2 border rounded"
+                            required
+                            placeholder="Enter password"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Confirm Password*</label>
+                        <input
+                            type="password"
+                            name="confirmPassword"
+                            value={passwordData.confirmPassword}
+                            onChange={handlePasswordChange}
+                            className="w-full p-2 border rounded"
+                            required
+                            placeholder="Confirm password"
+                        />
+                    </div>
+                    {passwordError && (
+                        <div className="text-red-500 text-sm">
+                            {passwordError}
+                        </div>
+                    )}
+                    <div className="text-sm text-gray-500">
+                        Password must be at least 6 characters long.
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };
