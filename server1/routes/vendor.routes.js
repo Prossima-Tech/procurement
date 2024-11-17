@@ -54,4 +54,9 @@ router.get('/getByCode/:code',
   asyncHandler(vendorController.getVendorByCode)
 );
 
+// GET /api/vendors/getVendorByUserId/:userId
+router.get('/getVendorByUserId/:userId',
+  asyncHandler(vendorController.getVendorByUserId)
+);
+
 module.exports = router;

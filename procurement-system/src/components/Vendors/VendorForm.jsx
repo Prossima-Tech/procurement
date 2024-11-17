@@ -60,7 +60,7 @@ const VendorForm = ({ onSubmit, onCancel, isLoading, initialData }) => {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleFormSubmit = (e) => {
         e.preventDefault();
         onSubmit(formData);
     };
@@ -69,7 +69,7 @@ const VendorForm = ({ onSubmit, onCancel, isLoading, initialData }) => {
     const labelClass = 'block text-xs font-medium mb-1';
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-4">
             <div className="grid grid-cols-3 gap-3">
                 <div>
                     <label className={labelClass}>PO Prefix</label>
@@ -180,7 +180,7 @@ const VendorForm = ({ onSubmit, onCancel, isLoading, initialData }) => {
                     className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
                     disabled={isLoading}
                 >
-                    {isLoading ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Vendor' : 'Create Vendor')}
+                    {isLoading ? 'Creating...' : 'Create Vendor'}
                 </button>
             </div>
         </form>

@@ -1,5 +1,5 @@
 const Vendor = require('../models/vendor.model');
-
+const User = require('../models/user.model');
 exports.createVendor = async (req, res) => {
   try {
     // Check if a vendor with the same email already exists
@@ -142,6 +142,22 @@ exports.searchVendors = async (req, res) => {
     res.json(vendors);
   } catch (error) {
     console.error("Search error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getVendorByUserId = async (req, res) => {
+  try {
+    console.log("userId received", req.params.userId);
+    const user = await User.findById(req.params.userId);
+    console.log("user",user);
+    const vendor = await Vendor.findById(user.vendorId);
+    console.log("vendor",vendor);
+    if (!vendor) {
+      return res.status(404).json({ message: 'Vendor not found' });
+    }
+    res.json(vendor);
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };

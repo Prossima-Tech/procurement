@@ -11,6 +11,8 @@ import InternalForm from './components/orders/InternalForm';
 import ManagerDashboard from './components/Manager/ManagerDashboard';
 import { useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
+import VendorRegistration from './components/authentication/VendorRegistration';
+import VendorDashboard from './components/Vendors/VendorDashboard';
 
 function App() {
   return (
@@ -25,7 +27,7 @@ function App() {
               <Route path="/unauthorized" element={<UnauthorizedPage />} />
               <Route path="/external-form" element={<ExternalForm />} />
               <Route path="/internal-form" element={<InternalForm />} />
-
+              <Route path="/vendor-registration" element={<VendorRegistration />} />
               {/* Protected Routes */}
               <Route
                 path="/"
@@ -57,6 +59,8 @@ function RoleBasedComponent() {
       return <ManagerDashboard />;
     case 'employee':
       return <InternalForm />;
+    case 'vendor':
+      return <VendorDashboard />;
     default:
       return <Navigate to="/unauthorized" replace />;
   }
