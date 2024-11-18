@@ -59,4 +59,9 @@ router.get('/getVendorByUserId/:userId',
   asyncHandler(vendorController.getVendorByUserId)
 );
 
+// GET /api/vendors/purchase-orders/:vendorId
+router.get('/purchase-orders/:vendorId',
+  asyncHandler(vendorController.getPurchaseOrdersByVendorId)
+);
+
 module.exports = router;
