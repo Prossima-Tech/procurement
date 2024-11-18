@@ -1,5 +1,6 @@
 const Vendor = require('../models/vendor.model');
 const User = require('../models/user.model');
+const PurchaseOrder = require('../models/purchaseOrder.model');
 exports.createVendor = async (req, res) => {
   try {
     // Check if a vendor with the same email already exists
@@ -161,3 +162,13 @@ exports.getVendorByUserId = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+exports.getPurchaseOrdersByVendorId = async (req, res) => {
+  try {
+    const purchaseOrders = await PurchaseOrder.find({ vendorId: req.params.vendorId });
+    res.json(purchaseOrders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
