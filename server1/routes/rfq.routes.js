@@ -13,6 +13,6 @@ router.post('/ItemVendorsRelation', authenticate, rfqController.createOrUpdateIt
 
 router.get('/getVendorQuoteForm/:id', rfqController.getVendorQuoteForm);
 router.post('/submitVendorQuote', authenticate, rfqController.submitVendorQuote); 
-
+router.get('/vendor/:id', rfqController.getVendorRFQs);
 
 module.exports = router;
