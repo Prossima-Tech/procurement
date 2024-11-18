@@ -9,7 +9,7 @@ router.get('/getPart/:partId', partController.getPart);
 router.delete('/deletePart/:id', partController.deletePart);
 router.put('/updatePart/:id', partController.updatePart);
 router.get('/getPartByCode/:code', partController.getPartByCode);
-
+router.get('/getPartByItemCode/:itemCode', partController.getPartByItemCode);
 // SizeName routes
 router.post('/sizes/createSizeName', partController.createSizeName);
 router.get('/sizes/allSizeNames', partController.getAllSizeNames);
