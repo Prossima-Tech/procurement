@@ -441,6 +441,13 @@ exports.getVendorQuoteForm = async (req, res) => {
     }
 };
 
+exports.getVendorRFQs = async (req, res) => {
+    const { id } = req.params;
+    console.log("fetch rfq for vendorId", id);
+    const rfqs = await RFQ.find({ 'selectedVendors.vendor': id });
+    res.json(rfqs);
+};
+
 // Submit vendor quote
 exports.submitVendorQuote = async (req, res) => {
     try {
