@@ -6,6 +6,7 @@ import { baseURL } from '../../utils/endpoint';
 import CreateRfqModal from './CreateRfqModal';
 import ViewRfqModal from './ViewRfqModal';
 import VendorQuoteForm from './VendorQuoteForm';
+import CreateDirectPOModal from './CreateDirectPOModal';
 
 const ITEM_STATUS = {
     AVAILABLE: 'available',
@@ -27,6 +28,7 @@ export const RequestForQuotationComponent = () => {
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isQuoteFormOpen, setIsQuoteFormOpen] = useState(false);
     const [selectedVendor, setSelectedVendor] = useState(null);
+    const [isCreatePOModalOpen, setIsCreatePOModalOpen] = useState(false);
 
     // Add this function after your state declarations
     const handleViewRfq = (record) => {
@@ -145,15 +147,26 @@ export const RequestForQuotationComponent = () => {
             title: 'Action',
             key: 'action',
             render: (_, record) => (
-                <button
-                    onClick={() => {
-                        setSelectedIndent(record);
-                        setIsCreateRfqModalOpen(true);
-                    }}
-                    className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
-                >
-                    Create RFQ
-                </button>
+                <div className="flex space-x-2">
+                    <button
+                        onClick={() => {
+                            setSelectedIndent(record);
+                            setIsCreateRfqModalOpen(true);
+                        }}
+                        className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+                    >
+                        Create RFQ
+                    </button>
+                    <button
+                        onClick={() => {
+                            setSelectedIndent(record);
+                            setIsCreatePOModalOpen(true);
+                        }}
+                        className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm"
+                    >
+                        Create PO
+                    </button>
+                </div>
             )
         }
     ];
@@ -237,14 +250,14 @@ export const RequestForQuotationComponent = () => {
                     >
                         View
                     </button>
-                    {/* {record.status === 'published' && (
+                    {record.status === 'published' && (
                         <button
                             onClick={() => handleOpenQuoteForm(record, record.selectedVendors[0])}
                             className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
                         >
                             Submit Quote
                         </button>
-                    )} */}
+                    )}
                 </div>
             )
         }
@@ -351,6 +364,22 @@ export const RequestForQuotationComponent = () => {
                     onClose={handleCloseQuoteForm}
                     rfq={selectedRfq}
                     vendor={selectedVendor}
+                />
+            )}
+
+            {isCreatePOModalOpen && selectedIndent && (
+                <CreateDirectPOModal
+                    isOpen={isCreatePOModalOpen}
+                    onClose={() => {
+                        setIsCreatePOModalOpen(false);
+                        setSelectedIndent(null);
+                    }}
+                    indent={selectedIndent}
+                    onSuccess={() => {
+                        setIsCreatePOModalOpen(false);
+                        setSelectedIndent(null);
+                        message.success('Purchase Order created successfully');
+                    }}
                 />
             )}
         </div>

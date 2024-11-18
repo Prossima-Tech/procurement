@@ -255,6 +255,17 @@ exports.updatePart = async (req, res) => {
   }
 };
 
+exports.getPartByItemCode = async (req, res) => {
+  try {
+    const itemCode = req.params.itemCode;
+    console.log("itemCode",itemCode);
+    const parts = await PartCode.find({ ItemCode: itemCode });
+    console.log("parts",parts);
+    res.status(200).json({ success: true, data: parts });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Server Error' });
+  }
+};
 
 // SizeName controllers
 exports.createSizeName = async (req, res) => {

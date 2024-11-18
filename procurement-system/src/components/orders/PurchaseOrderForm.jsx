@@ -6,7 +6,18 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { baseURL } from '../../utils/endpoint';
 import axios from 'axios';
-const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, setIsModalOpen,setIsCreatingNew,fetchPurchaseOrders,setEditingPO }) => {
+const PurchaseOrderForm = ({ 
+    onCancel, 
+    isLoading, 
+    setIsLoading, 
+    initialData, 
+    setIsModalOpen,
+    setIsCreatingNew,
+    fetchPurchaseOrders,
+    setEditingPO,
+    isDirectPO = false,
+    readOnlyItems = false
+}) => {
     const { isDarkMode } = useTheme();
     const [formData, setFormData] = useState({
         vendorId: '',
@@ -57,15 +68,17 @@ const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, set
         if (initialData) {
             const formattedData = {
                 ...initialData,
-                poDate: initialData.poDate ? new Date(initialData.poDate).toISOString().split('T')[0] : '',
-                validUpto: initialData.validUpto ? new Date(initialData.validUpto).toISOString().split('T')[0] : '',
-                deliveryDate: initialData.deliveryDate ? new Date(initialData.deliveryDate).toISOString().split('T')[0] : '',
+                poDate: initialData.poDate || new Date().toISOString().split('T')[0],
+                validUpto: initialData.validUpto || '',
+                deliveryDate: initialData.deliveryDate || '',
                 items: initialData.items.map(item => ({
-                    partCode: item.partCode.PartCodeNumber || item.partCode,
+                    partCode: item.partCode,
                     quantity: item.quantity,
-                    unitPrice: item.unitPrice,
+                    unitPrice: item.unitPrice || '',
                     masterItemName: item.masterItemName,
-                    totalPrice: item.totalPrice
+                    unit: item.unit,
+                    totalPrice: item.totalPrice || '',
+                    itemDetails: item.itemDetails
                 }))
             };
             setFormData(formattedData);
@@ -136,11 +149,28 @@ const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, set
         }));
     };
 
-    const handleItemChange = (index, e) => {
-        const { name, value } = e.target;
-        const newItems = [...formData.items];
-        newItems[index][name] = value;
-        setFormData(prev => ({ ...prev, items: newItems }));
+    const handleItemChange = (index, field, value) => {
+        const updatedItems = [...formData.items];
+        updatedItems[index] = {
+            ...updatedItems[index],
+            [field]: value
+        };
+
+        if (field === 'unitPrice') {
+            updatedItems[index].totalPrice = calculateTotalPrice(
+                updatedItems[index].quantity,
+                value
+            );
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            items: updatedItems
+        }));
+    };
+
+    const calculateTotalPrice = (quantity, unitPrice) => {
+        return quantity && unitPrice ? (quantity * unitPrice).toFixed(2) : '';
     };
 
     const addItem = async () => {
@@ -270,81 +300,35 @@ const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, set
         }
     };
 
-    const handleSubmit = async (e, status) => {
+    const handleSubmit = async (e, status = 'draft') => {
         e.preventDefault();
-        if (isLoading) return;
-
-        console.log("Form data before processing", formData);
-        console.log("Status", status);
-        // Validate required fields
-        if (!formData.vendorId) {
-            toast.error("Please select a valid vendor");
-            return;
-        }
-        if (!formData.projectId) {
-            toast.error("Please select a valid project");
-            return;
-        }
-        if (!formData.unitId) {
-            toast.error("Please select a valid unit");
-            return;
-        }
-        if (!formData.poDate) {
-            toast.error("Please select PO date");
-            return;
-        }
-        if (!formData.validUpto) {
-            toast.error("Please select validity date");
-            return;
-        }
-        if (!formData.deliveryDate) {
-            toast.error("Please select delivery date");
-            return;
-        }
-
-        // Filter out empty items
-        const validItems = formData.items.filter(item =>
-            item.partCode && item.quantity && item.unitPrice
-        );
-
-        if (validItems.length === 0) {
-            toast.error("Please add at least one valid item to the order");
-            return;
-        }
-
-        // Create a new object with valid items
-        const dataToSend = {
-            ...formData,
-            items: validItems,
-            status: status // Set the status based on which button was clicked
-        };
-
-        console.log("Data to send", dataToSend);
-
-        // Set loading state
         setIsLoading(true);
 
         try {
-            const response = await axios.post(`${baseURL}/purchase-orders/createPO`, dataToSend, {
-                headers: {
-                    'Authorization': `Bearer ${getToken()}`,
-                    'Content-Type': 'application/json',
-                }
-            });
+            // Validate required fields
+            if (!formData.vendorCode || formData.items.some(item => !item.unitPrice)) {
+                toast.error('Please fill all required fields including unit prices');
+                return;
+            }
 
-            if (response.status === 201) {
-                toast.success("Purchase order created successfully");
-                setIsCreatingNew(false);
-                setIsModalOpen(false);
-            } else {
-                throw new Error('Failed to create Purchase Order');
+            const payload = {
+                ...formData,
+                status,
+                isDirectPO: true,
+                indentReference: initialData.indentReference
+            };
+
+            const response = await api('/purchase-orders/create', 'post', payload);
+
+            if (response.data.success) {
+                toast.success(`Purchase order ${status === 'draft' ? 'saved' : 'created'} successfully`);
+                onSuccess?.();
             }
         } catch (error) {
-            console.error('Error creating Purchase Order:', error);
-            toast.error(`Failed to create purchase order: ${error.response?.data?.message || error.message}`);
+            console.error('Error creating PO:', error);
+            toast.error(error.response?.data?.message || 'Failed to create purchase order');
         } finally {
             setIsLoading(false);
-            fetchPurchaseOrders();
         }
     };
 
@@ -408,6 +392,43 @@ const PurchaseOrderForm = ({ onCancel, isLoading, setIsLoading, initialData, set
     const labelClass = 'block text-sm font-medium mb-2';
     const buttonClass = 'px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600';
     const readOnlyClass = `${inputClass} bg-opacity-60 cursor-not-allowed`;
+
+    const renderItemsTable = () => (
+        <table className="w-full mt-4">
+            <thead>
+                <tr className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                    <th className="p-2 text-left">Part Code</th>
+                    <th className="p-2 text-left">Item Name</th>
+                    <th className="p-2 text-left">Quantity</th>
+                    <th className="p-2 text-left">Unit</th>
+                    <th className="p-2 text-left">Unit Price</th>
+                    <th className="p-2 text-left">Total Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {formData.items.map((item, index) => (
+                    <tr key={index} className={`border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                        <td className="p-2">{item.partCode}</td>
+                        <td className="p-2">{item.masterItemName}</td>
+                        <td className="p-2">{item.quantity}</td>
+                        <td className="p-2">{item.unit}</td>
+                        <td className="p-2">
+                            <input
+                                type="number"
+                                value={item.unitPrice}
+                                onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
+                                className={`${inputClass} w-24`}
+                                placeholder="Enter price"
+                            />
+                        </td>
+                        <td className="p-2">
+                            {item.totalPrice || calculateTotalPrice(item.quantity, item.unitPrice)}
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    );
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
