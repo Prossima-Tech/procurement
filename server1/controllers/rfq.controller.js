@@ -15,7 +15,7 @@ exports.createRFQ = async (req, res) => {
 
     try {
         const {
-            indent,
+            indent: indentId,
             unit,
             project,
             items,
@@ -37,7 +37,7 @@ exports.createRFQ = async (req, res) => {
 
         // 1. Validate required fields
         // console.log('✅ Validating required fields...');
-        if (!indent || !unit || !project || !items || !selectedVendors || !submissionDeadline) {
+        if (!indentId || !unit || !project || !items || !selectedVendors || !submissionDeadline) {
             // console.log('❌ Missing required fields:', {
             //     indent: !!indent,
             //     unit: !!unit,
@@ -119,7 +119,7 @@ exports.createRFQ = async (req, res) => {
 
         // 6. Check if indent exists
         // console.log('✅ Checking indent existence...');
-        const indentExists = await Indent.findById(indent);
+        const indentExists = await Indent.findById(indentId);
         if (!indentExists) {
             // console.log('❌ Indent not found:', indent);
             return res.status(404).json({
@@ -163,7 +163,7 @@ exports.createRFQ = async (req, res) => {
 
         const rfqData = {
             rfqNumber,
-            indent,
+            indent: indentId,
             unit,
             project,
             items: items.map(item => ({
@@ -191,11 +191,47 @@ exports.createRFQ = async (req, res) => {
         //     rfqNumber: newRFQ.rfqNumber
         // });
 
+        // Update item statuses in the indent
+        const indent = await Indent.findById(indentId);
+        
+        // Update status for each item
+        for (const item of items) {
+            if (item.indentItemType === 'existing') {
+                // Update existing item
+                await Indent.updateOne(
+                    { 
+                        _id: indentId,
+                        'items.existing._id': item.indentItemId 
+                    },
+                    { 
+                        $set: {
+                            'items.existing.$.status': 'rfq',
+                            'items.existing.$.rfqReference': newRFQ._id
+                        }
+                    }
+                );
+            } else if (item.indentItemType === 'new') {
+                // Update new item
+                await Indent.updateOne(
+                    { 
+                        _id: indentId,
+                        'items.new.name': item.name 
+                    },
+                    { 
+                        $set: {
+                            'items.new.$.status': 'rfq',
+                            'items.new.$.rfqReference': newRFQ._id
+                        }
+                    }
+                );
+            }
+        }
+
         // 10. Send response
         // console.log('📤 Sending success response');
         return res.status(201).json({
             success: true,
-            message: 'RFQ created successfully',
+            message: 'RFQ created successfully and item statuses updated',
             data: {
                 rfqId: newRFQ._id,
                 rfqNumber: newRFQ.rfqNumber

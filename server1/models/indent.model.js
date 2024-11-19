@@ -1,6 +1,13 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
+// Define item status enum
+const ITEM_STATUS = {
+    INDENT: 'indent',
+    RFQ: 'rfq',
+    PO: 'po'
+};
+
 // Schema for existing items
 const ExistingItemSchema = new Schema({
     name: {
@@ -18,6 +25,19 @@ const ExistingItemSchema = new Schema({
     },
     itemCode: {
         type: String,
+    },
+    status: {
+        type: String,
+        enum: Object.values(ITEM_STATUS),
+        default: ITEM_STATUS.INDENT
+    },
+    rfqReference: {
+        type: Schema.Types.ObjectId,
+        ref: 'RFQ'
+    },
+    poReference: {
+        type: Schema.Types.ObjectId,
+        ref: 'PO'
     }
 });
 
@@ -32,6 +52,19 @@ const NewItemSchema = new Schema({
         required: [true, 'Quantity is required'],
         min: [1, 'Quantity must be at least 1']
     },
+    status: {
+        type: String,
+        enum: Object.values(ITEM_STATUS),
+        default: ITEM_STATUS.INDENT
+    },
+    rfqReference: {
+        type: Schema.Types.ObjectId,
+        ref: 'RFQ'
+    },
+    poReference: {
+        type: Schema.Types.ObjectId,
+        ref: 'PO'
+    }
 });
 
 const IndentSchema = new Schema({
