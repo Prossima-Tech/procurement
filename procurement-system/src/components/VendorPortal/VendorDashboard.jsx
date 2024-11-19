@@ -24,7 +24,7 @@ import { baseURL } from '../../utils/endpoint';
 import axios from 'axios';
 import { format } from 'date-fns';
 import VendorQuoteForm from '../orders/VendorQuoteForm';
-
+import AnalyticsDashboard from './AnalyticsDash';
 // First, add the CustomCard component at the top of the file
 const CustomCard = ({ children, className = '' }) => (
   <div className={`bg-white rounded-lg shadow-md p-4 ${className}`}>
@@ -709,7 +709,8 @@ const fetchVendorDetails = async () => {
           </CustomCard>
         )}
       </div>
-    {JSON.stringify(vendorDetails)}
+    {/* {JSON.stringify(vendorDetails)} */}
+    <AnalyticsDashboard />
       {/* Tabs Section */}
       <div className="mb-6">
         <div className="flex space-x-1 border-b">

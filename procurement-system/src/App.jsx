@@ -12,7 +12,7 @@ import ManagerDashboard from './components/Manager/ManagerDashboard';
 import { useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
 import VendorRegistration from './components/authentication/VendorRegistration';
-import VendorDashboard from './components/Vendors/VendorDashboard';
+import VendorDashboard from './components/VendorPortal/VendorDashboard';
 
 function App() {
   return (
