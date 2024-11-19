@@ -63,7 +63,16 @@ const CreateRfqModal = ({ isOpen, onClose, indent, onSuccess }) => {
     }, [step]);
 
     // Handle item selection
-    const handleItemSelection = (itemId, itemType) => {
+    const handleItemSelection = (itemId) => {
+        const item = indent.items.existing.find(i => i._id === itemId) || 
+                    indent.items.new.find(i => i._id === itemId);
+        
+        // Don't allow selection if item already has RFQ or PO
+        if (item && (item.status === 'rfq' || item.status === 'po')) {
+            message.warning(`This item already has a ${item.status.toUpperCase()} created`);
+            return;
+        }
+
         setSelectedItems(prev => {
             if (prev.includes(itemId)) {
                 return prev.filter(id => id !== itemId);
@@ -75,6 +84,26 @@ const CreateRfqModal = ({ isOpen, onClose, indent, onSuccess }) => {
     // Render item card
     const ItemCard = ({ item, isExisting = true }) => {
         const isSelected = selectedItems.includes(item._id);
+        
+        // Add status badge component
+        const StatusBadge = ({ status }) => {
+            const getStatusColor = (status) => {
+                switch (status) {
+                    case 'rfq':
+                        return 'bg-blue-100 text-blue-800';
+                    case 'po':
+                        return 'bg-green-100 text-green-800';
+                    default: // 'indent'
+                        return 'bg-gray-100 text-gray-800';
+                }
+            };
+
+            return (
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(status)}`}>
+                    {status.toUpperCase()}
+                </span>
+            );
+        };
         
         return (
             <div 
@@ -88,13 +117,23 @@ const CreateRfqModal = ({ isOpen, onClose, indent, onSuccess }) => {
                         checked={isSelected}
                         onChange={() => handleItemSelection(item._id)}
                         className="mt-1"
+                        // Disable checkbox if item already has RFQ or PO
+                        disabled={item.status === 'rfq' || item.status === 'po'}
                     />
                     <div className="flex-1">
-                        <h4 className="font-medium">{item.name}</h4>
+                        <div className="flex justify-between items-start">
+                            <h4 className="font-medium">{item.name}</h4>
+                            <StatusBadge status={item.status || 'indent'} />
+                        </div>
                         <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                         {isExisting && (
                             <p className="text-sm text-gray-600">Item Code: {item.itemCode}</p>
                         )}
+                        {/* {(item.status === 'rfq' || item.status === 'po') && (
+                            <p className="text-sm text-red-500 mt-1">
+                                This item already has a {item.status.toUpperCase()} created
+                            </p>
+                        )} */}
                     </div>
                 </div>
             </div>
@@ -283,32 +322,44 @@ const CreateRfqModal = ({ isOpen, onClose, indent, onSuccess }) => {
                 <div className="space-y-4">
                     <h3 className="text-lg font-medium mb-4">Select Items</h3>
                     
-                    {/* Existing Items */}
-                    {indent?.items?.existing?.length > 0 && (
-                        <div className="mb-6">
-                            <h4 className="font-medium mb-2">Existing Items</h4>
-                            {indent.items.existing.map(item => (
-                                <ItemCard 
-                                    key={item._id} 
-                                    item={item} 
-                                    isExisting={true}
-                                />
-                            ))}
+                    {/* Check if all items have RFQs/POs */}
+                    {indent?.items?.existing?.every(item => item.status === 'rfq' || item.status === 'po') &&
+                     indent?.items?.new?.every(item => item.status === 'rfq' || item.status === 'po') ? (
+                        <div className="text-center py-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <p className="text-yellow-700">
+                                All items in this indent already have RFQs or POs created.
+                            </p>
                         </div>
-                    )}
+                    ) : (
+                        <>
+                            {/* Existing Items */}
+                            {indent?.items?.existing?.length > 0 && (
+                                <div className="mb-6">
+                                    <h4 className="font-medium mb-2">Existing Items</h4>
+                                    {indent.items.existing.map(item => (
+                                        <ItemCard 
+                                            key={item._id} 
+                                            item={item} 
+                                            isExisting={true}
+                                        />
+                                    ))}
+                                </div>
+                            )}
 
-                    {/* New Items */}
-                    {indent?.items?.new?.length > 0 && (
-                        <div>
-                            <h4 className="font-medium mb-2">New Items</h4>
-                            {indent.items.new.map(item => (
-                                <ItemCard 
-                                    key={item._id} 
-                                    item={item} 
-                                    isExisting={false}
-                                />
-                            ))}
-                        </div>
+                            {/* New Items */}
+                            {indent?.items?.new?.length > 0 && (
+                                <div>
+                                    <h4 className="font-medium mb-2">New Items</h4>
+                                    {indent.items.new.map(item => (
+                                        <ItemCard 
+                                            key={item._id} 
+                                            item={item} 
+                                            isExisting={false}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </>
                     )}
 
                     {selectedItems.length > 0 && (
