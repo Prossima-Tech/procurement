@@ -149,24 +149,11 @@ const PurchaseOrderForm = ({
         }));
     };
 
-    const handleItemChange = (index, field, value) => {
-        const updatedItems = [...formData.items];
-        updatedItems[index] = {
-            ...updatedItems[index],
-            [field]: value
-        };
-
-        if (field === 'unitPrice') {
-            updatedItems[index].totalPrice = calculateTotalPrice(
-                updatedItems[index].quantity,
-                value
-            );
-        }
-
-        setFormData(prev => ({
-            ...prev,
-            items: updatedItems
-        }));
+    const handleItemChange = (index, e) => {
+        const { name, value } = e.target;
+        const newItems = [...formData.items];
+        newItems[index][name] = value;
+        setFormData(prev => ({ ...prev, items: newItems }));
     };
 
     const calculateTotalPrice = (quantity, unitPrice) => {
@@ -192,9 +179,9 @@ const PurchaseOrderForm = ({
             const response = await api(`/parts/getPartByCode/${newItem.partCode}`, 'get');
             const partDetails = response.data.data;
             // toast.success("Toast checking");
-            console.log("Part details", partDetails);
+            // console.log("Part details", partDetails);
             if (response.data.success) {
-                console.log("Part details found");
+                // console.log("Part details found");
                 const newItemWithDetails = {
                     ...newItem,
                     masterItemName: partDetails.ItemCode.ItemName,
@@ -267,6 +254,7 @@ const PurchaseOrderForm = ({
     const handleCreatePO = async (e) => {
         if(formData._id){
             console.log("updating purchase order");
+            console.log("formData", formData);
             try {
                 const response = await axios.put(`${baseURL}/purchase-orders/updatePO/${formData._id}`, 
                     {...formData, status: 'created'}, 
@@ -299,36 +287,80 @@ const PurchaseOrderForm = ({
             await handleSubmit(e, 'created');
         }
     };
-
-    const handleSubmit = async (e, status = 'draft') => {
+    const handleSubmit = async (e, status) => {
         e.preventDefault();
+        if (isLoading) return;
+        console.log("Form data before processing", formData);
+        console.log("Status", status);
+        // Validate required fields
+        if (!formData.vendorId) {
+            toast.error("Please select a valid vendor");
+            return;
+        }
+        if (!formData.projectId) {
+            toast.error("Please select a valid project");
+            return;
+        }
+        if (!formData.unitId) {
+            toast.error("Please select a valid unit");
+            return;
+        }
+        if (!formData.poDate) {
+            toast.error("Please select PO date");
+            return;
+        }
+        if (!formData.validUpto) {
+            toast.error("Please select validity date");
+            return;
+        }
+        if (!formData.deliveryDate) {
+            toast.error("Please select delivery date");
+            return;
+        }
+        // Filter out empty items
+        const validItems = formData.items.filter(item =>
+            item.partCode && item.quantity && item.unitPrice
+        );
+        if (validItems.length === 0) {
+            toast.error("Please add at least one valid item to the order");
+            return;
+        }
+        // Create a new object with valid items
+        const dataToSend = {
+            ...formData,
+            items: validItems,
+            status: status // Set the status based on which button was clicked
+        };
+        console.log("Data to send", dataToSend);
+        // Set loading state
         setIsLoading(true);
 
         try {
-            // Validate required fields
-            if (!formData.vendorCode || formData.items.some(item => !item.unitPrice)) {
-                toast.error('Please fill all required fields including unit prices');
-                return;
-            }
+            const response = await axios.post(`${baseURL}/purchase-orders/createPO`, dataToSend, {
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                    'Content-Type': 'application/json',
+                }
+            });
 
-            const payload = {
-                ...formData,
-                status,
-                isDirectPO: true,
-                indentReference: initialData.indentReference
-            };
-
-            const response = await api('/purchase-orders/create', 'post', payload);
-
-            if (response.data.success) {
-                toast.success(`Purchase order ${status === 'draft' ? 'saved' : 'created'} successfully`);
-                onSuccess?.();
+            if (response.status === 201) {
+                toast.success("Purchase order created successfully");
+                if(!isDirectPO)setIsCreatingNew(false);
+                if(!isDirectPO)setIsModalOpen(false);
+                if(isDirectPO)onCancel();
+            } else {
+                throw new Error('Failed to create Purchase Order');
             }
         } catch (error) {
-            console.error('Error creating PO:', error);
-            toast.error(error.response?.data?.message || 'Failed to create purchase order');
+            console.error('Error creating Purchase Order:', error);
+            toast.error(`Failed to create purchase order: ${error.response?.data?.message || error.message}`);
         } finally {
-            setIsLoading(false);
+            if(!isDirectPO)setIsLoading(false);
+            if(!isDirectPO)fetchPurchaseOrders();
+            if(isDirectPO){
+                onCancel();
+                setIsLoading(false);
+            }
         }
     };
 
@@ -358,10 +390,6 @@ const PurchaseOrderForm = ({
         }
     };
 
-    useEffect(() => {
-        // searchUnit();
-        console.log("formData", formData);
-    }, [formData]);
 
     const searchUnit = async () => {
         if (!formData.unitCode.trim()) {

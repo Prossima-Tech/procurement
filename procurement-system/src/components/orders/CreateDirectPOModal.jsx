@@ -205,12 +205,15 @@ const CreateDirectPOModal = ({ isOpen, onClose, indent, onSuccess }) => {
         <div className="py-4">
             <PurchaseOrderForm
                 initialData={initialPOData}
-                onCancel={() => setStep(1)}
+                onCancel={onClose}
                 isLoading={isLoading}
                 setIsLoading={setIsLoading}
                 onSuccess={() => {
                     onSuccess?.();
+                    console.log("onSuccess");
                     onClose();
+                    // setStep(1); // Reset step to initial state
+                    // resetSelections(); 
                 }}
                 isDirectPO={true} // New prop to indicate direct PO creation
                 readOnlyItems={true} // Items are pre-filled and shouldn't be editable
