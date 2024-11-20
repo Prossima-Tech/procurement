@@ -28,6 +28,9 @@ import {
     PurchaseOrdersComponent
 } from '../orders/PurchaseOrdersComponent';
 
+import { GRNComponent } from '../grn/GRNManagement';
+import { InspectionManagement } from '../inspection/InspectionManagement'
+
 import {
     SizeMasterComponent,
     ColourMasterComponent,
@@ -41,7 +44,7 @@ const DashboardComponent = () => {
         <div className={`p-6 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'} rounded-lg shadow-md`}>
             <h2 className="text-2xl font-bold mb-4">Dashboard</h2>
             <p>Welcome to your dashboard. Here you can see an overview of your system.</p>
-            <IndentList /> 
+            <IndentList />
         </div>
     );
 };
@@ -67,6 +70,10 @@ const Layout = () => {
                 return <RequestForQuotationComponent />;
             case 'Orders.PurchaseOrders':
                 return <PurchaseOrdersComponent />;
+            case 'Orders.GoodsReceiptNote':    // Add this case
+                return <GRNComponent />;
+            case 'Orders.QualityInspection':  // Add this case
+                return <InspectionManagement />;
             case 'Vendors':
                 return <VendorsComponent />;
             case 'Products.ItemMaster':
