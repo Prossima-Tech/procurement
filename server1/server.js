@@ -15,6 +15,8 @@ const projectRoutes = require('./routes/project.routes');
 const unitRoutes = require('./routes/unit.routes');
 const indentRoutes = require('./routes/indent.routes');
 const rfqRoutes = require('./routes/rfq.routes');
+const grnRoutes = require('./routes/grn.routes');
+const inspectionRoutes = require('./routes/inspection.routes');
 const app = express();
 
 // Connect to database
@@ -35,6 +37,10 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/units', unitRoutes);
 app.use('/api/indents', indentRoutes);
 app.use('/api/rfq', rfqRoutes);
+app.use('/api/grn', grnRoutes);
+app.use('/api/inspection', inspectionRoutes);
+
+
 // Error handling middleware
 app.use(errorHandler);
 

@@ -90,7 +90,14 @@ const Sidebar = ({ onNavigate }) => {
 
     const menuItems = useMemo(() => [
         { title: 'Dashboard', icon: <Home size={24} />, component: 'Dashboard' },
-        { title: 'Orders', icon: <ShoppingCart size={24} />, subItems: ['Request for Quotation', 'Purchase Orders'] },
+        {
+            title: 'Orders', icon: <ShoppingCart size={24} />, subItems: [
+                'Request for Quotation',
+                'Purchase Orders',
+                'Goods Receipt Note',
+                'Quality Inspection'
+            ]
+        },
         { title: 'Vendors', icon: <Users size={24} />, component: 'Vendors' },
         { title: 'Products', icon: <Package size={24} />, subItems: ['Item Master', 'Part Master'] },
         { title: 'Config', icon: <Settings size={24} />, subItems: ['Size Master', 'Colour Master', 'MakerName Master', 'Unit of Measurement Master'] },
