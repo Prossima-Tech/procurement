@@ -15,4 +15,6 @@ router.put('/:id', GRNController.updateGRN.bind(GRNController));
 // DELETE Request
 router.delete('/:id', GRNController.deleteGRN.bind(GRNController));
 
+router.get('/vendor/:id',GRNController.getVendorGRN.bind(GRNController))
+router.get('/inspection/:grnId', GRNController.getInspectionByGRN.bind(GRNController));
 module.exports = router;
