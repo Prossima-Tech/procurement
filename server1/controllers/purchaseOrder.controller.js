@@ -195,7 +195,7 @@ exports.createPurchaseOrder = async (req, res) => {
     console.log(" Processing items");
     const processedItems = await Promise.all(items.map(async (item, index) => {
       console.log(` Processing item ${index + 1}:`, JSON.stringify(item, null, 2));
-      const part = await PartCode.findOne({ partCode: item.partCode });
+      const part = await PartCode.findOne({ PartCodeNumber: item.partCode });
       if (!part) {
         console.log(` Part not found for partCode:`, item.partCode);
         throw new Error(`Part with code ${item.partCode} not found`);
