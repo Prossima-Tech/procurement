@@ -277,7 +277,7 @@
 // components/grn/GRNManagement.js
 import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Plus, Search, Eye, Edit, Trash, FileText, Filter, X } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash, } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { baseURL } from '../../utils/endpoint';
 
@@ -333,6 +333,7 @@ const GRNForm = ({ grn, onBack, onSuccess }) => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const po = await response.json();
+            console.log(po);
 
             if (!po) {
                 throw new Error('Purchase order details not found');
@@ -346,6 +347,7 @@ const GRNForm = ({ grn, onBack, onSuccess }) => {
                 purchaseOrder: poId,
                 items: po.items.map(item => {
                     return {
+                        partId: item.partId,
                         partCode: item.partCode,
                         poItem: item._id || '',
                         orderedQuantity: item.quantity,
