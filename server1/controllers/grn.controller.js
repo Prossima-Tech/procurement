@@ -88,6 +88,7 @@ class GRNController {
                 status: finalStatus,
                 transportDetails,
                 items: items.map(item => ({
+                    partId: item.partId,
                     partCode: item.partCode,
                     poItem: item.poItem || '',
                     orderedQuantity: item.orderedQuantity,
@@ -362,7 +363,7 @@ class GRNController {
                 data: updatedGRN
             });
 
-        } catch (error) { 
+        } catch (error) {
             await session.abortTransaction();
             res.status(400).json({
                 success: false,
@@ -413,19 +414,19 @@ class GRNController {
     async getVendorGRN(req, res) {
         try {
             const vendorId = req.params.id;
-            
+
             // Find all GRNs where vendor.id matches and populate necessary fields
             const grns = await GRN.find({
                 'vendor.id': vendorId
             })
-            .populate({
-                path: 'purchaseOrder',
-                select: 'poCode poDate status'
-            })
-            .populate('projectId', 'projectName')
-            .populate('unitId', 'unitName')
-            .sort({ createdAt: -1 })
-            .lean();
+                .populate({
+                    path: 'purchaseOrder',
+                    select: 'poCode poDate status'
+                })
+                .populate('projectId', 'projectName')
+                .populate('unitId', 'unitName')
+                .sort({ createdAt: -1 })
+                .lean();
 
             // Transform the data to include inspection status
             const grnsWithInspection = await Promise.all(grns.map(async grn => {
@@ -481,45 +482,45 @@ class GRNController {
         }
     }
     // Add this method to your inspection controller
-async getInspectionByGRN(req, res) {
-    try {
-        const grnId = req.params.grnId;
-        
-        const inspection = await Inspection.findOne({ grn: grnId })
-            .populate('grn')
-            .lean();
+    async getInspectionByGRN(req, res) {
+        try {
+            const grnId = req.params.grnId;
 
-        if (!inspection) {
-            return res.status(404).json({
+            const inspection = await Inspection.findOne({ grn: grnId })
+                .populate('grn')
+                .lean();
+
+            if (!inspection) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No inspection found for this GRN'
+                });
+            }
+
+            // Transform the data for the frontend
+            const transformedData = {
+                inspectionId: inspection._id,
+                status: inspection.status,
+                items: inspection.items.map(item => ({
+                    partCode: item.partCode,
+                    itemName: item.itemName,
+                    inspectedQuantity: item.inspectedQuantity,
+                    approvedQuantity: item.approvedQuantity,
+                    rejectedQuantity: item.rejectedQuantity,
+                    unitPrice: item.unitPrice,
+                    remarks: item.remarks
+                }))
+            };
+
+            res.status(200).json(transformedData);
+
+        } catch (error) {
+            console.error('Error fetching inspection:', error);
+            res.status(500).json({
                 success: false,
-                message: 'No inspection found for this GRN'
+                message: error.message || 'Error fetching inspection data'
             });
         }
-
-        // Transform the data for the frontend
-        const transformedData = {
-            inspectionId: inspection._id,
-            status: inspection.status,
-            items: inspection.items.map(item => ({
-                partCode: item.partCode,
-                itemName: item.itemName,
-                inspectedQuantity: item.inspectedQuantity,
-                approvedQuantity: item.approvedQuantity,
-                rejectedQuantity: item.rejectedQuantity,
-                unitPrice: item.unitPrice,
-                remarks: item.remarks
-            }))
-        };
-
-        res.status(200).json(transformedData);
-
-    } catch (error) {
-        console.error('Error fetching inspection:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Error fetching inspection data'
-        });
     }
-}
 }
 module.exports = new GRNController();

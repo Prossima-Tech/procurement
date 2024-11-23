@@ -6,6 +6,11 @@ const GRNItemSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    partId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Part',
+        required: true
+    },
     poItem: {
         type: String,
         default: ''
