@@ -8,7 +8,7 @@ const GRNItemSchema = new mongoose.Schema({
     },
     partId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Part',
+        ref: 'PartCode',
         required: true
     },
     poItem: {

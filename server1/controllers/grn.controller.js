@@ -363,7 +363,7 @@ class GRNController {
                 data: updatedGRN
             });
 
-        } catch (error) {
+        } catch (error) { 
             await session.abortTransaction();
             res.status(400).json({
                 success: false,
@@ -414,19 +414,19 @@ class GRNController {
     async getVendorGRN(req, res) {
         try {
             const vendorId = req.params.id;
-
+            console.log("inside getVendorGRN vendorId", vendorId)
             // Find all GRNs where vendor.id matches and populate necessary fields
             const grns = await GRN.find({
                 'vendor.id': vendorId
             })
-                .populate({
-                    path: 'purchaseOrder',
-                    select: 'poCode poDate status'
-                })
-                .populate('projectId', 'projectName')
-                .populate('unitId', 'unitName')
-                .sort({ createdAt: -1 })
-                .lean();
+            .populate({
+                path: 'purchaseOrder',
+                select: 'poCode poDate status'
+            })
+            .populate('projectId', 'projectName')
+            .populate('unitId', 'unitName')
+            .sort({ createdAt: -1 })
+            .lean();
 
             // Transform the data to include inspection status
             const grnsWithInspection = await Promise.all(grns.map(async grn => {
@@ -470,7 +470,7 @@ class GRNController {
                     createdAt: grn.createdAt
                 };
             }));
-
+            console.log("grnsWithInspection", grnsWithInspection)
             res.status(200).json(grnsWithInspection);
 
         } catch (error) {
@@ -485,10 +485,23 @@ class GRNController {
     async getInspectionByGRN(req, res) {
         try {
             const grnId = req.params.grnId;
-
-            const inspection = await Inspection.findOne({ grn: grnId })
-                .populate('grn')
+            
+            // Fetch GRN with populated part details and Item details
+            const grn = await GRN.findById(grnId)
+                .populate({
+                    path: 'items.partId',
+                    populate: {
+                        path: 'ItemCode',
+                        model: 'Item',
+                        //  select: 'itemName gstRate sacHsnCode' // Add the fields you need from Item model
+                    }
+                })
                 .lean();
+
+            console.log("grn", grn)
+            console.log("grn items", JSON.stringify(grn.items[0]))
+            // Fetch inspection data
+            const inspection = await Inspection.findOne({ grn: grnId }).lean();
 
             if (!inspection) {
                 return res.status(404).json({
@@ -497,22 +510,61 @@ class GRNController {
                 });
             }
 
-            // Transform the data for the frontend
+            // Transform the data combining GRN and Inspection data
             const transformedData = {
                 inspectionId: inspection._id,
                 status: inspection.status,
-                items: inspection.items.map(item => ({
-                    partCode: item.partCode,
-                    itemName: item.itemName,
-                    inspectedQuantity: item.inspectedQuantity,
-                    approvedQuantity: item.approvedQuantity,
-                    rejectedQuantity: item.rejectedQuantity,
-                    unitPrice: item.unitPrice,
-                    remarks: item.remarks
-                }))
-            };
+                items: grn.items.map(grnItem => {
+                    // Find corresponding inspection item
+                    const inspectionItem = inspection.items.find(
+                        item => item.partCode === grnItem.partCode
+                    );
 
-            res.status(200).json(transformedData);
+                    return {
+                        // GRN item details
+                        partCode: grnItem.partCode,
+                        partId: grnItem.partId._id,
+                        itemName: grnItem.itemDetails.itemName,
+                        
+                        // Tax related details
+                        igstRate: grnItem.partId.ItemCode?.IGST_Rate || 0,
+                        cgstRate: grnItem.partId.ItemCode?.CGST_Rate || 0,
+                        sgstRate: grnItem.partId.ItemCode?.SGST_Rate || 0,
+                        utgstRate: grnItem.partId.ItemCode?.UTGST_Rate || 0,
+                        sacHsnCode: grnItem.partId.ItemCode?.SAC_HSN_Code || '',
+                        
+                        // Part details
+                        description: grnItem.partId.description,
+                        category: grnItem.partId.category,
+                        uom: grnItem.partId.measurementUnit,
+                        specifications: grnItem.partId.specifications,
+                        
+                        // Quantities and pricing
+                        receivedQuantity: grnItem.receivedQuantity,
+                        unitPrice: grnItem.unitPrice,
+                        totalPrice: grnItem.totalPrice,
+                        
+                        // Inspection details
+                        inspectedQuantity: inspectionItem?.inspectedQuantity || 0,
+                        acceptedQuantity: inspectionItem?.acceptedQuantity || 0,
+                        rejectedQuantity: inspectionItem?.rejectedQuantity || 0,
+                        remarks: inspectionItem?.remarks || '',
+                        
+                        // Additional details from itemDetails
+                        itemDetails: {
+                            partCodeNumber: grnItem.itemDetails.partCodeNumber,
+                            itemName: grnItem.itemDetails.itemName,
+                            itemCode: grnItem.itemDetails.itemCode,
+                            measurementUnit: grnItem.itemDetails.measurementUnit
+                        }
+                    };
+                })
+            };
+            console.log("transformedData", transformedData)
+            res.status(200).json({
+                success: true,
+                data: transformedData
+            });
 
         } catch (error) {
             console.error('Error fetching inspection:', error);
