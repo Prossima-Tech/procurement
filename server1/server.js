@@ -17,6 +17,7 @@ const indentRoutes = require('./routes/indent.routes');
 const rfqRoutes = require('./routes/rfq.routes');
 const grnRoutes = require('./routes/grn.routes');
 const inspectionRoutes = require('./routes/inspection.routes');
+const invoiceRoutes = require('./routes/invoice.routes');
 const app = express();
 
 // Connect to database
@@ -39,7 +40,7 @@ app.use('/api/indents', indentRoutes);
 app.use('/api/rfq', rfqRoutes);
 app.use('/api/grn', grnRoutes);
 app.use('/api/inspection', inspectionRoutes);
-
+app.use('/api/invoice', invoiceRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
