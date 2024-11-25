@@ -137,32 +137,32 @@ exports.createPurchaseOrder = async (req, res) => {
     //   if (!unit) {
     //     throw new Error('Unit not found');
     //   }
-
+    
     //   let attempts = 0;
     //   const maxAttempts = 5;
-
+    
     //   while (attempts < maxAttempts) {
     //     // Step 2: Find the latest PO for this unit
     //     const latestPo = await PurchaseOrder.findOne({ unitId })
     //       .sort('-poCode')
     //       .select('poCode')
     //       .session(session);
-
+    
     //     // Step 3: Determine the next number
     //     let nextNumber = 1;
     //     if (latestPo) {
     //       const lastNumber = parseInt(latestPo.poCode.split('-')[1]);
     //       nextNumber = lastNumber + 1;
     //     }
-
+    
     //     // Step 4: Generate the new PO code
     //     const newPoCode = `${unit.unitCode}-${nextNumber.toString().padStart(5, '0')}`;
-
+    
     //     try {
     //       // Step 5: Try to create a new PO with this code
     //       const newPo = new PurchaseOrder({ poCode: newPoCode, unitId });
     //       await newPo.save({ session });
-
+    
     //       // Step 6: If successful, return the new PO code
     //       return newPoCode;
     //     } catch (error) {
@@ -176,7 +176,7 @@ exports.createPurchaseOrder = async (req, res) => {
     //       }
     //     }
     //   }
-
+    
     //   // Step 8: If all attempts fail, throw an error
     //   throw new Error('Failed to generate a unique PO code after multiple attempts');
     // };
