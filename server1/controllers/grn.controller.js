@@ -414,64 +414,20 @@ class GRNController {
     async getVendorGRN(req, res) {
         try {
             const vendorId = req.params.id;
-            console.log("inside getVendorGRN vendorId", vendorId)
-            // Find all GRNs where vendor.id matches and populate necessary fields
+            
+            // Simply find GRNs associated with the vendor and populate necessary references
             const grns = await GRN.find({
                 'vendor.id': vendorId
             })
-            .populate({
-                path: 'purchaseOrder',
-                select: 'poCode poDate status'
-            })
-            .populate('projectId', 'projectName')
-            .populate('unitId', 'unitName')
+            // .populate('purchaseOrder', 'poNumber poDate')
+            // .populate('invoiceId') // To know if invoice exists
             .sort({ createdAt: -1 })
             .lean();
 
-            // Transform the data to include inspection status
-            const grnsWithInspection = await Promise.all(grns.map(async grn => {
-                // Find associated inspection
-                const inspection = await Inspection.findOne({ grn: grn._id })
-                    .select('status overallResult')
-                    .lean();
-
-                // Determine GRN status based on inspection
-                let status = grn.status;
-                if (inspection) {
-                    if (inspection.status === 'completed') {
-                        status = inspection.overallResult === 'pass' ? 'approved' : 'rejected';
-                    } else if (inspection.status === 'in_progress') {
-                        status = 'inspection_in_progress';
-                    }
-                }
-
-                return {
-                    _id: grn._id,
-                    grnNumber: grn.grnNumber,
-                    poReference: {
-                        poNumber: grn.purchaseOrder?.poCode,
-                        poDate: grn.purchaseOrder?.poDate
-                    },
-                    projectName: grn.projectId?.projectName,
-                    unitName: grn.unitId?.unitName,
-                    receiptDate: grn.receivedDate,
-                    challanNumber: grn.challanNumber,
-                    challanDate: grn.challanDate,
-                    status: status,
-                    items: grn.items.map(item => ({
-                        partCode: item.partCode,
-                        partCodeNumber: item.itemDetails.partCodeNumber,
-                        itemName: item.itemDetails.itemName,
-                        receivedQuantity: item.receivedQuantity,
-                        unitPrice: item.unitPrice,
-                        totalPrice: item.totalPrice
-                    })),
-                    totalValue: grn.totalValue,
-                    createdAt: grn.createdAt
-                };
-            }));
-            console.log("grnsWithInspection", grnsWithInspection)
-            res.status(200).json(grnsWithInspection);
+            res.status(200).json({
+                success: true,
+                data: grns
+            });
 
         } catch (error) {
             console.error('Error fetching vendor GRNs:', error);
