@@ -99,8 +99,13 @@ const GRNSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['draft', 'submitted', 'inspection_pending', 'inspection_in_progress', 'inspection_completed', 'approved', 'rejected'],
+        enum: ['draft', 'submitted', 'inspection_pending', 'inspection_in_progress', 'inspection_completed', 'approved', 'rejected', 'invoice_created'],
         default: 'draft'
+    },
+    invoiceId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Invoice',
+        default: null
     },
     transportDetails: TransportDetailsSchema,
     items: [GRNItemSchema],

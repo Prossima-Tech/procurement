@@ -133,18 +133,33 @@ const CreateInvoiceModal = ({ isOpen, onClose, grnData }) => {
     }
   };
 
-  const handleCreateInvoice = () => {
-    const invoicePayload = {
-      grnId: grnData._id,
-      invoiceNumber: invoiceData.invoiceNumber,
-      invoiceDate: invoiceData.invoiceDate,
-      items: invoiceData.items,
-      totalAmount: invoiceData.items.reduce((sum, item) => sum + item.totalAmount, 0),
-      status: 'pending'
-    };
+  const handleCreateInvoice = async () => {
+    try {
+      const invoicePayload = {
+        grnId: grnData._id,
+        invoiceNumber: invoiceData.invoiceNumber,
+        invoiceDate: invoiceData.invoiceDate,
+        items: invoiceData.items,
+        taxType: selectedTaxType,
+        subTotal: invoiceData.subTotal,
+        cgstAmount: invoiceData.cgstAmount,
+        sgstAmount: invoiceData.sgstAmount,
+        utgstAmount: invoiceData.utgstAmount,
+        igstAmount: invoiceData.igstAmount,
+        totalAmount: invoiceData.totalAmount
+      };
 
-    console.log('Invoice Payload:', invoicePayload);
-    // TODO: Implement API call to create invoice
+      const response = await axios.post(`${baseURL}/invoice/create`, invoicePayload);
+      
+      if (response.data.success) {
+        // Show success message
+        // Close modal
+        onClose();
+      }
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to create invoice');
+      console.error('Invoice creation error:', error);
+    }
   };
 
   const generateInvoiceNumber = () => {
