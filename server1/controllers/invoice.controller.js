@@ -111,8 +111,8 @@ class InvoiceController {
   async getInvoiceById(req, res) {
     try {
       const invoice = await Invoice.findById(req.params.id)
-        .populate('vendorId', 'name email contactNumber gstin')
-        .populate('poId', 'poNumber date')
+        .populate('vendorId', 'name email contactNumber gstNumber')
+        .populate('poId', 'poCode date')
         .populate('grnId', 'grnNumber date')
         .lean();
 
@@ -122,7 +122,7 @@ class InvoiceController {
           message: 'Invoice not found'
         });
       }
-
+      console.log("invoice",invoice);
       res.status(200).json({
         success: true,
         data: invoice

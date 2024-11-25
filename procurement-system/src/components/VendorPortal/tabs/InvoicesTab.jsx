@@ -8,12 +8,14 @@ import {
   Clock,
   Package,
   CheckCircle,
-  FilePlus
+  FilePlus,
+  Receipt
 } from 'lucide-react';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { baseURL } from '../../../utils/endpoint';
 import CreateInvoiceModal from '../CreateInvoiceModal';
+import ViewInvoiceModal from '../ViewInvoiceModal';
 
 const InvoicesTab = ({ vendorDetails }) => {
   const [grns, setGrns] = useState([]);
@@ -23,6 +25,8 @@ const InvoicesTab = ({ vendorDetails }) => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateInvoiceModalOpen, setIsCreateInvoiceModalOpen] = useState(false);
   const [selectedGRN, setSelectedGRN] = useState(null);
+  const [isViewInvoiceModalOpen, setIsViewInvoiceModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
 
   useEffect(() => {
     if (vendorDetails?._id) {
@@ -34,7 +38,8 @@ const InvoicesTab = ({ vendorDetails }) => {
     try {
       setLoading(true);
       const response = await axios.get(`${baseURL}/grn/vendor/${vendorDetails._id}`);
-      setGrns(response.data);
+      setGrns(response.data.data);
+      setError(null);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch GRNs');
       console.error('GRN fetch error:', err);
@@ -48,7 +53,9 @@ const InvoicesTab = ({ vendorDetails }) => {
       pending: { color: 'yellow', icon: Clock },
       approved: { color: 'green', icon: CheckCircle },
       rejected: { color: 'red', icon: AlertCircle },
-      completed: { color: 'blue', icon: Package }
+      completed: { color: 'blue', icon: Package },
+      invoice_created: { color: 'purple', icon: Receipt },
+      inspection_in_progress: { color: 'orange', icon: Clock }
     };
 
     const config = statusConfig[status.toLowerCase()] || statusConfig.pending;
@@ -58,18 +65,15 @@ const InvoicesTab = ({ vendorDetails }) => {
       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
         bg-${config.color}-100 text-${config.color}-800`}>
         <Icon className="h-3 w-3" />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
       </span>
     );
   };
-  const handleViewGRN =(grn) =>{
-    console.log("grn selected for view",grn);
-    
-  }
+
   const filteredGRNs = grns.filter(grn => {
     const matchesSearch = 
       grn.grnNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      grn.poReference?.poNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+      grn.purchaseOrder?.poNumber?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || grn.status === statusFilter;
     
@@ -79,6 +83,17 @@ const InvoicesTab = ({ vendorDetails }) => {
   const handleCreateInvoice = (grn) => {
     setSelectedGRN(grn);
     setIsCreateInvoiceModalOpen(true);
+  };
+
+  const handleViewInvoice = async (grn) => {
+    try {
+      const response = await axios.get(`${baseURL}/invoice/${grn.invoiceId}`);
+      setSelectedInvoice(response.data.data);
+      console.log("selected invoice",response.data.data);
+      setIsViewInvoiceModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching invoice:', error);
+    }
   };
 
   return (
@@ -112,7 +127,8 @@ const InvoicesTab = ({ vendorDetails }) => {
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
-              <option value="completed">Completed</option>
+              <option value="inspection_in_progress">Inspection In Progress</option>
+              <option value="invoice_created">Invoice Created</option>
             </select>
           </div>
         </div>
@@ -138,15 +154,17 @@ const InvoicesTab = ({ vendorDetails }) => {
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Receipt Date</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Status</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Items</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Actions</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {filteredGRNs.map((grn) => (
                     <tr key={grn._id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">{grn.grnNumber}</td>
-                      <td className="px-4 py-3">{grn.poReference?.poNumber || 'N/A'}</td>
-                      <td className="px-4 py-3">{format(new Date(grn.receiptDate), 'dd MMM yyyy')}</td>
+                      <td className="px-4 py-3">{grn.purchaseOrder?.poNumber || 'N/A'}</td>
+                      <td className="px-4 py-3">
+                        {format(new Date(grn.receivedDate), 'dd MMM yyyy')}
+                      </td>
                       <td className="px-4 py-3">
                         {getStatusBadge(grn.status)}
                       </td>
@@ -158,21 +176,32 @@ const InvoicesTab = ({ vendorDetails }) => {
                       <td className="px-4 py-3">
                         <div className="flex space-x-2">
                           <button
-                            onClick={() => handleViewGRN(grn)}
-                            className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            onClick={() => handleCreateInvoice(grn)}
+                            disabled={grn.status !== 'approved'}
+                            className={`flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md border
+                              ${grn.status === 'approved'
+                                ? 'text-green-600 hover:text-green-700 border-green-600 hover:bg-green-50'
+                                : 'text-gray-400 border-gray-300 cursor-not-allowed bg-gray-50'
+                              }`}
+                            title={grn.status !== 'approved' ? 'GRN must be approved to create invoice' : ''}
                           >
-                            <Eye className="h-4 w-4" />
-                            View
+                            <FilePlus className="h-4 w-4" />
+                            Create Invoice
                           </button>
-                          {grn.status === 'approved' && (
-                            <button
-                              onClick={() => handleCreateInvoice(grn)}
-                              className="flex items-center gap-1 px-3 py-1.5 text-sm text-green-600 hover:text-green-700 font-medium rounded-md border border-green-600 hover:bg-green-50"
-                            >
-                              <FilePlus className="h-4 w-4" />
-                              Create Invoice
-                            </button>
-                          )}
+
+                          <button
+                            onClick={() => handleViewInvoice(grn)}
+                            disabled={!grn.invoiceId}
+                            className={`flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md border
+                              ${grn.invoiceId
+                                ? 'text-purple-600 hover:text-purple-700 border-purple-600 hover:bg-purple-50'
+                                : 'text-gray-400 border-gray-300 cursor-not-allowed bg-gray-50'
+                              }`}
+                            title={!grn.invoiceId ? 'No invoice available' : ''}
+                          >
+                            <Receipt className="h-4 w-4" />
+                            View Invoice
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -195,8 +224,18 @@ const InvoicesTab = ({ vendorDetails }) => {
         onClose={() => {
           setIsCreateInvoiceModalOpen(false);
           setSelectedGRN(null);
+          fetchVendorGRNs();
         }}
         grnData={selectedGRN}
+      />
+
+      <ViewInvoiceModal
+        isOpen={isViewInvoiceModalOpen}
+        onClose={() => {
+          setIsViewInvoiceModalOpen(false);
+          setSelectedInvoice(null);
+        }}
+        invoiceData={selectedInvoice}
       />
     </>
   );

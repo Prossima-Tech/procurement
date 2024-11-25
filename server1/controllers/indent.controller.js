@@ -15,10 +15,46 @@ const handleError = (res, error) => {
   });
 };
 
+// Add this function at the top of the file
+const getDepartmentCode = (unitName) => {
+  const departmentCodes = {
+    'finance': 'FIN',
+    'human resource': 'HR',
+    'supply chain management': 'SCM',
+    'legal': 'LEG',
+    'information technology': 'IT',
+    'operations': 'OPS',
+    'marketing': 'MKT',
+    'research and development': 'RND',
+    'quality assurance': 'QA',
+    'administration': 'ADM',
+    'procurement': 'PRO',
+    'accounts': 'ACC'
+    // Add more department mappings as needed
+  };
+
+  // Convert unit name to lowercase and find matching code
+  const normalizedName = unitName.toLowerCase();
+  
+  // Check for exact matches first
+  if (departmentCodes[normalizedName]) {
+    return departmentCodes[normalizedName];
+  }
+
+  // Check for partial matches
+  for (const [dept, code] of Object.entries(departmentCodes)) {
+    if (normalizedName.includes(dept)) {
+      return code;
+    }
+  }
+
+  // If no match found, return first 3 letters in uppercase
+  return unitName.slice(0, 3).toUpperCase();
+};
+
 // Create new indent
 exports.createIndent = async (req, res) => {
   try {
-    console.log("req.body",req.body);
     const {
       employeeId,
       managerId,
@@ -46,17 +82,25 @@ exports.createIndent = async (req, res) => {
         message: 'Invalid Unit ID or Unit not found'
       });
     }
-    // Validate Project exists and is active
-    const project = await Project.findById(projectId);
-    if (!project) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid Project ID or Project not found'
-      });
-    }
 
-    // Create new indent with the items structure matching the model
+    // Generate Indent Number
+    const currentYear = new Date().getFullYear();
+    
+    // Get count of indents for this unit in current year
+    const indentCount = await Indent.countDocuments({
+      unit: unitId,
+      createdAt: {
+        $gte: new Date(currentYear, 0, 1),
+        $lt: new Date(currentYear + 1, 0, 1)
+      }
+    });
+
+    // Format: UnitName_Year_SerialNumber
+    const indentNumber = `${getDepartmentCode(unit.unitName)}_${currentYear}_${(indentCount + 1).toString().padStart(3, '0')}`;
+
+    // Create new indent
     const indent = new Indent({
+      indentNumber,
       employee: employeeId,
       manager: managerId,
       unit: unitId,

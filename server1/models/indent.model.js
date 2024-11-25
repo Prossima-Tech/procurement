@@ -140,23 +140,4 @@ const IndentSchema = new Schema({
     timestamps: true
 });
 
-// Pre-save middleware for indent number generation
-IndentSchema.pre('save', async function (next) {
-    if (!this.indentNumber) {
-        const date = new Date();
-        const year = date.getFullYear().toString().slice(-2);
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-
-        const count = await this.constructor.countDocuments({
-            createdAt: {
-                $gte: new Date(date.getFullYear(), date.getMonth(), 1),
-                $lt: new Date(date.getFullYear(), date.getMonth() + 1, 1)
-            }
-        });
-
-        this.indentNumber = `IND-${year}-${month}-${(count + 1).toString().padStart(4, '0')}`;
-    }
-    next();
-});
-
 module.exports = mongoose.model('Indent', IndentSchema);
