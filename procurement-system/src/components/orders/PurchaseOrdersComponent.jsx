@@ -57,15 +57,15 @@ const PurchaseOrdersComponent = () => {
 
             // Transform the data to match your frontend structure
             const formattedOrders = purchaseOrders.map(po => ({
-                id: po._id,
-                reference: po.poCode,
-                confirmationDate: new Date(po.poDate).toLocaleDateString(),
+                _id: po._id,
+                poCode: po.poCode,
+                poDate: new Date(po.poDate).toLocaleDateString(),
                 vendor: {
                     name: po.vendorId?.name || 'N/A'
                 },
-                total: po.items?.reduce((sum, item) => sum + (item.totalPrice || 0), 0) || 0,
-                status: po.status || 'Pending',
-                expectedArrival: po.deliveryDate ? new Date(po.deliveryDate).toLocaleDateString() : 'N/A',
+                status: po.status || 'draft',
+                deliveryStatus: po.deliveryStatus || 'pending',
+                deliveryDate: po.deliveryDate,
                 items: po.items || []
             }));
 
@@ -136,7 +136,7 @@ const PurchaseOrdersComponent = () => {
 
     const handleDeletePurchaseOrder = async (orderId, reference) => {
         const confirmDelete = window.confirm(`Are you sure you want to delete Purchase Order ${reference}?`);
-        
+
         if (confirmDelete) {
             setIsLoading(true);
             try {
@@ -148,7 +148,7 @@ const PurchaseOrdersComponent = () => {
                         }
                     }
                 );
-                
+
                 if (response.status === 200) {
                     toast.success('Purchase Order deleted successfully');
                     // Refresh the purchase orders list
@@ -178,41 +178,78 @@ const PurchaseOrdersComponent = () => {
     };
 
     const columns = [
-        { header: 'Reference', key: 'reference' },
-        { header: 'Confirmation Date', key: 'confirmationDate' },
-        { header: 'Vendor', key: 'vendor', render: (item) => item.vendor.name },
-        { header: 'Total', key: 'total', render: (item) => `₹${item.total.toFixed(2)}` },
+        { header: 'PO Code', key: 'poCode' },
+        { header: 'PO Date', key: 'poDate' },
+        { header: 'Vendor', key: 'vendor', render: (item) => item.vendor?.name || 'N/A' },
         {
             header: 'Status',
             key: 'status',
-            render: (item) => (
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.status === 'Pending'
-                    ? isDarkMode ? 'bg-yellow-700 text-yellow-100' : 'bg-yellow-100 text-yellow-800'
-                    : isDarkMode ? 'bg-green-700 text-green-100' : 'bg-green-100 text-green-800'
-                    }`}>
-                    {item.status}
-                </span>
-            )
+            render: (item) => {
+                const statusColors = {
+                    draft: 'gray',
+                    created: 'blue',
+                    submitted: 'yellow',
+                    approved: 'green',
+                    in_progress: 'purple',
+                    partially_delivered: 'orange',
+                    fully_delivered: 'green',
+                    cancelled: 'red'
+                };
+                const color = statusColors[item.status] || 'gray';
+                return (
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${isDarkMode
+                        ? `bg-${color}-700 text-${color}-100`
+                        : `bg-${color}-100 text-${color}-800`
+                        }`}>
+                        {item.status?.replace(/_/g, ' ').toUpperCase()}
+                    </span>
+                );
+            }
         },
-        { header: 'Expected Arrival', key: 'expectedArrival' },
+        {
+            header: 'Delivery Status',
+            key: 'deliveryStatus',
+            render: (item) => {
+                const statusColors = {
+                    pending: 'yellow',
+                    partially_delivered: 'orange',
+                    fully_delivered: 'green'
+                };
+                const color = statusColors[item.deliveryStatus] || 'gray';
+                return (
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${isDarkMode
+                        ? `bg-${color}-700 text-${color}-100`
+                        : `bg-${color}-100 text-${color}-800`
+                        }`}>
+                        {item.deliveryStatus?.replace(/_/g, ' ').toUpperCase()}
+                    </span>
+                );
+            }
+        },
+        {
+            header: 'Total Value',
+            key: 'totalValue',
+            render: (item) => `₹${item.items?.reduce((sum, item) => sum + (item.totalPrice || 0), 0).toFixed(2)}`
+        },
+        { header: 'Delivery Date', key: 'deliveryDate', render: (item) => new Date(item.deliveryDate).toLocaleDateString() },
         {
             header: 'Actions',
             key: 'actions',
             render: (item) => (
                 <div className="flex items-center justify-end space-x-2">
                     <button
-                        onClick={() => handleEdit(item.id)}
+                        onClick={() => handleEdit(item._id)}
                         className="text-blue-600 hover:text-blue-900 focus:outline-none p-1 rounded-full transition-colors"
                         title="Edit Purchase Order"
-                        disabled={isLoading}
+                        disabled={isLoading || item.status === 'in_progress' || item.status === 'grn_created'}
                     >
                         <Pencil size={20} />
                     </button>
                     <button
-                        onClick={() => handleDeletePurchaseOrder(item.id, item.reference)}
+                        onClick={() => handleDeletePurchaseOrder(item._id, item.poCode)}
                         className="text-red-600 hover:text-red-900 focus:outline-none p-1 rounded-full transition-colors"
                         title="Delete Purchase Order"
-                        disabled={isLoading}
+                        disabled={isLoading || item.status === 'in_progress' || item.status === 'grn_created'}
                     >
                         <Trash2 size={20} />
                     </button>
@@ -229,10 +266,10 @@ const PurchaseOrdersComponent = () => {
                     <div className="flex justify-center">
                         {isCreatingNew && (
                             <Link to="/" className={`flex justify-center p-2 mr-2 rounded-full ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-200'} transition duration-150 ease-in-out`}>
-                            <button onClick={handleCancel}>
-                                <ChevronLeft size={24} />
-                            </button>
-                        </Link>
+                                <button onClick={handleCancel}>
+                                    <ChevronLeft size={24} />
+                                </button>
+                            </Link>
                         )}
                         <h1 className="text-2xl font-bold">
                             {isCreatingNew ? (editingPO ? 'Edit Purchase Order' : 'Create Purchase Order') : 'Purchase Orders'}

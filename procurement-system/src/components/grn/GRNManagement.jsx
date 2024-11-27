@@ -1,279 +1,4 @@
 /* eslint-disable react/prop-types */
-// import { useState, useEffect } from 'react';
-// import axios from 'axios';
-// import { message, Table } from 'antd';
-// import { baseURL } from '../../utils/endpoint';
-// import CreateGRNModal from './CreateGRN';
-// import ViewGRNModal from './ViewGRN';
-// import InspectionModal from './InspectionModal';
-
-// export const GRNComponent = () => {
-//     // State Management
-//     const [activeTab, setActiveTab] = useState('grns');
-//     const [grns, setGRNs] = useState([]);
-//     const [pendingPOs, setPendingPOs] = useState([]);
-//     const [isLoading, setIsLoading] = useState(false);
-//     const [selectedPO, setSelectedPO] = useState(null);
-//     const [isCreateGRNModalOpen, setIsCreateGRNModalOpen] = useState(false);
-//     const [selectedGRN, setSelectedGRN] = useState(null);
-//     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-//     const [isInspectionModalOpen, setIsInspectionModalOpen] = useState(false);
-
-//     // Fetch GRNs
-//     const fetchGRNs = async () => {
-//         try {
-//             setIsLoading(true);
-//             const token = localStorage.getItem('token');
-//             const response = await axios.get(`${baseURL}/grn`, {
-//                 headers: { Authorization: `Bearer ${token}` }
-//             });
-//             setGRNs(response.data.data || []);
-//         } catch (error) {
-//             console.error('Error fetching GRNs:', error);
-//             message.error('Failed to fetch GRNs');
-//         } finally {
-//             setIsLoading(false);
-//         }
-//     };
-
-//     // Fetch Pending POs
-//     const fetchPendingPOs = async () => {
-//         try {
-//             setIsLoading(true);
-//             const token = localStorage.getItem('token');
-//             const response = await axios.get(`${baseURL}/grn/pending-pos`, {
-//                 headers: { Authorization: `Bearer ${token}` }
-//             });
-//             setPendingPOs(response.data.data || []);
-//         } catch (error) {
-//             console.error('Error fetching pending POs:', error);
-//             message.error('Failed to fetch pending POs');
-//         } finally {
-//             setIsLoading(false);
-//         }
-//     };
-
-//     useEffect(() => {
-//         if (activeTab === 'pos') {
-//             fetchPendingPOs();
-//         } else {
-//             fetchGRNs();
-//         }
-//     }, [activeTab]);
-
-//     // Define table columns
-//     const grnColumns = [
-//         {
-//             title: 'GRN Number',
-//             dataIndex: 'grnNumber',
-//             key: 'grnNumber',
-//         },
-//         {
-//             title: 'PO Reference',
-//             dataIndex: ['purchaseOrder', 'poCode'],
-//             key: 'poReference',
-//         },
-//         {
-//             title: 'Vendor',
-//             dataIndex: ['vendor', 'name'],
-//             key: 'vendor',
-//         },
-//         {
-//             title: 'Created Date',
-//             dataIndex: 'createdAt',
-//             key: 'createdAt',
-//             render: (date) => new Date(date).toLocaleDateString()
-//         },
-//         {
-//             title: 'Status',
-//             dataIndex: 'status',
-//             key: 'status',
-//             render: (status) => (
-//                 <span className={`px-2 py-1 rounded-full text-xs ${status === 'draft' ? 'bg-gray-100 text-gray-800' :
-//                     status === 'pending_inspection' ? 'bg-yellow-100 text-yellow-800' :
-//                         status === 'approved' ? 'bg-green-100 text-green-800' :
-//                             'bg-red-100 text-red-800'
-//                     }`}>
-//                     {status?.replace('_', ' ').toUpperCase()}
-//                 </span>
-//             )
-//         },
-//         {
-//             title: 'Actions',
-//             key: 'actions',
-//             render: (_, record) => (
-//                 <div className="flex space-x-2">
-//                     <button
-//                         onClick={() => handleViewGRN(record)}
-//                         className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
-//                     >
-//                         View
-//                     </button>
-//                     {record.status === 'pending_inspection' && (
-//                         <button
-//                             onClick={() => handleInspection(record)}
-//                             className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm"
-//                         >
-//                             Inspect
-//                         </button>
-//                     )}
-//                 </div>
-//             )
-//         }
-//     ];
-
-//     const poColumns = [
-//         {
-//             title: 'PO Number',
-//             dataIndex: 'poCode',
-//             key: 'poCode',
-//         },
-//         {
-//             title: 'Vendor',
-//             dataIndex: ['vendorId', 'name'],
-//             key: 'vendor',
-//         },
-//         {
-//             title: 'Project',
-//             dataIndex: ['project', 'projectName'],
-//             key: 'project',
-//         },
-//         {
-//             title: 'Items Count',
-//             key: 'itemsCount',
-//             render: (record) => record.items?.length || 0
-//         },
-//         {
-//             title: 'Action',
-//             key: 'action',
-//             render: (_, record) => (
-//                 <button
-//                     onClick={() => {
-//                         setSelectedPO(record);
-//                         setIsCreateGRNModalOpen(true);
-//                     }}
-//                     className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
-//                 >
-//                     Create GRN
-//                 </button>
-//             )
-//         }
-//     ];
-
-//     // Event Handlers
-//     const handleViewGRN = (record) => {
-//         setSelectedGRN(record);
-//         setIsViewModalOpen(true);
-//     };
-
-//     const handleInspection = (record) => {
-//         setSelectedGRN(record);
-//         setIsInspectionModalOpen(true);
-//     };
-
-//     const handleCloseCreateGRNModal = () => {
-//         setIsCreateGRNModalOpen(false);
-//         setSelectedPO(null);
-//         if (activeTab === 'pos') {
-//             fetchPendingPOs();
-//         } else {
-//             fetchGRNs();
-//         }
-//     };
-
-//     return (
-//         <div className="p-6">
-//             <div className="mb-6">
-//                 <h1 className="text-2xl font-bold mb-2">Goods Receipt Note Management</h1>
-//                 <div className="flex space-x-4">
-//                     <button
-//                         onClick={() => setActiveTab('grns')}
-//                         className={`px-4 py-2 rounded-md ${activeTab === 'grns'
-//                             ? 'bg-blue-500 text-white'
-//                             : 'bg-gray-200 text-gray-700'
-//                             }`}
-//                     >
-//                         GRN List
-//                     </button>
-//                     <button
-//                         onClick={() => setActiveTab('pos')}
-//                         className={`px-4 py-2 rounded-md ${activeTab === 'pos'
-//                             ? 'bg-blue-500 text-white'
-//                             : 'bg-gray-200 text-gray-700'
-//                             }`}
-//                     >
-//                         Pending POs
-//                     </button>
-//                 </div>
-//             </div>
-
-//             <div className="bg-white rounded-lg shadow">
-//                 {isLoading ? (
-//                     <div className="text-center py-10">
-//                         <span className="text-gray-600">Loading...</span>
-//                     </div>
-//                 ) : (
-//                     <Table
-//                         dataSource={activeTab === 'pos' ? pendingPOs : grns}
-//                         columns={activeTab === 'pos' ? poColumns : grnColumns}
-//                         rowKey="_id"
-//                         pagination={{
-//                             total: activeTab === 'pos' ? pendingPOs.length : grns.length,
-//                             pageSize: 10,
-//                             showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`
-//                         }}
-//                     />
-//                 )}
-//             </div>
-
-//             {isCreateGRNModalOpen && selectedPO && (
-//                 <CreateGRNModal
-//                     isOpen={isCreateGRNModalOpen}
-//                     onClose={handleCloseCreateGRNModal}
-//                     purchaseOrder={selectedPO}
-//                     onSuccess={() => {
-//                         fetchPendingPOs();
-//                         fetchGRNs();
-//                         setIsCreateGRNModalOpen(false);
-//                         setSelectedPO(null);
-//                         message.success('GRN created successfully');
-//                     }}
-//                 />
-//             )}
-
-//             {isViewModalOpen && selectedGRN && (
-//                 <ViewGRNModal
-//                     isOpen={isViewModalOpen}
-//                     onClose={() => {
-//                         setIsViewModalOpen(false);
-//                         setSelectedGRN(null);
-//                     }}
-//                     grn={selectedGRN}
-//                 />
-//             )}
-
-//             {isInspectionModalOpen && selectedGRN && (
-//                 <InspectionModal
-//                     isOpen={isInspectionModalOpen}
-//                     onClose={() => {
-//                         setIsInspectionModalOpen(false);
-//                         setSelectedGRN(null);
-//                     }}
-//                     grn={selectedGRN}
-//                     onSuccess={() => {
-//                         fetchGRNs();
-//                         setIsInspectionModalOpen(false);
-//                         setSelectedGRN(null);
-//                         message.success('Inspection completed successfully');
-//                     }}
-//                 />
-//             )}
-//         </div>
-//     );
-// };
-
-// export default GRNComponent;
-
 // components/grn/GRNManagement.js
 import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -306,19 +31,21 @@ const GRNForm = ({ grn, onBack, onSuccess }) => {
     const fetchPurchaseOrders = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${baseURL}/purchase-orders/getAllPOs?status=created`, {
+            const response = await fetch(`${baseURL}/purchase-orders/getAllPOs`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await response.json();
 
             if (data.purchaseOrders) {
-                // Filter POs with status 'created' (case-insensitive)
-                const createdPOs = data.purchaseOrders.filter(po =>
-                    po.status.toLowerCase() === 'created'
+                // Filter POs that are approved or partially delivered
+                const eligiblePOs = data.purchaseOrders.filter(po =>
+                    po.status === 'created' ||
+                    po.status === 'in_progress' ||
+                    po.deliveryStatus === 'partially_delivered'
                 );
-                setPurchaseOrders(createdPOs);
+                setPurchaseOrders(eligiblePOs);
             } else {
-                toast.error('No purchase orders available');
+                toast.error('No eligible purchase orders available');
             }
         } catch (error) {
             console.error('Error fetching POs:', error);
@@ -333,42 +60,58 @@ const GRNForm = ({ grn, onBack, onSuccess }) => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const po = await response.json();
-            console.log(po);
 
             if (!po) {
                 throw new Error('Purchase order details not found');
             }
 
             setSelectedPO(po);
+            console.log("po details:", po);
 
-            // Initialize GRN items from PO items with the new structure
             setFormData(prev => ({
                 ...prev,
                 purchaseOrder: poId,
                 items: po.items.map(item => {
+                    // Use the delivery details from PO
+                    const deliveredQty = item.deliveredQuantity || 0;
+                    const pendingQty = item.pendingQuantity || (item.quantity - deliveredQty);
+
+                    // Calculate GRN delivery history
+                    const grnHistory = item.grnDeliveries?.map(delivery => ({
+                        grnId: delivery.grnId,
+                        receivedQuantity: delivery.receivedQuantity,
+                        receivedDate: delivery.receivedDate,
+                        status: delivery.status
+                    })) || [];
+
                     return {
                         partId: item.partId,
                         partCode: item.partCode,
-                        poItem: item._id || '',
                         orderedQuantity: item.quantity,
-                        receivedQuantity: 0,
+                        receivedQuantity: 0, // Start with 0 for new GRN
+                        pendingQuantity: pendingQty,
+                        previouslyDelivered: deliveredQty,
+                        grnDeliveries: grnHistory,
                         unitPrice: item.unitPrice,
                         totalPrice: 0,
                         remarks: '',
                         itemDetails: {
-                            partCodeNumber: item.partCode,
-                            itemName: item.masterItemName,
-                            itemCode: item.partCode,
-                            measurementUnit: 'Units' // Add default unit if not available
-                        }
+                            partCodeNumber: item.partCode?.PartCodeNumber || item.partCode,
+                            itemName: item.masterItemName || item.itemDetails?.itemName,
+                            itemCode: item.itemDetails?.itemCode || '',
+                            measurementUnit: item.itemDetails?.measurementUnit || 'Units'
+                        },
+                        // Add delivery tracking
+                        deliveryStatus: deliveredQty === item.quantity ? 'complete' :
+                            deliveredQty > 0 ? 'partial' : 'pending',
+                        deliveryHistory: grnHistory.map(delivery => ({
+                            date: new Date(delivery.receivedDate).toLocaleDateString(),
+                            quantity: delivery.receivedQuantity,
+                            status: delivery.status
+                        }))
                     };
                 })
             }));
-
-            console.log('Successfully processed PO:', {
-                poId,
-                items: po.items
-            });
 
         } catch (error) {
             console.error('Error fetching PO details:', error);
@@ -395,29 +138,78 @@ const GRNForm = ({ grn, onBack, onSuccess }) => {
         }
     }, [grn]);
 
+    // const handleSubmit = async (status = 'draft') => {
+    //     try {
+    //         setLoading(true);
+    //         const method = grn ? 'PUT' : 'POST';
+    //         const url = grn ? `${baseURL}/grn/${grn._id}` : `${baseURL}/grn`;
+
+    //         const response = await fetch(url, {
+    //             method,
+    //             headers: {
+    //                 'Content-Type': 'application/json'
+    //             },
+    //             body: JSON.stringify({
+    //                 ...formData,
+    //                 status
+    //             })
+    //         });
+
+    //         const data = await response.json();
+    //         if (data.success) {
+    //             toast.success(`GRN ${grn ? 'updated' : 'created'} successfully`);
+    //             if (onSuccess) {
+    //                 onSuccess(data.data); // Pass the new/updated GRN data
+    //             }
+    //             onBack();
+    //         } else {
+    //             toast.error(data.message);
+    //         }
+    //     } catch (error) {
+    //         console.error('Error saving GRN:', error);
+    //         toast.error('Failed to save GRN');
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
+
     const handleSubmit = async (status = 'draft') => {
         try {
             setLoading(true);
-            const method = grn ? 'PUT' : 'POST';
-            const url = grn ? `${baseURL}/grn/${grn._id}` : `${baseURL}/grn`;
 
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    ...formData,
-                    status
-                })
-            });
+            // Validate all quantities before submission
+            for (const item of formData.items) {
+                const totalDelivered = item.previouslyDelivered + item.receivedQuantity;
+                if (totalDelivered > item.orderedQuantity) {
+                    toast.error(`Total delivered quantity exceeds ordered quantity for ${item.itemDetails.partCodeNumber}`);
+                    return;
+                }
+            }
+
+            const submitData = {
+                ...formData,
+                status,
+                items: formData.items.map(item => ({
+                    ...item,
+                    pendingQuantity: item.orderedQuantity - (item.previouslyDelivered + item.receivedQuantity)
+                }))
+            };
+
+            const response = await fetch(
+                grn ? `${baseURL}/grn/${grn._id}` : `${baseURL}/grn`,
+                {
+                    method: grn ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(submitData)
+                }
+            );
 
             const data = await response.json();
             if (data.success) {
                 toast.success(`GRN ${grn ? 'updated' : 'created'} successfully`);
-                if (onSuccess) {
-                    onSuccess(data.data); // Pass the new/updated GRN data
-                }
+                if (onSuccess) onSuccess(data.data);
                 onBack();
             } else {
                 toast.error(data.message);
@@ -431,6 +223,10 @@ const GRNForm = ({ grn, onBack, onSuccess }) => {
     };
 
     const handleQuantityChange = (index, value) => {
+        if (!validateReceivedQuantity(index, Number(value))) {
+            return;
+        }
+
         const newItems = [...formData.items];
         newItems[index] = {
             ...newItems[index],
@@ -438,6 +234,22 @@ const GRNForm = ({ grn, onBack, onSuccess }) => {
             totalPrice: Number(value) * newItems[index].unitPrice
         };
         setFormData(prev => ({ ...prev, items: newItems }));
+    };
+
+    // Add validation for received quantities
+    const validateReceivedQuantity = (index, newQuantity) => {
+        const item = formData.items[index];
+        const pendingQty = item.orderedQuantity - item.previouslyDelivered;
+
+        if (newQuantity > pendingQty) {
+            toast.error(`Received quantity cannot exceed pending quantity (${pendingQty})`);
+            return false;
+        }
+        if (newQuantity < 0) {
+            toast.error('Received quantity cannot be negative');
+            return false;
+        }
+        return true;
     };
 
     return (
@@ -662,6 +474,12 @@ const GRNForm = ({ grn, onBack, onSuccess }) => {
                                     Ordered Qty
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                                    Previously Delivered
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                                    Pending Quantity
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                                     Received Qty
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
@@ -685,21 +503,22 @@ const GRNForm = ({ grn, onBack, onSuccess }) => {
                                     <td className="px-4 py-2 text-right">
                                         {item.orderedQuantity} {item.itemDetails.measurementUnit}
                                     </td>
+                                    <td className="px-4 py-2 text-right font-medium">
+                                        {item.previouslyDelivered} {item.itemDetails.measurementUnit}
+                                    </td>
+                                    <td className="px-4 py-2 text-right font-medium text-orange-600">
+                                        {item.pendingQuantity} {item.itemDetails.measurementUnit}
+                                    </td>
                                     <td className="px-4 py-2">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <input
-                                                type="number"
-                                                value={item.receivedQuantity}
-                                                onChange={(e) => handleQuantityChange(index, e.target.value)}
-                                                min="0"
-                                                max={item.orderedQuantity}
-                                                className={`w-20 px-2 py-1 text-right rounded-md border ${isDarkMode
-                                                    ? 'bg-gray-800 border-gray-600'
-                                                    : 'bg-white border-gray-300'
-                                                    }`}
-                                            />
-                                            <span>{item.itemDetails.measurementUnit}</span>
-                                        </div>
+                                        <input
+                                            type="number"
+                                            value={item.receivedQuantity || 0}
+                                            onChange={(e) => handleQuantityChange(index, e.target.value)}
+                                            min="0"
+                                            max={item.pendingQuantity}
+                                            className={`w-20 px-2 py-1 text-right rounded-md border 
+                        ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}
+                                        />
                                     </td>
                                     <td className="px-4 py-2 text-right">₹{item.unitPrice.toFixed(2)}</td>
                                     <td className="px-4 py-2 text-right">₹{item.totalPrice.toFixed(2)}</td>
@@ -722,6 +541,23 @@ const GRNForm = ({ grn, onBack, onSuccess }) => {
                                 </tr>
                             ))}
                         </tbody>
+                        <tfoot className={isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}>
+                            <tr>
+                                <td colSpan="4" className="px-6 py-4 text-right font-semibold">
+                                    Total Quantities:
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right font-semibold">
+                                    {formData.items.reduce((sum, item) => sum + item.pendingQuantity, 0)} (Pending)
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right font-semibold">
+                                    {formData.items.reduce((sum, item) => sum + (item.receivedQuantity || 0), 0)} (Current)
+                                </td>
+                                <td colSpan="2" className="px-6 py-4 whitespace-nowrap text-right font-semibold">
+                                    Total Value: ₹{formData.items.reduce((sum, item) =>
+                                        sum + (item.receivedQuantity * item.unitPrice), 0).toFixed(2)}
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
@@ -857,7 +693,13 @@ const GRNView = ({ grn, onBack }) => {
                                     Ordered Qty
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                                    Received Qty
+                                    Previously Delivered
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                                    Pending After GRN
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                                    Current Received
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                                     Unit Price
@@ -881,6 +723,12 @@ const GRNView = ({ grn, onBack }) => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right">
                                         {item.orderedQuantity} {item.itemDetails.measurementUnit}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                        {item.previouslyDelivered} {item.itemDetails.measurementUnit}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                        {item.orderedQuantity - (item.previouslyDelivered + item.receivedQuantity)} {item.itemDetails.measurementUnit}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right">
                                         {item.receivedQuantity} {item.itemDetails.measurementUnit}
@@ -913,6 +761,47 @@ const GRNView = ({ grn, onBack }) => {
             </div>
 
 
+        </div>
+    );
+};
+
+
+const getDeliveryStatusBadge = (item) => {
+    const delivered = item.previouslyDelivered + item.receivedQuantity;
+    const percentage = (delivered / item.orderedQuantity) * 100;
+
+    if (percentage === 0) return (
+        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
+            Pending
+        </span>
+    );
+    if (percentage === 100) return (
+        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+            Complete
+        </span>
+    );
+    return (
+        <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
+            Partial ({percentage.toFixed(0)}%)
+        </span>
+    );
+};
+
+const DeliveryProgress = ({ item }) => {
+    const delivered = item.previouslyDelivered + item.receivedQuantity;
+    const percentage = (delivered / item.orderedQuantity) * 100;
+
+    return (
+        <div className="w-full">
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                    className="bg-blue-600 h-2.5 rounded-full"
+                    style={{ width: `${percentage}%` }}
+                />
+            </div>
+            <div className="text-xs mt-1 text-gray-500">
+                {delivered} of {item.orderedQuantity} delivered
+            </div>
         </div>
     );
 };

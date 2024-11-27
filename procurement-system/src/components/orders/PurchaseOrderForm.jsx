@@ -6,11 +6,11 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { baseURL } from '../../utils/endpoint';
 import axios from 'axios';
-const PurchaseOrderForm = ({ 
-    onCancel, 
-    isLoading, 
-    setIsLoading, 
-    initialData, 
+const PurchaseOrderForm = ({
+    onCancel,
+    isLoading,
+    setIsLoading,
+    initialData,
     setIsModalOpen,
     setIsCreatingNew,
     fetchPurchaseOrders,
@@ -178,14 +178,23 @@ const PurchaseOrderForm = ({
         try {
             const response = await api(`/parts/getPartByCode/${newItem.partCode}`, 'get');
             const partDetails = response.data.data;
-            // toast.success("Toast checking");
-            // console.log("Part details", partDetails);
+
+            console.log(partDetails)
+
             if (response.data.success) {
-                // console.log("Part details found");
                 const newItemWithDetails = {
-                    ...newItem,
+                    partCode: partDetails._id, // Store the MongoDB ObjectId
+                    partCodeDisplay: partDetails.ItemCode.ItemName, // Store the actual part code for display
+                    quantity: Number(newItem.quantity),
+                    unitPrice: Number(newItem.unitPrice),
+                    totalPrice: Number(newItem.quantity) * Number(newItem.unitPrice),
                     masterItemName: partDetails.ItemCode.ItemName,
-                    // Add any other relevant details from the API response
+                    itemDetails: {
+                        partCodeNumber: partDetails.PartCodeNumber,
+                        itemName: partDetails.ItemCode.ItemName,
+                        itemCode: partDetails.ItemCode.ItemCode,
+                        measurementUnit: partDetails.MeasurementUnit || 'Units'
+                    }
                 };
 
                 setFormData(prev => ({
@@ -193,7 +202,9 @@ const PurchaseOrderForm = ({
                     items: [...prev.items, newItemWithDetails]
                 }));
 
-                setNewItem({ partCode: '', quantity: '', unitPrice: '' });
+                setNewItem({ partCode: '', partCodeDisplay: '', quantity: '', unitPrice: '' });
+
+                console.log(setNewItem);
                 toast.success("Item added successfully");
             } else {
                 toast.error("Part code not found in database");
@@ -217,11 +228,11 @@ const PurchaseOrderForm = ({
     };
 
     const handleSaveDraft = async (e) => {
-        if(formData._id){
+        if (formData._id) {
             console.log("updating purchase order");
             try {
-                const response = await axios.put(`${baseURL}/purchase-orders/updatePO/${formData._id}`, 
-                    {...formData, status: 'draft'}, 
+                const response = await axios.put(`${baseURL}/purchase-orders/updatePO/${formData._id}`,
+                    { ...formData, status: 'draft' },
                     {
                         headers: {
                             'Authorization': `Bearer ${getToken()}`,
@@ -245,19 +256,19 @@ const PurchaseOrderForm = ({
                 fetchPurchaseOrders();
                 setEditingPO(null);
             }
-        }else{
+        } else {
             e.preventDefault();
             await handleSubmit(e, 'draft');
         }
     };
 
     const handleCreatePO = async (e) => {
-        if(formData._id){
+        if (formData._id) {
             console.log("updating purchase order");
             console.log("formData", formData);
             try {
-                const response = await axios.put(`${baseURL}/purchase-orders/updatePO/${formData._id}`, 
-                    {...formData, status: 'created'}, 
+                const response = await axios.put(`${baseURL}/purchase-orders/updatePO/${formData._id}`,
+                    { ...formData, status: 'created' },
                     {
                         headers: {
                             'Authorization': `Bearer ${getToken()}`,
@@ -282,7 +293,7 @@ const PurchaseOrderForm = ({
                 setEditingPO(null);
             }
 
-        }else{
+        } else {
             e.preventDefault();
             await handleSubmit(e, 'created');
         }
@@ -320,34 +331,42 @@ const PurchaseOrderForm = ({
         // Filter out empty items
         const validItems = formData.items.filter(item =>
             item.partCode && item.quantity && item.unitPrice
-        );
+        ).map(item => ({
+            partCode: item.partCode, // This is already the MongoDB ObjectId
+            quantity: Number(item.quantity),
+            unitPrice: Number(item.unitPrice),
+            totalPrice: Number(item.quantity) * Number(item.unitPrice)
+        }));
+
         if (validItems.length === 0) {
             toast.error("Please add at least one valid item to the order");
             return;
         }
-        // Create a new object with valid items
+
         const dataToSend = {
             ...formData,
             items: validItems,
-            status: status // Set the status based on which button was clicked
+            status
         };
-        console.log("Data to send", dataToSend);
-        // Set loading state
-        setIsLoading(true);
 
         try {
-            const response = await axios.post(`${baseURL}/purchase-orders/createPO`, dataToSend, {
-                headers: {
-                    'Authorization': `Bearer ${getToken()}`,
-                    'Content-Type': 'application/json',
+            setIsLoading(true);
+            const response = await axios.post(
+                `${baseURL}/purchase-orders/createPO`,
+                dataToSend,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json',
+                    }
                 }
-            });
+            );
 
             if (response.status === 201) {
                 toast.success("Purchase order created successfully");
-                if(!isDirectPO)setIsCreatingNew(false);
-                if(!isDirectPO)setIsModalOpen(false);
-                if(isDirectPO)onCancel();
+                if (!isDirectPO) setIsCreatingNew(false);
+                if (!isDirectPO) setIsModalOpen(false);
+                if (isDirectPO) onCancel();
             } else {
                 throw new Error('Failed to create Purchase Order');
             }
@@ -355,9 +374,9 @@ const PurchaseOrderForm = ({
             console.error('Error creating Purchase Order:', error);
             toast.error(`Failed to create purchase order: ${error.response?.data?.message || error.message}`);
         } finally {
-            if(!isDirectPO)setIsLoading(false);
-            if(!isDirectPO)fetchPurchaseOrders();
-            if(isDirectPO){
+            if (!isDirectPO) setIsLoading(false);
+            if (!isDirectPO) fetchPurchaseOrders();
+            if (isDirectPO) {
                 onCancel();
                 setIsLoading(false);
             }
@@ -435,24 +454,23 @@ const PurchaseOrderForm = ({
             </thead>
             <tbody>
                 {formData.items.map((item, index) => (
-                    <tr key={index} className={`border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-                        <td className="p-2">{item.partCode}</td>
-                        <td className="p-2">{item.masterItemName}</td>
-                        <td className="p-2">{item.quantity}</td>
-                        <td className="p-2">{item.unit}</td>
-                        <td className="p-2">
-                            <input
-                                type="number"
-                                value={item.unitPrice}
-                                onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                                className={`${inputClass} w-24`}
-                                placeholder="Enter price"
-                            />
-                        </td>
-                        <td className="p-2">
-                            {item.totalPrice || calculateTotalPrice(item.quantity, item.unitPrice)}
-                        </td>
-                    </tr>
+                    item.partCode && (
+                        <tr key={index} className={`border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                            <td className="p-2">{item.partCodeDisplay || item.itemDetails.partCodeNumber}</td>
+                            <td className="p-2">{item.masterItemName}</td>
+                            <td className="p-2">{item.quantity}</td>
+                            <td className="p-2">{item.unitPrice}</td>
+                            <td className="p-2">
+                                <button
+                                    type="button"
+                                    onClick={() => removeItem(index)}
+                                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                                >
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    )
                 ))}
             </tbody>
         </table>
@@ -754,7 +772,7 @@ const PurchaseOrderForm = ({
                             {formData.items.map((item, index) => (
                                 item.partCode && (
                                     <tr key={index} className={`border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-                                        <td className="p-2">{item.partCode}</td>
+                                        <td className="p-2">{item.partCodeDisplay}</td>
                                         <td className="p-2">{item.masterItemName}</td>
                                         <td className="p-2">{item.quantity}</td>
                                         <td className="p-2">{item.unitPrice}</td>

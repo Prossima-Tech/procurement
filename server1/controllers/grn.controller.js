@@ -41,7 +41,7 @@ class GRNController {
 
         try {
             const {
-                purchaseOrder,
+                purchaseOrder: poId,
                 challanNumber,
                 challanDate,
                 receivedDate,
@@ -50,85 +50,125 @@ class GRNController {
                 items
             } = req.body;
 
-            // Validate purchase order exists and get its details
-            const poExists = await PurchaseOrder.findById(purchaseOrder)
+            console.log('Creating GRN for PO:', poId);
+
+            // Fetch PO with items
+            const po = await PurchaseOrder.findById(poId)
                 .populate('vendorId')
                 .populate('projectId')
                 .populate('unitId');
 
-            if (!poExists) {
+            if (!po) {
                 throw new Error('Purchase Order not found');
             }
 
-            // Generate GRN number
+            // console.log(items);
+            // console.log(po);
+
+            // Validate and update PO items
+            for (const grnItem of items) {
+
+                const poItem = po.items.find(pi => {
+                    console.log('pi partcode', pi.partCode.toString());
+                    console.log('grnitem partcode', grnItem.partId);
+                    return pi.partCode.toString() === grnItem.partId._id.toString();
+                }
+                );
+
+                console.log(poItem);
+
+                if (!poItem) {
+                    throw new Error(`Item ${grnItem.partCode} not found in Purchase Order`);
+                }
+
+                // Calculate new delivered quantity
+                const newDeliveredQty = (poItem.deliveredQuantity || 0) + grnItem.receivedQuantity;
+
+                // Validate total delivered quantity
+                if (newDeliveredQty > poItem.quantity) {
+                    throw new Error(
+                        `Total received quantity (${newDeliveredQty}) exceeds ordered quantity (${poItem.quantity}) for item ${grnItem.partCode}`
+                    );
+                }
+
+                // Update PO item quantities
+                poItem.deliveredQuantity = newDeliveredQty;
+                poItem.pendingQuantity = poItem.quantity - newDeliveredQty;
+
+                // Add GRN delivery reference
+                poItem.grnDeliveries.push({
+                    grnId: null, // Will update after GRN creation
+                    receivedQuantity: grnItem.receivedQuantity,
+                    receivedDate: receivedDate,
+                    status: status === 'submitted' ? 'inspection_pending' : 'pending'
+                });
+            }
+
+            // Generate GRN number and create GRN
             const grnNumber = await this.generateGRNNumber();
 
-            // Calculate total value
-            const totalValue = items.reduce((sum, item) => {
-                return sum + (item.receivedQuantity * item.unitPrice);
-            }, 0);
-
-            const finalStatus = status === 'submitted' ? 'inspection_pending' : status;
-
-            // Create GRN document
             const grn = new GRN({
                 grnNumber,
-                purchaseOrder,
-                projectId: poExists.projectId._id,
-                unitId: poExists.unitId._id,
+                purchaseOrder: poId,
+                projectId: po.projectId._id,
+                unitId: po.unitId._id,
                 vendor: {
-                    id: poExists.vendorId._id,
-                    name: poExists.vendorId.name,
-                    code: poExists.vendorId.code,
-                    gstNumber: poExists.vendorId.gstNumber
+                    id: po.vendorId._id,
+                    name: po.vendorId.name,
+                    code: po.vendorId.code,
+                    gstNumber: po.vendorId.gstNumber
                 },
                 challanNumber,
                 challanDate,
                 receivedDate,
-                status: finalStatus,
+                status: status === 'submitted' ? 'inspection_pending' : status,
                 transportDetails,
                 items: items.map(item => ({
                     partId: item.partId,
                     partCode: item.partCode,
-                    poItem: item.poItem || '',
                     orderedQuantity: item.orderedQuantity,
                     receivedQuantity: item.receivedQuantity,
                     unitPrice: item.unitPrice,
                     totalPrice: item.receivedQuantity * item.unitPrice,
                     remarks: item.remarks || '',
-                    itemDetails: {
-                        partCodeNumber: item.itemDetails.partCodeNumber,
-                        itemName: item.itemDetails.itemName,
-                        itemCode: item.itemDetails.itemCode,
-                        measurementUnit: item.itemDetails.measurementUnit || 'Units'
-                    }
+                    itemDetails: item.itemDetails
                 })),
-                totalValue,
-                createdAt: new Date()
+                totalValue: items.reduce((sum, item) =>
+                    sum + (item.receivedQuantity * item.unitPrice), 0
+                )
             });
 
-            // Validate received quantities
-            const invalidItems = items.filter(item =>
-                item.receivedQuantity > item.orderedQuantity ||
-                item.receivedQuantity < 0
-            );
-
-            if (invalidItems.length > 0) {
-                throw new Error('Received quantity cannot exceed ordered quantity or be negative');
-            }
-
-            // Save GRN
             await grn.save({ session });
 
-            // If status is submitted, update PO status
-            if (status === 'submitted') {
-                await PurchaseOrder.findByIdAndUpdate(
-                    purchaseOrder,
-                    { status: 'grn_created' },
-                    { session }
-                );
+            // Update GRN IDs in PO item references
+            po.items.forEach(poItem => {
+                const lastDelivery = poItem.grnDeliveries[poItem.grnDeliveries.length - 1];
+                if (lastDelivery && !lastDelivery.grnId) {
+                    lastDelivery.grnId = grn._id;
+                }
+            });
+
+            // Update PO status and delivery status
+            const allItemsDelivered = po.items.every(item =>
+                item.deliveredQuantity === item.quantity
+            );
+
+            if (allItemsDelivered) {
+                po.deliveryStatus = 'fully_delivered';
+                po.isFullyDelivered = true;
+                po.status = 'grn_created'; // Set status to GRN_created when fully delivered
+            } else {
+                po.deliveryStatus = 'partially_delivered';
+                po.status = 'in_progress';
             }
 
+            // Add GRN reference to PO
+            if (!po.grns) {
+                po.grns = [];
+            }
+            po.grns.push(grn._id);
+
+            await po.save({ session });
             await session.commitTransaction();
 
             res.status(201).json({
@@ -139,6 +179,7 @@ class GRNController {
 
         } catch (error) {
             await session.abortTransaction();
+            console.error('Error creating GRN:', error);
             res.status(400).json({
                 success: false,
                 message: error.message
@@ -363,7 +404,7 @@ class GRNController {
                 data: updatedGRN
             });
 
-        } catch (error) { 
+        } catch (error) {
             await session.abortTransaction();
             res.status(400).json({
                 success: false,
@@ -414,15 +455,15 @@ class GRNController {
     async getVendorGRN(req, res) {
         try {
             const vendorId = req.params.id;
-            
+
             // Simply find GRNs associated with the vendor and populate necessary references
             const grns = await GRN.find({
                 'vendor.id': vendorId
             })
-            // .populate('purchaseOrder', 'poNumber poDate')
-            // .populate('invoiceId') // To know if invoice exists
-            .sort({ createdAt: -1 })
-            .lean();
+                // .populate('purchaseOrder', 'poNumber poDate')
+                // .populate('invoiceId') // To know if invoice exists
+                .sort({ createdAt: -1 })
+                .lean();
 
             res.status(200).json({
                 success: true,
@@ -441,7 +482,7 @@ class GRNController {
     async getInspectionByGRN(req, res) {
         try {
             const grnId = req.params.grnId;
-            
+
             // Fetch GRN with populated part details and Item details
             const grn = await GRN.findById(grnId)
                 .populate({
@@ -481,31 +522,31 @@ class GRNController {
                         partCode: grnItem.partCode,
                         partId: grnItem.partId._id,
                         itemName: grnItem.itemDetails.itemName,
-                        
+
                         // Tax related details
                         igstRate: grnItem.partId.ItemCode?.IGST_Rate || 0,
                         cgstRate: grnItem.partId.ItemCode?.CGST_Rate || 0,
                         sgstRate: grnItem.partId.ItemCode?.SGST_Rate || 0,
                         utgstRate: grnItem.partId.ItemCode?.UTGST_Rate || 0,
                         sacHsnCode: grnItem.partId.ItemCode?.SAC_HSN_Code || '',
-                        
+
                         // Part details
                         description: grnItem.partId.description,
                         category: grnItem.partId.category,
                         uom: grnItem.partId.measurementUnit,
                         specifications: grnItem.partId.specifications,
-                        
+
                         // Quantities and pricing
                         receivedQuantity: grnItem.receivedQuantity,
                         unitPrice: grnItem.unitPrice,
                         totalPrice: grnItem.totalPrice,
-                        
+
                         // Inspection details
                         inspectedQuantity: inspectionItem?.inspectedQuantity || 0,
                         acceptedQuantity: inspectionItem?.acceptedQuantity || 0,
                         rejectedQuantity: inspectionItem?.rejectedQuantity || 0,
                         remarks: inspectionItem?.remarks || '',
-                        
+
                         // Additional details from itemDetails
                         itemDetails: {
                             partCodeNumber: grnItem.itemDetails.partCodeNumber,
