@@ -16,7 +16,7 @@ import { format } from 'date-fns';
 import { baseURL } from '../../../utils/endpoint';
 import CreateInvoiceModal from '../CreateInvoiceModal';
 import ViewInvoiceModal from '../ViewInvoiceModal';
-import StatusBadge from '../../../utils/StatusBadge';
+// import StatusBadge from '../../../utils/StatusBadge';
 const InvoicesTab = ({ vendorDetails }) => {
   const [grns, setGrns] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -48,27 +48,27 @@ const InvoicesTab = ({ vendorDetails }) => {
     }
   };
 
-  // const getStatusBadge = (status) => {
-  //   const statusConfig = {
-  //     pending: { color: 'yellow', icon: Clock },
-  //     approved: { color: 'green', icon: CheckCircle },
-  //     rejected: { color: 'red', icon: AlertCircle },
-  //     completed: { color: 'blue', icon: Package },
-  //     invoice_created: { color: 'purple', icon: Receipt },
-  //     inspection_in_progress: { color: 'orange', icon: Clock }
-  //   };
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      pending: { color: 'yellow', icon: Clock },
+      approved: { color: 'green', icon: CheckCircle },
+      rejected: { color: 'red', icon: AlertCircle },
+      completed: { color: 'blue', icon: Package },
+      invoice_created: { color: 'purple', icon: Receipt },
+      inspection_in_progress: { color: 'orange', icon: Clock }
+    };
 
-  //   const config = statusConfig[status.toLowerCase()] || statusConfig.pending;
-  //   const Icon = config.icon;
+    const config = statusConfig[status.toLowerCase()] || statusConfig.pending;
+    const Icon = config.icon;
 
-  //   return (
-  //     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
-  //       bg-${config.color}-100 text-${config.color}-800`}>
-  //       <Icon className="h-3 w-3" />
-  //       {status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-  //     </span>
-  //   );
-  // };
+    return (
+      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
+        bg-${config.color}-100 text-${config.color}-800`}>
+        <Icon className="h-3 w-3" />
+        {status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+      </span>
+    );
+  };
 
   const filteredGRNs = grns.filter(grn => {
     const matchesSearch = 
@@ -166,7 +166,7 @@ const InvoicesTab = ({ vendorDetails }) => {
                         {format(new Date(grn.receivedDate), 'dd MMM yyyy')}
                       </td>
                       <td className="px-4 py-3">
-                        {StatusBadge(grn.status)}
+                        {getStatusBadge(grn.status)}
                       </td>
                       <td className="px-4 py-3">
                         <div className="text-sm text-gray-600">
