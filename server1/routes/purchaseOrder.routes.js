@@ -16,38 +16,40 @@ router.put('/updatePO/:id', authenticate, authorize(['admin', 'manager']), purch
 
 router.delete('/deletePO/:id', authenticate, authorize(['admin']), purchaseOrderController.deletePurchaseOrder);
 
+router.get('/grnHistory/:id', authenticate, purchaseOrderController.getGRNHistory);
+
 router.get('/generatePdf/:id', async (req, res) => {
-    try {
-      const purchaseOrder = await PurchaseOrder.findById(req.params.id)
-        .populate('vendorId')
-        .populate('projectId')
-        .populate('unitId')
-        .populate({
-          path: 'items.partCode',
-          populate: {
-            path: 'ItemCode',
-            select: 'ItemCode ItemName'
-          }
-        });
-  
-      if (!purchaseOrder) {
-        return res.status(404).json({ message: 'Purchase Order not found' });
-      }
-  
-      const pdfBuffer = await generatePoPdf(purchaseOrder);
-  
-      res.set({
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename=PO_${purchaseOrder.poCode}.pdf`,
-        'Content-Length': pdfBuffer.length
+  try {
+    const purchaseOrder = await PurchaseOrder.findById(req.params.id)
+      .populate('vendorId')
+      .populate('projectId')
+      .populate('unitId')
+      .populate({
+        path: 'items.partCode',
+        populate: {
+          path: 'ItemCode',
+          select: 'ItemCode ItemName'
+        }
       });
-  
-      res.send(pdfBuffer);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      res.status(500).json({ message: 'Error generating PDF' });
+
+    if (!purchaseOrder) {
+      return res.status(404).json({ message: 'Purchase Order not found' });
     }
-  });
-  
+
+    const pdfBuffer = await generatePoPdf(purchaseOrder);
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename=PO_${purchaseOrder.poCode}.pdf`,
+      'Content-Length': pdfBuffer.length
+    });
+
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    res.status(500).json({ message: 'Error generating PDF' });
+  }
+});
+
 
 module.exports = router;

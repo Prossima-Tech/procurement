@@ -82,6 +82,59 @@ const updateItemPriceHistory = async (purchaseOrder) => {
   }
 };
 
+exports.getGRNHistory = async (req, res) => {
+  try {
+    const poId = req.params.id;
+
+    const po = await PurchaseOrder.findById(poId)
+      .populate({
+        path: 'grns',
+        select: 'grnNumber challanNumber receivedDate status items totalValue',
+        options: { sort: { receivedDate: -1 } }
+      });
+
+    if (!po) {
+      return res.status(404).json({
+        success: false,
+        message: 'Purchase Order not found'
+      });
+    }
+
+    const grnHistory = po.items.map(item => {
+      const deliveryHistory = item.grnReferences.map(ref => ({
+        grnId: ref.grnId,
+        receivedQuantity: ref.receivedQuantity,
+        receivedDate: ref.receivedDate
+      }));
+
+      return {
+        partCode: item.partCode,
+        orderedQuantity: item.quantity,
+        deliveredQuantity: item.deliveredQuantity,
+        pendingQuantity: item.pendingQuantity,
+        deliveryHistory
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        poCode: po.poCode,
+        deliveryStatus: po.deliveryStatus,
+        isFullyDelivered: po.isFullyDelivered,
+        items: grnHistory,
+        grns: po.grns
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 exports.createPurchaseOrder = async (req, res) => {
   try {
     console.log(" Starting purchase order creation");
@@ -89,13 +142,8 @@ exports.createPurchaseOrder = async (req, res) => {
 
     const {
       vendorId,
-      vendorCode,
-      vendorName,
-      vendorAddress,
-      vendorGst,
-      projectCode,
+      projectId, // Changed from projectCode to projectId
       unitId,
-      unitName,
       poDate,
       validUpto,
       status,
@@ -113,81 +161,23 @@ exports.createPurchaseOrder = async (req, res) => {
     } = req.body;
 
     console.log(" Generating PO Code");
-    // const poCode = await generatePoNumber(unitId);
-    // const generatePoCode = async (unitId) => {
-    //   const unit = await Unit.findById(unitId).select('unitCode');
-    //   if (!unit) {
-    //     throw new Error('Unit not found');
-    //   }
-    //   const randomNumber = Math.floor(10000 + Math.random() * 90000); // Generates a random 5-digit number
-    //   return `${unit.unitCode}-${(lastNumber + 1).toString().padStart(5, '0')}`;
-    // };
-    // New function to generate PO code
     const generatePoCode = async (unitId) => {
       const unit = await Unit.findById(unitId).select('unitCode');
       if (!unit) {
         throw new Error('Unit not found');
       }
-      const randomNumber = Math.floor(10000 + Math.random() * 90000); // Generates a random 5-digit number
+      const randomNumber = Math.floor(10000 + Math.random() * 90000);
       return `${unit.unitCode}-${randomNumber}`;
     };
-    // const generatePoCode = async (unitId, session) => {
-    //   // Step 1: Find the unit
-    //   const unit = await Unit.findById(unitId).select('unitCode');
-    //   if (!unit) {
-    //     throw new Error('Unit not found');
-    //   }
-    
-    //   let attempts = 0;
-    //   const maxAttempts = 5;
-    
-    //   while (attempts < maxAttempts) {
-    //     // Step 2: Find the latest PO for this unit
-    //     const latestPo = await PurchaseOrder.findOne({ unitId })
-    //       .sort('-poCode')
-    //       .select('poCode')
-    //       .session(session);
-    
-    //     // Step 3: Determine the next number
-    //     let nextNumber = 1;
-    //     if (latestPo) {
-    //       const lastNumber = parseInt(latestPo.poCode.split('-')[1]);
-    //       nextNumber = lastNumber + 1;
-    //     }
-    
-    //     // Step 4: Generate the new PO code
-    //     const newPoCode = `${unit.unitCode}-${nextNumber.toString().padStart(5, '0')}`;
-    
-    //     try {
-    //       // Step 5: Try to create a new PO with this code
-    //       const newPo = new PurchaseOrder({ poCode: newPoCode, unitId });
-    //       await newPo.save({ session });
-    
-    //       // Step 6: If successful, return the new PO code
-    //       return newPoCode;
-    //     } catch (error) {
-    //       if (error.code === 11000) {
-    //         // Step 7: Handle duplicate key error
-    //         attempts++;
-    //         console.log(`Attempt ${attempts}: PO code ${newPoCode} already exists. Retrying...`);
-    //       } else {
-    //         // Other error, throw it
-    //         throw error;
-    //       }
-    //     }
-    //   }
-    
-    //   // Step 8: If all attempts fail, throw an error
-    //   throw new Error('Failed to generate a unique PO code after multiple attempts');
-    // };
 
     const poCode = await generatePoCode(unitId);
     console.log(" Generated PO Code:", poCode);
 
-    console.log(" Finding project by projectCode:", projectCode);
-    const project = await Project.findOne({ projectCode });
+    // Find project directly by ID instead of projectCode
+    console.log(" Finding project by projectId:", projectId);
+    const project = await Project.findById(projectId);
     if (!project) {
-      console.log(" Project not found for projectCode:", projectCode);
+      console.log(" Project not found for projectId:", projectId);
       return res.status(400).json({ success: false, message: 'Project not found' });
     }
     console.log(" Found project:", project._id);
@@ -195,32 +185,31 @@ exports.createPurchaseOrder = async (req, res) => {
     console.log(" Processing items");
     const processedItems = await Promise.all(items.map(async (item, index) => {
       console.log(` Processing item ${index + 1}:`, JSON.stringify(item, null, 2));
-      const part = await PartCode.findOne({ PartCodeNumber: item.partCode });
+      // Changed to find by ID instead of PartCodeNumber
+      const part = await PartCode.findById(item.partCode);
       if (!part) {
         console.log(` Part not found for partCode:`, item.partCode);
-        throw new Error(`Part with code ${item.partCode} not found`);
+        throw new Error(`Part with ID ${item.partCode} not found`);
       }
       console.log(` Found part:`, part._id);
       return {
         partCode: part._id,
-        // masterItemName: item.masterItemName,
         quantity: item.quantity,
+        deliveredQuantity: 0, // Added for GRN tracking
+        pendingQuantity: item.quantity, // Added for GRN tracking
         unitPrice: item.unitPrice,
-        totalPrice: item.quantity * item.unitPrice
+        totalPrice: item.quantity * item.unitPrice,
+        grnDeliveries: [] // Added for GRN tracking
       };
     }));
+
     console.log(" Processed items:", JSON.stringify(processedItems, null, 2));
 
     console.log(" Creating new PurchaseOrder object");
     const newPurchaseOrder = new PurchaseOrder({
-      vendorId: mongoose.Types.ObjectId(vendorId),
-      vendorCode,
-      vendorName,
-      vendorAddress,
-      vendorGst,
+      vendorId,
       projectId: project._id,
-      unitId: mongoose.Types.ObjectId(unitId),
-      unitName,
+      unitId,
       poCode,
       poDate: poDate || new Date(),
       validUpto,
@@ -236,7 +225,10 @@ exports.createPurchaseOrder = async (req, res) => {
       paymentTerms,
       deliveryTerms,
       poNarration,
-      createdBy: req.user._id
+      deliveryStatus: 'pending', // Added for GRN tracking
+      isFullyDelivered: false, // Added for GRN tracking
+      grns: [], // Added for GRN tracking
+      createdBy: req.user?._id
     });
 
     console.log(" Calculating totals");
@@ -338,7 +330,11 @@ exports.getPurchaseOrderById = async (req, res) => {
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         totalPrice: item.totalPrice,
-        masterItemName: item.partCode?.ItemCode?.ItemName || ''
+        masterItemName: item.partCode?.ItemCode?.ItemName || '',
+        // Add delivery details
+        deliveredQuantity: item.deliveredQuantity || 0,
+        pendingQuantity: item.pendingQuantity || item.quantity,
+        grnDeliveries: item.grnDeliveries || []
       }))
     };
 
@@ -392,7 +388,7 @@ exports.updatePurchaseOrder = async (req, res) => {
       unitId,
       poDate,
       validUpto,
-      status,
+      status: 'created',
       invoiceTo: {
         name: invoiceTo.name,
         branchName: invoiceTo.branchName,

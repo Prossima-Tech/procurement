@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Search, Filter, Eye, ClipboardList, Plus } from 'lucide-react';
+import { Search, Eye, ClipboardList, Plus } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { baseURL } from '../../utils/endpoint';
@@ -69,8 +69,6 @@ export const FilterSection = ({ filters, setFilters, isDarkMode }) => (
 );
 
 // components/inspection/PendingGRNsTable.jsx
-
-
 export const PendingGRNsTable = ({ pendingGRNs, onCreateInspection, isDarkMode }) => (
     <div className="mb-6">
         <h3 className="text-xl font-semibold mb-4">Pending GRNs for Inspection</h3>
@@ -182,7 +180,7 @@ export const InspectionsTable = ({ inspections, onView, onStart, isDarkMode, loa
                                     >
                                         <Eye className="w-4 h-4" />
                                     </button>
-                                    {inspection.status === 'pending' && (
+                                    {(inspection.status !== 'completed') && (
                                         <button
                                             onClick={() => onStart(inspection)}
                                             className="text-green-500 hover:text-green-700"
@@ -304,7 +302,7 @@ const InspectionView = ({ inspection, onBack }) => {
             {/* Items */}
             <div className={`mb-6 p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
                 <h3 className="text-lg font-semibold mb-4">Inspected Items</h3>
-                {inspection.items.map((item, index) => (
+                {inspection.items.map((item) => (
                     <div key={item._id} className={`mb-6 p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
                         <div className="flex justify-between items-start mb-4">
                             <div>
@@ -446,35 +444,171 @@ export const InspectionForm = ({ inspection, onBack, onSuccess }) => {
         };
     });
 
+    const validateForm = (isComplete = false) => {
+        try {
+            for (const item of formData.items) {
+                // Only validate if the item has inspectedQuantity
+                if (item.inspectedQuantity > 0) {
+                    // 1. Validate inspected quantity doesn't exceed received
+                    if (item.inspectedQuantity > item.receivedQuantity) {
+                        toast.error(
+                            `Inspected quantity (${item.inspectedQuantity}) cannot exceed received quantity (${item.receivedQuantity}) for item: ${item.itemDetails?.itemName}`
+                        );
+                        return false;
+                    }
+
+                    // 2. Validate accepted + rejected equals inspected quantity
+                    const totalProcessed = (item.acceptedQuantity || 0) + (item.rejectedQuantity || 0);
+                    if (totalProcessed !== item.inspectedQuantity) {
+                        toast.error(
+                            `Sum of accepted (${item.acceptedQuantity || 0}) and rejected (${item.rejectedQuantity || 0}) quantities must equal inspected quantity (${item.inspectedQuantity}) for item: ${item.itemDetails?.itemName}`
+                        );
+                        return false;
+                    }
+                }
+
+                // 3. Parameter validation
+                if (isComplete) {
+                    // A. Require parameters for items being inspected
+                    if (item.inspectedQuantity > 0 && (!Array.isArray(item.parameters) || item.parameters.length === 0)) {
+                        toast.error(`Please add inspection parameters for item: ${item.itemDetails?.itemName}`);
+                        return false;
+                    }
+
+                    // B. Validate parameter values
+                    if (item.parameters && item.parameters.length > 0) {
+                        for (const param of item.parameters) {
+                            if (!param.parameterName || param.parameterName.trim() === '') {
+                                toast.error(`Parameter name is required for item: ${item.itemDetails?.itemName}`);
+                                return false;
+                            }
+                            if (!param.value || param.value.trim() === '') {
+                                toast.error(`Value is required for parameter "${param.parameterName}" in item: ${item.itemDetails?.itemName}`);
+                                return false;
+                            }
+                            if (!param.result || !['pass', 'fail', 'conditional'].includes(param.result)) {
+                                toast.error(`Valid result (pass/fail/conditional) is required for parameter "${param.parameterName}" in item: ${item.itemDetails?.itemName}`);
+                                return false;
+                            }
+                        }
+                    }
+
+                    // C. Update item result based on parameters
+                    if (item.inspectedQuantity > 0) {
+                        const hasFailedParams = item.parameters.some(p => p.result === 'fail');
+                        const hasConditionalParams = item.parameters.some(p => p.result === 'conditional');
+
+                        if (hasFailedParams) {
+                            item.result = 'fail';
+                        } else if (hasConditionalParams) {
+                            item.result = 'conditional';
+                        } else {
+                            item.result = 'pass';
+                        }
+                    }
+                }
+
+                // 4. Remarks validation for rejected items
+                if (item.rejectedQuantity > 0 && (!item.remarks || item.remarks.trim() === '')) {
+                    toast.error(`Please provide remarks for rejected quantity in item: ${item.itemDetails?.itemName}`);
+                    return false;
+                }
+            }
+
+            // 5. Overall validation for completion
+            if (isComplete) {
+                // Check if at least one item has been inspected
+                const anyInspected = formData.items.some(item => item.inspectedQuantity > 0);
+                if (!anyInspected) {
+                    toast.error('At least one item must be inspected to complete the inspection');
+                    return false;
+                }
+
+                // Check for overall remarks if any failures
+                const hasFailures = formData.items.some(item =>
+                    item.result === 'fail' || item.rejectedQuantity > 0
+                );
+                if (hasFailures && (!formData.remarks || formData.remarks.trim() === '')) {
+                    toast.error('Overall remarks are required when there are failed items or rejected quantities');
+                    return false;
+                }
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error('Validation error:', error);
+            toast.error('Error validating inspection form');
+            return false;
+        }
+    };
+
+
     const handleSubmit = async (status) => {
         try {
-            if (!inspection?._id) {
-                toast.error('Invalid inspection data');
+            const isComplete = status === 'completed';
+            if (!validateForm(isComplete)) {
                 return;
             }
 
             setLoading(true);
+
+            // Calculate overall result
+            const overallResult = calculateOverallResult(formData.items);
+
+            const submissionData = {
+                ...formData,
+                status,
+                overallResult,
+                completionDate: isComplete ? new Date().toISOString() : null
+            };
+
+            // Make API call to save inspection
             const response = await axios.put(
                 `${baseURL}/inspection/${inspection._id}`,
-                {
-                    ...formData,
-                    status
-                }
+                submissionData
             );
 
             if (response.data.success) {
-                toast.success('Inspection updated successfully');
-                if (onSuccess) onSuccess(response.data.data);
+                toast.success(`Inspection ${isComplete ? 'completed' : 'saved'} successfully`);
+                if (onSuccess) {
+                    onSuccess(response.data.data);
+                }
             } else {
-                toast.error(response.data.message);
+                throw new Error(response.data.message);
             }
+
         } catch (error) {
-            console.error('Error updating inspection:', error);
-            toast.error('Failed to update inspection');
+            console.error('Error saving inspection:', error);
+            toast.error(error.message || 'Failed to save inspection');
         } finally {
             setLoading(false);
         }
     };
+
+    const calculateOverallResult = (items) => {
+        const inspectedItems = items.filter(item => item.inspectedQuantity > 0);
+        if (inspectedItems.length === 0) return 'pending';
+
+        if (inspectedItems.some(item => item.result === 'fail')) {
+            return 'fail';
+        }
+        if (inspectedItems.some(item => item.result === 'conditional')) {
+            return 'conditional';
+        }
+        if (inspectedItems.every(item => item.result === 'pass')) {
+            return 'pass';
+        }
+        return 'pending';
+    };
+
+    // Add result update handler for items
+    const handleItemResultChange = (itemIndex, result) => {
+        const newItems = [...formData.items];
+        newItems[itemIndex].result = result;
+        setFormData(prev => ({ ...prev, items: newItems }));
+    };
+
 
     const handleParameterChange = (itemIndex, paramIndex, field, value) => {
         const newItems = [...formData.items];
@@ -501,18 +635,35 @@ export const InspectionForm = ({ inspection, onBack, onSuccess }) => {
 
     const validateQuantities = (item, field, value) => {
         const numValue = Number(value);
-        if (field === 'inspectedQuantity' && numValue > item.receivedQuantity) {
-            toast.error('Inspected quantity cannot exceed received quantity');
+
+        // Basic validation
+        if (numValue < 0) {
+            toast.error('Quantities cannot be negative');
             return false;
         }
-        if (field === 'acceptedQuantity' || field === 'rejectedQuantity') {
-            const otherField = field === 'acceptedQuantity' ? 'rejectedQuantity' : 'acceptedQuantity';
-            const otherValue = Number(item[otherField] || 0);
-            if (numValue + otherValue > item.inspectedQuantity) {
-                toast.error('Sum of accepted and rejected quantities cannot exceed inspected quantity');
-                return false;
-            }
+
+        switch (field) {
+            case 'inspectedQuantity':
+                if (numValue > item.receivedQuantity) {
+                    toast.error(`Inspected quantity cannot exceed received quantity (${item.receivedQuantity})`);
+                    return false;
+                }
+                break;
+
+            case 'acceptedQuantity':
+            case 'rejectedQuantity':
+                const otherField = field === 'acceptedQuantity' ? 'rejectedQuantity' : 'acceptedQuantity';
+                const otherValue = Number(item[otherField] || 0);
+                if (numValue + otherValue > item.inspectedQuantity) {
+                    toast.error(`Sum of accepted and rejected quantities cannot exceed inspected quantity (${item.inspectedQuantity})`);
+                    return false;
+                }
+                break;
+
+            default:
+                break;
         }
+
         return true;
     };
 
@@ -521,7 +672,22 @@ export const InspectionForm = ({ inspection, onBack, onSuccess }) => {
         const item = newItems[itemIndex];
 
         if (validateQuantities(item, field, value)) {
-            item[field] = Number(value);
+            const numValue = Number(value);
+            item[field] = numValue;
+
+            // Auto-calculate remaining quantity for accepted/rejected
+            if (field === 'inspectedQuantity') {
+                // Reset accepted/rejected quantities when inspected quantity changes
+                item.acceptedQuantity = 0;
+                item.rejectedQuantity = 0;
+            } else if (field === 'acceptedQuantity') {
+                // Auto-set rejected quantity to remaining amount
+                item.rejectedQuantity = item.inspectedQuantity - numValue;
+            } else if (field === 'rejectedQuantity') {
+                // Auto-set accepted quantity to remaining amount
+                item.acceptedQuantity = item.inspectedQuantity - numValue;
+            }
+
             setFormData(prev => ({ ...prev, items: newItems }));
         }
     };
@@ -574,15 +740,27 @@ export const InspectionForm = ({ inspection, onBack, onSuccess }) => {
                 {formData.items.map((item, itemIndex) => (
                     <div
                         key={itemIndex}
-                        className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}
+                        className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} mb-4`}
                     >
-                        <div className="flex justify-between items-center mb-4">
+                        <div className="flex justify-between items-start mb-4">
                             <div>
-                                <h3 className="text-lg font-semibold">{item.itemDetails?.itemName || 'N/A'}</h3>
-                                <p className="text-sm text-gray-500">Part Code: {item.partCode}</p>
+                                <h3 className="text-lg font-semibold">Part Code: {item.partCode}</h3>
+                                <p className="text-sm text-gray-500">Item: {item.itemDetails?.itemName}</p>
+                            </div>
+                            <div>
+                                <select
+                                    value={item.result}
+                                    onChange={(e) => handleItemResultChange(itemIndex, e.target.value)}
+                                    className={`w-full px-3 py-2 rounded-md border ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
+                                        }`}
+                                >
+                                    <option value="pending">Pending</option>
+                                    <option value="pass">Pass</option>
+                                    <option value="fail">Fail</option>
+                                    <option value="conditional">Conditional</option>
+                                </select>
                             </div>
                         </div>
-
                         {/* Quantities */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                             <div>
