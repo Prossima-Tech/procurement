@@ -458,7 +458,7 @@ class GRNController {
 
             // Simply find GRNs associated with the vendor and populate necessary references
             const grns = await GRN.find({
-                'vendor.id': vendorId
+                'vendor._id': vendorId
             })
                 // .populate('purchaseOrder', 'poNumber poDate')
                 // .populate('invoiceId') // To know if invoice exists
