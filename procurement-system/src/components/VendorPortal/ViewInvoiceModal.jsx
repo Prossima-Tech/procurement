@@ -1,4 +1,5 @@
-import React from 'react';
+/* eslint-disable react/prop-types */
+
 import { X } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -70,7 +71,7 @@ const ViewInvoiceModal = ({ isOpen, onClose, invoiceData }) => {
                       <td className="px-4 py-2 text-right">₹{item.unitPrice.toFixed(2)}</td>
                       <td className="px-4 py-2 text-right">₹{item.baseAmount.toFixed(2)}</td>
                       <td className="px-4 py-2 text-right">
-                        {invoiceData.taxType === 'igst' 
+                        {invoiceData.taxType === 'igst'
                           ? `₹${item.igstAmount.toFixed(2)} (${item.igstRate}%)`
                           : `₹${(item.cgstAmount + item.sgstAmount).toFixed(2)} (${item.cgstRate + item.sgstRate}%)`
                         }
@@ -90,7 +91,7 @@ const ViewInvoiceModal = ({ isOpen, onClose, invoiceData }) => {
                 <span className="font-medium">Sub Total:</span>
                 <span>₹{invoiceData.subTotal.toFixed(2)}</span>
               </div>
-              
+
               {invoiceData.taxType === 'igst' ? (
                 <div className="flex justify-between">
                   <span className="font-medium">IGST:</span>
@@ -108,7 +109,7 @@ const ViewInvoiceModal = ({ isOpen, onClose, invoiceData }) => {
                   </div>
                 </>
               )}
-              
+
               <div className="flex justify-between pt-2 border-t font-semibold">
                 <span>Total Amount:</span>
                 <span>₹{invoiceData.totalAmount.toFixed(2)}</span>

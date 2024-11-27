@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable react/prop-types */
+import { useState, useEffect } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import { baseURL } from '../../utils/endpoint';
@@ -33,7 +34,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, grnData }) => {
 
   const calculateItemTotals = (item, taxType) => {
     const baseAmount = item.acceptedQuantity * item.unitPrice;
-    
+
     // If IGST, only apply IGST
     if (taxType === 'igst') {
       const igstAmount = (baseAmount * item.igstRate) / 100;
@@ -47,11 +48,11 @@ const CreateInvoiceModal = ({ isOpen, onClose, grnData }) => {
         totalAmount: baseAmount + igstAmount
       };
     }
-    
+
     // For SGST/UTGST, apply CGST + selected tax
     const cgstAmount = (baseAmount * item.cgstRate) / 100;
     const secondaryTaxAmount = (baseAmount * (taxType === 'sgst' ? item.sgstRate : item.utgstRate)) / 100;
-    
+
     return {
       ...item,
       baseAmount,
@@ -65,9 +66,9 @@ const CreateInvoiceModal = ({ isOpen, onClose, grnData }) => {
 
   const handleTaxTypeChange = (type) => {
     setSelectedTaxType(type);
-    
+
     const recalculatedItems = invoiceData.items.map(item => calculateItemTotals(item, type));
-    
+
     const newTotals = recalculatedItems.reduce((acc, item) => ({
       subTotal: acc.subTotal + item.baseAmount,
       cgstAmount: acc.cgstAmount + item.cgstAmount,
@@ -98,8 +99,8 @@ const CreateInvoiceModal = ({ isOpen, onClose, grnData }) => {
       setError(null);
       const response = await axios.get(`${baseURL}/grn/inspection/${grnData._id}`);
       setInspectionData(response.data);
-      
-      const processedItems = response.data.data.items.map(item => 
+
+      const processedItems = response.data.data.items.map(item =>
         calculateItemTotals(item, selectedTaxType)
       );
 
@@ -118,13 +119,13 @@ const CreateInvoiceModal = ({ isOpen, onClose, grnData }) => {
         igstAmount: 0,
         totalAmount: 0
       });
-      
+
       setInvoiceData(prev => ({
         ...prev,
         items: processedItems,
         ...totals
       }));
-      
+
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch inspection data');
       console.error('Inspection fetch error:', err);
@@ -150,7 +151,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, grnData }) => {
       };
 
       const response = await axios.post(`${baseURL}/invoice/create`, invoicePayload);
-      
+
       if (response.data.success) {
         // Show success message
         // Close modal
@@ -168,7 +169,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, grnData }) => {
     const month = String(currentDate.getMonth() + 1).padStart(2, '0');
     const vendorCode = grnData?.vendor?.id?.toString().slice(-4) || '0000';
     const randomDigits = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    
+
     return `INV-${year}${month}-${vendorCode}-${randomDigits}`;
   };
 
@@ -331,7 +332,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, grnData }) => {
                               {item.cgstRate}% (₹{item.cgstAmount.toFixed(2)})
                             </td>
                             <td className="px-3 py-2 text-right">
-                              {selectedTaxType === 'sgst' ? item.sgstRate : item.utgstRate}% 
+                              {selectedTaxType === 'sgst' ? item.sgstRate : item.utgstRate}%
                               (₹{(selectedTaxType === 'sgst' ? item.sgstAmount : item.utgstAmount).toFixed(2)})
                             </td>
                           </>
