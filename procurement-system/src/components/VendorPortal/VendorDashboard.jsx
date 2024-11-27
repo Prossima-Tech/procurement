@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  FileText, 
-  Truck, 
-  ClipboardCheck, 
-  ShoppingCart, 
-  User, 
-  ChevronDown, 
-  ChevronUp, 
-  Building2, 
-  MapPin, 
+/* eslint-disable react/prop-types */
+import { useState, useEffect } from 'react';
+import {
+  FileText,
+  Truck,
+  ClipboardCheck,
+  ShoppingCart,
+  User,
+  ChevronDown,
+  ChevronUp,
+  Building2,
+  MapPin,
   Wallet,
   Package,
   Search,
@@ -24,7 +25,7 @@ import { baseURL } from '../../utils/endpoint';
 import axios from 'axios';
 import { format } from 'date-fns';
 import VendorQuoteForm from '../orders/VendorQuoteForm';
-import AnalyticsDashboard from './AnalyticsDash';
+import AnalyticsDashboard from './analyticsDash';
 import InvoicesTab from './tabs/InvoicesTab';
 // First, add the CustomCard component at the top of the file
 const CustomCard = ({ children, className = '' }) => (
@@ -203,7 +204,7 @@ const RFQTab = ({ vendorDetails }) => {
                 {rfqs.map((rfq) => {
                   const isInvited = rfq.selectedVendors.some(v => v.vendor === vendorDetails._id);
                   const quoteSubmitted = hasSubmittedQuote(rfq);
-                  
+
                   return (
                     <tr key={rfq._id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">{rfq.rfqNumber}</td>
@@ -352,30 +353,30 @@ const VendorDashboard = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
 
-useEffect(() => {
+  useEffect(() => {
     fetchVendorDetails();
-}, [user]);
+  }, [user]);
 
-const fetchVendorDetails = async () => {
+  const fetchVendorDetails = async () => {
     try {
-        setLoading(true);
-        setError(null);
+      setLoading(true);
+      setError(null);
 
-        // console.log("user.id",user.id);
-        const response = await axios.get(
-            `${baseURL}/vendors/getVendorByUserId/${user.id}`,
-            // {
-            //     headers: { 'Authorization': `Bearer ${getToken()}` }
-            // }
-        );
-        setVendorDetails(response.data);
+      // console.log("user.id",user.id);
+      const response = await axios.get(
+        `${baseURL}/vendors/getVendorByUserId/${user.id}`,
+        // {
+        //     headers: { 'Authorization': `Bearer ${getToken()}` }
+        // }
+      );
+      setVendorDetails(response.data);
     } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch vendor details');
-        console.error('Vendor details fetch error:', err);
+      setError(err.response?.data?.message || 'Failed to fetch vendor details');
+      console.error('Vendor details fetch error:', err);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
   useEffect(() => {
     setTimeout(() => {
       setLoading(false);
@@ -388,9 +389,9 @@ const fetchVendorDetails = async () => {
         setPoLoading(true);
         setPoError(null);
         try {
-        //   console.log("Vendor ID",vendorDetails);
+          //   console.log("Vendor ID",vendorDetails);
           const response = await axios.get(`${baseURL}/vendors/purchase-orders/${vendorDetails._id}`);
-        //   console.log("Purchase Orders",response.data);
+          //   console.log("Purchase Orders",response.data);
           setPurchaseOrders(response.data);
         } catch (error) {
           setPoError(error.response?.data?.message || 'Failed to fetch purchase orders');
@@ -485,7 +486,7 @@ const fetchVendorDetails = async () => {
                   <p><span className="text-gray-600">PO Date:</span> {formatDate(po.poDate)}</p>
                   <p><span className="text-gray-600">Valid Until:</span> {formatDate(po.validUpto)}</p>
                   <p><span className="text-gray-600">Delivery Date:</span> {formatDate(po.deliveryDate)}</p>
-                  <p><span className="text-gray-600">Status:</span> 
+                  <p><span className="text-gray-600">Status:</span>
                     <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(po.status)}`}>
                       {po.status.charAt(0).toUpperCase() + po.status.slice(1)}
                     </span>
@@ -710,8 +711,8 @@ const fetchVendorDetails = async () => {
           </CustomCard>
         )}
       </div>
-    {/* {JSON.stringify(vendorDetails)} */}
-    <AnalyticsDashboard />
+      {/* {JSON.stringify(vendorDetails)} */}
+      <AnalyticsDashboard />
       {/* Tabs Section */}
       <div className="mb-6">
         <div className="flex space-x-1 border-b">
@@ -720,8 +721,8 @@ const fetchVendorDetails = async () => {
               key={id}
               onClick={() => setActiveTab(id)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors
-                ${activeTab === id 
-                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                ${activeTab === id
+                  ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-500 hover:text-gray-700'}`}
             >
               <Icon className="h-4 w-4" />
