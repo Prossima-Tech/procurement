@@ -2,7 +2,7 @@
 
 const express = require('express');
 const router = express.Router();
-const inspectionController = require('../controllers/inspection.controller');
+const inspectionController = require('../controllers/Inspection.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 
 // Create new inspection

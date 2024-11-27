@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const GRN = require('../models/grn.model');
 const PurchaseOrder = require('../models/purchaseOrder.model');
-const Inspection = require('../models/inspection.model');
+const Inspection = require('../models/Inspection.model');
 
 class GRNController {
     // Generate GRN Number
