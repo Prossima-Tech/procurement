@@ -65,7 +65,7 @@ exports.createRFQ = async (req, res) => {
         // 3. Validate items structure
         // console.log('✅ Validating individual items...');
         for (const item of items) {
-            // console.log('🔍 Checking item:', item);
+            // console.log('�� Checking item:', item);
             
             if (!item.indentItemType || !item.name || !item.quantity) {
                 // console.log('❌ Invalid item structure:', {
@@ -484,93 +484,7 @@ exports.getVendorRFQs = async (req, res) => {
     res.json(rfqs);
 };
 
-// Submit vendor quote
-exports.submitVendorQuote = async (req, res) => {
-    try {
-        const { vendorId } = req.params;
-        const { rfq: rfqId } = req.query;
-        const quoteData = req.body;
 
-        // Basic validation
-        if (!quoteData.items || !Array.isArray(quoteData.items)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid quote data'
-            });
-        }
-
-        // Find RFQ and validate
-        const rfq = await RFQ.findOne({
-            _id: rfqId,
-            'selectedVendors.vendor': vendorId,
-            submissionDeadline: { $gt: new Date() }
-        });
-
-        if (!rfq) {
-            return res.status(404).json({
-                success: false,
-                message: 'RFQ not found or submission deadline passed'
-            });
-        }
-
-        // Create vendor quote object
-        const vendorQuote = {
-            vendor: vendorId,
-            quotationReference: quoteData.quotationReference,
-            items: quoteData.items.map(item => ({
-                rfqItem: item.rfqItemId,
-                unitPrice: item.unitPrice,
-                quantity: item.quantity,
-                totalPrice: item.unitPrice * item.quantity,
-                deliveryTime: item.deliveryTime,
-                specifications: item.specifications,
-                technicalRemarks: item.technicalRemarks,
-                commercialRemarks: item.commercialRemarks,
-                alternativeOffering: item.alternativeOffering
-            })),
-            totalAmount: quoteData.items.reduce((sum, item) => 
-                sum + (item.unitPrice * item.quantity), 0),
-            currency: quoteData.currency || 'INR',
-            paymentTerms: quoteData.paymentTerms,
-            deliveryTerms: quoteData.deliveryTerms,
-            warranty: quoteData.warranty,
-            validityPeriod: quoteData.validityPeriod,
-            documents: quoteData.documents || [],
-            status: 'submitted',
-            submissionDate: new Date()
-        };
-
-        // Add quote to RFQ
-        rfq.vendorQuotes.push(vendorQuote);
-        
-        // Update vendor status
-        const vendorIndex = rfq.selectedVendors.findIndex(
-            v => v.vendor.toString() === vendorId
-        );
-        if (vendorIndex !== -1) {
-            rfq.selectedVendors[vendorIndex].status = 'accepted';
-            rfq.selectedVendors[vendorIndex].responseDate = new Date();
-        }
-
-        await rfq.save();
-
-        return res.status(201).json({
-            success: true,
-            message: 'Quote submitted successfully',
-            data: {
-                rfqNumber: rfq.rfqNumber,
-                quotationReference: vendorQuote.quotationReference
-            }
-        });
-
-    } catch (error) {
-        console.error('Error submitting vendor quote:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Internal server error'
-        });
-    }
-};
 
 
 exports.getRFQDetails = async (req, res) => {
@@ -684,3 +598,59 @@ exports.getQuotesComparison = async (req, res) => {
         });
     }
 };
+
+exports.getVendorQuote = async (req, res) => {
+    try {
+        // const { vendorId } = req.params;
+        const { rfqId } = req.params;  // Changed to match frontend query parameter
+        const vendorId = req.body.vendorId;
+        // console.log("vendorId",vendorId);
+        // console.log("rfqId",rfqId);
+        // Validate if vendor is authorized for this RFQ
+        
+
+        const rfq = await RFQ.findById(rfqId)
+            .populate('unit', 'name')
+            .populate('project', 'name')
+            .select('-vendorQuotes -selectedQuote'); // Exclude sensitive bidding data
+
+        if (!rfq) {
+            return res.status(404).json({
+                success: false,
+                message: 'RFQ not found or vendor not authorized'
+            });
+        }
+
+        // Get vendor details
+        if(vendorId){
+            const vendor = await Vendor.findById(vendorId)
+                .select('name email contact address'); // Only select necessary vendor fields
+        }
+        // console.log("vendor",vendor);
+        // console.log("rfq",rfq);
+        // Format the response data
+        const responseData = {
+            rfq: rfq,
+            // vendor: vendor?vendor:null
+        };
+
+        return res.status(200).json(responseData);
+
+    } catch (error) {
+        console.error('Error fetching vendor quote details:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+exports.submitVendorQuote = async (req, res) => {
+    const { vendorId, rfqId } = req.params;
+    console.log("submitVendorQuote",req.body);
+    // now we need to save the quote to the database
+    const rfq = await RFQ.findById(rfqId);
+    rfq.vendorQuotes.push(req.body);
+    await rfq.save();
+    res.json(rfq);
+}

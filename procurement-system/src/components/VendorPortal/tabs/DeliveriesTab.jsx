@@ -1,3 +1,5 @@
+import { Truck } from 'lucide-react';
+
 const DeliveriesTab = () => (
   <div className="bg-white rounded-lg shadow">
     <div className="p-4 border-b">
@@ -9,3 +11,5 @@ const DeliveriesTab = () => (
     {/* Rest of your Deliveries content */}
   </div>
 );
+
+export default DeliveriesTab;

@@ -25,6 +25,7 @@ const ViewRfqModal = ({ isOpen, onClose, rfq }) => {
             const response = await axios.get(`${baseURL}/rfq/quotes/${rfq._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            console.log("vendor quotes",response.data);
             setVendorQuotes(response.data.quotes || []);
         } catch (error) {
             console.error('Error fetching vendor quotes:', error);
