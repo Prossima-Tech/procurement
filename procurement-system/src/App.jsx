@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
 import VendorRegistration from './components/authentication/VendorRegistration';
 import VendorDashboard from './components/VendorPortal/VendorDashboard';
+import ExternalVendorQuoteForm from './components/Rfq/ExternalVendorQuoteForm';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
               <Route path="/external-form" element={<ExternalForm />} />
               <Route path="/internal-form" element={<InternalForm />} />
               <Route path="/vendor-registration" element={<VendorRegistration />} />
+              <Route path="/vendor-quote/:vendorId/:rfqId" element={<ExternalVendorQuoteForm />} />
               {/* Protected Routes */}
               <Route
                 path="/"

@@ -16,7 +16,7 @@ import { format } from 'date-fns';
 import { baseURL } from '../../../utils/endpoint';
 import CreateInvoiceModal from '../CreateInvoiceModal';
 import ViewInvoiceModal from '../ViewInvoiceModal';
-
+// import StatusBadge from '../../../utils/StatusBadge';
 const InvoicesTab = ({ vendorDetails }) => {
   const [grns, setGrns] = useState([]);
   const [loading, setLoading] = useState(false);

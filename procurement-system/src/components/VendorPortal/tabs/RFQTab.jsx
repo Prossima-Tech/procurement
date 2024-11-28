@@ -1,4 +1,32 @@
 
+import { 
+  FileText, 
+  Truck, 
+  ClipboardCheck, 
+  ShoppingCart, 
+  User, 
+  ChevronDown, 
+  ChevronUp, 
+  Building2, 
+  MapPin, 
+  Wallet,
+  Package,
+  Search,
+  Filter,
+  Eye,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  Calendar
+} from 'lucide-react';
+
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { baseURL } from '../../../utils/endpoint';
+import StatusBadge from '../../../utils/StatusBadge';
+// import StatusBadge from '../../../utils/StatusBadge';
+import { format } from 'date-fns';
+
 const RFQTab = ({ vendorDetails }) => {
   const [rfqs, setRfqs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -6,10 +34,10 @@ const RFQTab = ({ vendorDetails }) => {
   const [isQuoteFormOpen, setIsQuoteFormOpen] = useState(false);
   const [selectedRfq, setSelectedRfq] = useState(null);
   const [selectedVendor, setSelectedVendor] = useState(null);
-
   useEffect(() => {
     if (vendorDetails?._id) {
       fetchVendorRfqs();
+      console.log("vendorDetails", vendorDetails);
     }
   }, [vendorDetails]);
 
@@ -162,3 +190,4 @@ const RFQTab = ({ vendorDetails }) => {
     </div>
   );
 };
+export default RFQTab;
