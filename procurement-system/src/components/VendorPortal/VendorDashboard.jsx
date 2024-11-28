@@ -5,7 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { baseURL } from '../../utils/endpoint';
 import axios from 'axios';
 import { format } from 'date-fns';
-import VendorQuoteForm from './VendorQuoteForm';
+// import VendorQuoteForm from './VendorQuoteForm';
 import AnalyticsDashboard from './AnalyticsDash';
 import InvoicesTab from './tabs/InvoicesTab';
 import RFQTab from './tabs/RFQTab';

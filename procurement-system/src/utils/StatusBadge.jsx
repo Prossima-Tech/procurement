@@ -50,12 +50,10 @@ const StatusBadge = ({ status }) => {
         evaluated: { color: 'purple', icon: CheckCircle, label: 'Evaluated' },
         awarded: { color: 'green', icon: CheckCircle, label: 'Awarded' },
         cancelled: { color: 'red', icon: Ban, label: 'Cancelled' },
-        cancelled: { color: 'red', icon: Ban, label: 'Cancelled' },
 
         // GRN Statuses
         pending: { color: 'yellow', icon: Clock, label: 'Pending' },
         approved: { color: 'green', icon: CheckCircle, label: 'Approved' },
-        completed: { color: 'blue', icon: Package, label: 'Completed' },
         completed: { color: 'blue', icon: Package, label: 'Completed' },
         rejected: { color: 'red', icon: AlertCircle, label: 'Rejected' },
         invoice_created: { color: 'purple', icon: Receipt, label: 'Invoice Created' },

@@ -6,7 +6,8 @@ import { baseURL } from '../../utils/endpoint';
 const VendorQuoteForm = ({ isOpen, onClose, rfq, vendor }) => {
     const [formData, setFormData] = useState([]);
     const [loading, setLoading] = useState(false);
-
+    // console.log("rfq", rfq);
+    // console.log("vendor", vendor);
     useEffect(() => {
         if (rfq?.items?.length > 0) {
             setFormData(
@@ -54,30 +55,40 @@ const VendorQuoteForm = ({ isOpen, onClose, rfq, vendor }) => {
 
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            
-            const quoteData = {
-                rfqId: rfq._id,
-                vendorId: vendor._id,
-                items: formData.map(item => ({
-                    itemId: item.itemId,
+            console.log("data to the endpoint", {...formData, vendorId: vendor.vendor, rfqId: rfq._id})
+            const response = await fetch(`${baseURL}/rfq/submitVendorQuote/${vendor.vendor}/${rfq._id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData.map(item => ({
+                    ...item,
                     quotedPrice: parseFloat(item.quotedPrice),
                     quotedQuantity: parseInt(item.quotedQuantity),
-                    remarks: item.remarks,
-                    deliveryTimeline: item.deliveryTimeline
-                }))
-            };
+                    deliveryTimeline: parseInt(item.deliveryTimeline)
+                })))
+            });
 
-            console.log('Submitting quote:', quoteData);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to submit quote');
+            }
 
-            // Simulated API call for now
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            message.success('Quote submitted successfully');
-            onClose();
-
+            const result = await response.json();
+            
+            message.success('Quote submitted successfully!');
+            navigate('/vendor/quotes', { 
+                state: { 
+                    success: true,
+                    rfqNumber: result.data.rfqNumber,
+                    quotationReference: result.data.quotationReference,
+                    totalAmount: result.data.totalAmount 
+                }
+            });
+            
         } catch (error) {
             console.error('Error submitting quote:', error);
-            message.error('Failed to submit quote');
+            message.error(error.message || 'Failed to submit quote');
         } finally {
             setLoading(false);
         }

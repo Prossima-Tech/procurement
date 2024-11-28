@@ -14,5 +14,6 @@ router.post('/ItemVendorsRelation', authenticate, rfqController.createOrUpdateIt
 router.get('/getVendorQuoteForm/:id', rfqController.getVendorQuoteForm);
 router.post('/submitVendorQuote', authenticate, rfqController.submitVendorQuote); 
 router.get('/vendor/:id', rfqController.getVendorRFQs);
-
+router.get('/vendorQuote/:rfqId', rfqController.getVendorQuote);
+router.post('/submitVendorQuote/:rfqId', rfqController.submitVendorQuote);
 module.exports = router;
