@@ -50,6 +50,7 @@ router.get('/generatePdf/:id', async (req, res) => {
     res.status(500).json({ message: 'Error generating PDF' });
   }
 });
+router.post('/notify-vendor/:purchaseOrderId', purchaseOrderController.notifyVendors);
 
 
 module.exports = router;

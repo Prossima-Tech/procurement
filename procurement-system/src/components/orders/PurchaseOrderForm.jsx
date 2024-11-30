@@ -364,6 +364,9 @@ const PurchaseOrderForm = ({
 
             if (response.status === 201) {
                 toast.success("Purchase order created successfully");
+                console.log("response.data._id", response.data.data._id);
+                const notifyResponse = await api(`/purchase-orders/notify-vendor/${response.data.data._id}`, 'post');
+                console.log("notifyResponse", notifyResponse);
                 if (!isDirectPO) setIsCreatingNew(false);
                 if (!isDirectPO) setIsModalOpen(false);
                 if (isDirectPO) onCancel();
@@ -518,7 +521,7 @@ const PurchaseOrderForm = ({
                         <textarea name="vendorAddress" value={formData.vendorAddress} readOnly className={`${inputClass} h-20`} />
                     </div>
                     <div>
-                        <label className={labelClass}>Vendor GST</label>
+                        <label className={labelClass}> GST No.</label>
                         <input name="vendorGst" value={formData.vendorGst} readOnly className={inputClass} />
                     </div>
                 </div>
@@ -620,7 +623,7 @@ const PurchaseOrderForm = ({
                         />
                     </div>
                     <div>
-                        <label className={labelClass}>Delivery Date*</label>
+                        <label className={labelClass}>Expected Delivery Date*</label>
                         <input
                             type="date"
                             name="deliveryDate"

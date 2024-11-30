@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Truck, ClipboardCheck, ShoppingCart, User, ChevronDown, ChevronUp, Building2, MapPin, Wallet, Package, Search, Filter, Eye, CheckCircle, AlertCircle, Clock, Calendar } from 'lucide-react';
+import { FileText, Truck, ClipboardCheck, ShoppingCart, User, ChevronDown, ChevronUp, Building2, MapPin, Wallet, Package, Search, Filter, Eye, CheckCircle, AlertCircle, Clock, Calendar, LogOut } from 'lucide-react';
 
 import { useAuth } from '../../hooks/useAuth';
 import { baseURL } from '../../utils/endpoint';
@@ -11,6 +11,8 @@ import InvoicesTab from './tabs/InvoicesTab';
 import RFQTab from './tabs/RFQTab';
 import POTab from './tabs/POTab';
 import  StatusBadge  from '../../utils/StatusBadge';
+// const { logout } = useAuth();
+
 // First, add the CustomCard component at the top of the file
 const CustomCard = ({ children, className = '' }) => (
   <div className={`bg-white rounded-lg shadow-md p-4 ${className}`}>
@@ -52,12 +54,15 @@ const VendorDashboard = () => {
   const { user } = useAuth();
   const [selectedPO, setSelectedPO] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-
+  const {logout} = useAuth();
 
   useEffect(() => {
     fetchVendorDetails();
   }, [user]);
 
+  const handleLogout = () => {
+    logout();
+  };
   const fetchVendorDetails = async () => {
     try {
       setLoading(true);
@@ -291,16 +296,26 @@ const VendorDashboard = () => {
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold">Welcome, {vendorDetails?.name}</h1>
-          <button
-            onClick={() => setShowVendorDetails(!showVendorDetails)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-          >
-            {showVendorDetails ? (
-              <>Hide Details <ChevronUp className="h-4 w-4" /></>
-            ) : (
-              <>View Details <ChevronDown className="h-4 w-4" /></>
-            )}
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowVendorDetails(!showVendorDetails)}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+            >
+              {showVendorDetails ? (
+                <>Hide Details <ChevronUp className="h-4 w-4" /></>
+              ) : (
+                <>View Details <ChevronDown className="h-4 w-4" /></>
+              )}
+            </button>
+            
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+            >
+              <LogOut size={16} />
+              Logout
+            </button>
+          </div>
         </div>
 
         {showVendorDetails && (
