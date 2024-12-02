@@ -5,7 +5,7 @@ const Unit = require('../models/unit.model'); // Import the Unit model
 const { PartCode } = require('../models/part.model'); // Make sure to import this
 const mongoose = require('mongoose');
 const ItemPriceHistory = require('../models/itemPriceHistory');
-
+const { sendEmail } = require('../services/emailService');
 // Add this function to handle price history updates
 const updateItemPriceHistory = async (purchaseOrder) => {
   try {
@@ -480,5 +480,149 @@ exports.searchVendors = async (req, res) => {
     res.json(vendors);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+//send notifications to vendors
+// exports.notifyVendors = async (req,res) =>{
+//   try {
+//       const {  } = req.body;
+
+//       // Fetch RFQ details
+//       const rfq = await RFQ.findById(rfqId)
+//           .populate('items.indentItemId')
+//           .populate('selectedVendors.vendor');
+
+//       if (!rfq) {
+//           return res.status(404).json({ success: false, message: 'RFQ not found' });
+//       }
+
+//       // Fetch vendor details
+//       const vendors = await Vendor.find({ _id: { $in: vendorIds } });
+
+//       // Send emails to each vendor
+//       for (const vendor of vendors) {
+//           const emailContent = {
+//               to: vendor.email,
+//               subject: `New RFQ Request - ${rfq._id}`,
+//               html: `
+//                   <h2>Request for Quotation</h2>
+//                   <p>Dear ${vendor.name},</p>
+//                   <p>You have been invited to submit a quotation for the following items:</p>
+//                   <ul>
+//                       ${rfq.items.map(item => `
+//                           <li>
+//                               ${item.name} - Quantity: ${item.quantity}
+//                               ${item.itemCode ? `(Item Code: ${item.itemCode})` : ''}
+//                           </li>
+//                       `).join('')}
+//                   </ul>
+//                   <p><strong>Submission Deadline:</strong> ${new Date(submissionDeadline).toLocaleDateString()}</p>
+//                   <p><strong>General Terms:</strong></p>
+//                   <p>${generalTerms}</p>
+//                   <p>Please log in to our portal to submit your quotation.</p>
+//                   <p>Best regards,<br>Procurement Team</p>
+//               `
+//           };
+
+//           // Send email using your email service
+//           await sendEmail(emailContent);
+//       }
+
+//       res.json({ success: true, message: 'Vendors notified successfully' });
+//   } catch (error) {
+//       console.error('Error notifying vendors:', error);
+//       res.status(500).json({ success: false, message: 'Failed to notify vendors' });
+//   }
+// }
+
+exports.notifyVendors = async (req, res) => {
+  try {
+    const { purchaseOrderId } = req.params;
+    const { customMessage } = req.body;
+
+    const po = await PurchaseOrder.findById(purchaseOrderId)
+      .populate('vendorId')
+      .populate('projectId')
+      .populate('unitId')
+      .populate({
+        path: 'items.partCode',
+        populate: {
+          path: 'ItemCode',
+          select: 'ItemCode ItemName'
+        }
+      });
+
+    if (!po) {
+      return res.status(404).json({ success: false, message: 'Purchase Order not found' });
+    }
+
+    // Add custom message to email content
+    const emailContent = {
+      to: po.vendorId.email,
+      subject: `New Purchase Order - ${po.poCode}`,
+      html: `
+        <h2>Purchase Order Notification</h2>
+        <p>Dear ${po.vendorId.name},</p>
+        
+        ${customMessage ? `<div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #007bff;">
+          <p><strong>Message:</strong> ${customMessage}</p>
+        </div>` : ''}
+        
+        <p>A new purchase order has been created with the following details:</p>
+        
+        <div style="margin: 20px 0;">
+          <p><strong>PO Number:</strong> ${po.poCode}</p>
+          <p><strong>Project:</strong> ${po.projectId.projectName}</p>
+          <p><strong>Unit:</strong> ${po.unitId.unitName}</p>
+          <p><strong>Delivery Date:</strong> ${new Date(po.deliveryDate).toLocaleDateString()}</p>
+        </div>
+
+        <h3>Ordered Items:</h3>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <tr style="background-color: #f2f2f2;">
+            <th style="padding: 8px; border: 1px solid #ddd;">Item</th>
+            <th style="padding: 8px; border: 1px solid #ddd;">Quantity</th>
+            <th style="padding: 8px; border: 1px solid #ddd;">Unit Price</th>
+            <th style="padding: 8px; border: 1px solid #ddd;">Total</th>
+          </tr>
+          ${po.items.map(item => `
+            <tr>
+              <td style="padding: 8px; border: 1px solid #ddd;">${item.partCode.ItemCode?.ItemName || 'N/A'}</td>
+              <td style="padding: 8px; border: 1px solid #ddd;">${item.quantity}</td>
+              <td style="padding: 8px; border: 1px solid #ddd;">${item.unitPrice}</td>
+              <td style="padding: 8px; border: 1px solid #ddd;">${item.totalPrice}</td>
+            </tr>
+          `).join('')}
+        </table>
+
+        <div style="margin: 20px 0;">
+          <p><strong>Sub Total:</strong> ${po.subTotal}</p>
+          <p><strong>Tax:</strong> ${po.tax}</p>
+          <p><strong>Total Amount:</strong> ${po.total}</p>
+        </div>
+
+        <div style="margin: 20px 0;">
+          <p><strong>Payment Terms:</strong> ${po.paymentTerms}</p>
+          <p><strong>Delivery Terms:</strong> ${po.deliveryTerms}</p>
+        </div>
+
+        <p>Please review the purchase order and proceed with the delivery as per the terms mentioned.</p>
+        <p>Best regards,<br>Procurement Team</p>
+      `
+    };
+
+    await sendEmail(emailContent);
+
+    res.json({ 
+      success: true, 
+      message: 'Purchase Order notification sent successfully to vendor' 
+    });
+  } catch (error) {
+    console.error('Error sending PO notification:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to send Purchase Order notification' 
+    });
   }
 };

@@ -42,6 +42,7 @@ const POTab = ({ vendorDetails }) => {
 
   const handleViewPO = (po) => {
     setSelectedPO(po);
+    console.log("selectedPO", po);
     setIsViewModalOpen(true);
   };
 

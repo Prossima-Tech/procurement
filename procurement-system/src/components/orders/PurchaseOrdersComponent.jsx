@@ -4,7 +4,7 @@ import ListComponent from '../common/ListComponent';
 import { toast, ToastContainer } from 'react-toastify';
 import PurchaseOrderForm from './PurchaseOrderForm';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Plus, ChevronLeft, Trash2, Pencil, X } from 'lucide-react';
+import { Plus, ChevronLeft, Trash2, Pencil, X, Send } from 'lucide-react';
 import { api, baseURL } from '../../utils/endpoint';
 import axios from 'axios';
 
@@ -18,6 +18,10 @@ const PurchaseOrdersComponent = () => {
     const [editingPO, setEditingPO] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { isDarkMode } = useTheme();
+    const [openNotifyModal, setOpenNotifyModal] = useState(false);
+    const [selectedPO, setSelectedPO] = useState(null);
+    const [customMessage, setCustomMessage] = useState('');
+    const [notifyLoading, setNotifyLoading] = useState(false);
 
     // Toast configuration
     const toastConfig = {
@@ -177,6 +181,34 @@ const PurchaseOrdersComponent = () => {
         setError(null);
     };
 
+    const handleNotifyVendor = async (purchaseOrder) => {
+        setSelectedPO(purchaseOrder);
+        setOpenNotifyModal(true);
+    };
+
+    const handleSendNotification = async () => {
+        try {
+            setNotifyLoading(true);
+            const response = await api(`${baseURL}/purchase-orders/notify-vendor/${selectedPO._id}`, 'post', {
+                customMessage
+            });
+            
+            if (response.data.success === true) {
+                toast.success(response.data.message || 'Vendor notification sent successfully', toastConfig);
+            } else {
+                toast.error(response.data.message || 'Failed to send notification', toastConfig);
+            }
+        } catch (error) {
+            console.error('Error sending notification:', error);
+            toast.error('Error sending notification', toastConfig);
+        } finally {
+            setNotifyLoading(false);
+            setOpenNotifyModal(false);
+            setCustomMessage('');
+            setSelectedPO(null);
+        }
+    };
+
     const columns = [
         { header: 'PO Code', key: 'poCode' },
         { header: 'PO Date', key: 'poDate' },
@@ -238,18 +270,44 @@ const PurchaseOrdersComponent = () => {
             render: (item) => (
                 <div className="flex items-center justify-end space-x-2">
                     <button
-                        onClick={() => handleEdit(item._id)}
-                        className="text-blue-600 hover:text-blue-900 focus:outline-none p-1 rounded-full transition-colors"
+                        onClick={() => handleNotifyVendor(item)}
+                        className={`text-green-600 hover:text-green-900 focus:outline-none p-1 rounded-full transition-colors ${
+                            isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                        title="Notify Vendor"
+                        disabled={isLoading}
+                    >
+                        <Send size={20} />
+                    </button>
+                    <button
+                        onClick={() => {
+                            if (item.status === 'in_progress' || item.status === 'grn_created') {
+                                toast.warning(`Purchase Orders in ${item.status.replace('_', ' ')} status cannot be edited`, toastConfig);
+                            } else {
+                                handleEdit(item._id);
+                            }
+                        }}
+                        className={`text-blue-600 hover:text-blue-900 focus:outline-none p-1 rounded-full transition-colors ${
+                            isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                         title="Edit Purchase Order"
-                        disabled={isLoading || item.status === 'in_progress' || item.status === 'grn_created'}
+                        disabled={isLoading}
                     >
                         <Pencil size={20} />
                     </button>
                     <button
-                        onClick={() => handleDeletePurchaseOrder(item._id, item.poCode)}
-                        className="text-red-600 hover:text-red-900 focus:outline-none p-1 rounded-full transition-colors"
+                        onClick={() => {
+                            if (item.status === 'in_progress' || item.status === 'grn_created') {
+                                toast.warning(`Purchase Orders in ${item.status.replace('_', ' ')} status cannot be deleted`, toastConfig);
+                            } else {
+                                handleDeletePurchaseOrder(item._id, item.poCode);
+                            }
+                        }}
+                        className={`text-red-600 hover:text-red-900 focus:outline-none p-1 rounded-full transition-colors ${
+                            isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                         title="Delete Purchase Order"
-                        disabled={isLoading || item.status === 'in_progress' || item.status === 'grn_created'}
+                        disabled={isLoading}
                     >
                         <Trash2 size={20} />
                     </button>
@@ -320,6 +378,63 @@ const PurchaseOrdersComponent = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Notification Modal */}
+            {openNotifyModal && (
+                <div className="fixed inset-0 z-50 overflow-y-auto">
+                    <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                        <div className="fixed inset-0 transition-opacity">
+                            <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+                        </div>
+
+                        <div className={`inline-block align-middle rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full ${
+                            isDarkMode ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-white text-gray-900'
+                        }`}>
+                            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                                        Notify Vendor
+                                    </h3>
+                                    <div className="ml-3 h-7 flex items-center">
+                                        <button
+                                            onClick={() => setOpenNotifyModal(false)}
+                                            className="bg-white rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                        >
+                                            <X size={20} />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="mt-2 text-base text-gray-500">
+                                    <p>Enter the custom message for the vendor:</p>
+                                    <textarea
+                                        value={customMessage}
+                                        onChange={(e) => setCustomMessage(e.target.value)}
+                                        className="mt-2 w-full border border-gray-300 rounded-md p-2"
+                                        rows="4"
+                                        placeholder="Enter your message here..."
+                                    />
+                                </div>
+                                <div className="mt-4 flex justify-end">
+                                    <button
+                                        onClick={handleSendNotification}
+                                        className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-md"
+                                        disabled={notifyLoading}
+                                    >
+                                        {notifyLoading ? (
+                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3.148 7.935l3.801-3.041z"></path>
+                                            </svg>
+                                        ) : (
+                                            'Send Notification'
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

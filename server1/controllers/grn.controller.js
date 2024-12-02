@@ -460,7 +460,7 @@ class GRNController {
             const grns = await GRN.find({
                 'vendor.id': vendorId
             })
-                // .populate('purchaseOrder', 'poNumber poDate')
+                .populate('purchaseOrder')
                 // .populate('invoiceId') // To know if invoice exists
                 .sort({ createdAt: -1 })
                 .lean();

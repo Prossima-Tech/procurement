@@ -108,7 +108,7 @@ const IndentList = () => {
       render: (date) => (
         <Space>
           <Calendar size={16} className="text-gray-500" />
-          {new Date(date).toLocaleDateString()}
+          {new Date(date).toLocaleDateString('en-GB')}
         </Space>
       )
     },

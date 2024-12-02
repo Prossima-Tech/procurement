@@ -90,6 +90,7 @@ const InvoicesTab = ({ vendorDetails }) => {
       const response = await axios.get(`${baseURL}/invoice/${grn.invoiceId}`);
       setSelectedInvoice(response.data.data);
       console.log("selected invoice",response.data.data);
+      console.log("selected vendor",vendorDetails);
       setIsViewInvoiceModalOpen(true);
     } catch (error) {
       console.error('Error fetching invoice:', error);
@@ -236,6 +237,7 @@ const InvoicesTab = ({ vendorDetails }) => {
           setSelectedInvoice(null);
         }}
         invoiceData={selectedInvoice}
+        vendorDetails={vendorDetails}
       />
     </>
   );
