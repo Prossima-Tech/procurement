@@ -112,7 +112,7 @@ class InvoiceController {
     try {
       const invoice = await Invoice.findById(req.params.id)
         .populate('vendorId', 'name email contactNumber gstNumber')
-        .populate('poId', 'poCode date')
+        .populate('poId')
         .populate('grnId', 'grnNumber date')
         .lean();
 

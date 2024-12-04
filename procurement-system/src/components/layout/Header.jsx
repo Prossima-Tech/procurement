@@ -14,7 +14,7 @@ const Header = ({ onLogout }) => {
             <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
                 <div className="flex justify-between items-center h-20">
                     <h2 className="text-2xl font-semibold leading-8">
-                        Procurement System
+                        Procurement Management 
                     </h2>
                     <div className="flex items-center space-x-6">
                         <span className="text-base">Welcome, {user.username}</span>
