@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const GRN = require('../models/grn.model');
 const PurchaseOrder = require('../models/purchaseOrder.model');
-const Inspection = require('../models/inspection.model');
+const Inspection = require('../models/Inspection.model');
 
 class GRNController {
     // Generate GRN Number
@@ -467,7 +467,7 @@ class GRNController {
 
 
             const grns = await GRN.find({
-                'vendor.id': vendorId
+                'vendor._id': vendorId
             })
                 .populate('purchaseOrder')
                 .populate('invoiceId', 'totalAmount') // Populate invoiceId and get totalAmount
