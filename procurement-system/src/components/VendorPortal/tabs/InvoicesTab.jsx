@@ -8,8 +8,8 @@ import {
   Clock,
   Package,
   CheckCircle,
-  FilePlus,
-  Receipt
+  FilePlus2,
+  ReceiptText
 } from 'lucide-react';
 import axios from 'axios';
 import { format } from 'date-fns';
@@ -39,6 +39,7 @@ const InvoicesTab = ({ vendorDetails }) => {
       setLoading(true);
       const response = await axios.get(`${baseURL}/grn/vendor/${vendorDetails._id}`);
       setGrns(response.data.data);
+      console.log("grns",response.data.data);
       setError(null);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch GRNs');
@@ -54,7 +55,7 @@ const InvoicesTab = ({ vendorDetails }) => {
       approved: { color: 'green', icon: CheckCircle },
       rejected: { color: 'red', icon: AlertCircle },
       completed: { color: 'blue', icon: Package },
-      invoice_created: { color: 'purple', icon: Receipt },
+      invoice_created: { color: 'purple', icon: ReceiptText },
       inspection_in_progress: { color: 'orange', icon: Clock }
     };
 
@@ -87,7 +88,8 @@ const InvoicesTab = ({ vendorDetails }) => {
 
   const handleViewInvoice = async (grn) => {
     try {
-      const response = await axios.get(`${baseURL}/invoice/${grn.invoiceId}`);
+      console.log("grn for invoiceId",grn);
+      const response = await axios.get(`${baseURL}/invoice/${grn.invoiceId._id}`);
       setSelectedInvoice(response.data.data);
       console.log("selected invoice",response.data.data);
       console.log("selected vendor",vendorDetails);
@@ -104,7 +106,7 @@ const InvoicesTab = ({ vendorDetails }) => {
         <div className="p-4 border-b flex justify-between items-center">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-blue-600" />
-            <h2 className="text-lg font-semibold">Invoices & GRNs</h2>
+            {/* <h2 className="text-lg font-semibold">Invoices & GRNs</h2> */}
           </div>
           <div className="flex gap-3">
             {/* Search */}
@@ -150,31 +152,32 @@ const InvoicesTab = ({ vendorDetails }) => {
               <table className="w-full border-collapse">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">GRN Number</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">PO Reference</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Receipt Date</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Invoice Number</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">PO No.</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">PO Receive Date</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Items</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Action</th>
+                    <th className="px-4 py-3 text-right text-sm font-medium text-gray-600">Amount</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Invoice Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {filteredGRNs.map((grn) => (
                     <tr key={grn._id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">{grn.grnNumber}</td>
-                      <td className="px-4 py-3">{grn.purchaseOrder?.poNumber || 'N/A'}</td>
+                      <td className="px-4 py-3">{grn.invoiceNumber}</td>
+                      <td className="px-4 py-3">{grn.purchaseOrder?.poCode || 'N/A'}</td>
                       <td className="px-4 py-3">
                         {format(new Date(grn.receivedDate), 'dd MMM yyyy')}
                       </td>
                       <td className="px-4 py-3">
                         {getStatusBadge(grn.status)}
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="text-sm text-gray-600">
-                          {grn.items.length} items
-                        </div>
+                      <td className="px-4 py-3 text-right">
+                        {grn.invoiceId ? 
+                          `₹${Math.round(grn.invoiceId.totalAmount).toFixed(2)}` : 
+                          <span className="text-gray-500 italic">Invoice not generated</span>
+                        }
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-1 py-1">
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleCreateInvoice(grn)}
@@ -186,8 +189,8 @@ const InvoicesTab = ({ vendorDetails }) => {
                               }`}
                             title={grn.status !== 'approved' ? 'GRN must be approved to create invoice' : ''}
                           >
-                            <FilePlus className="h-4 w-4" />
-                            Create Invoice
+                            <FilePlus2 className="h-4 w-4" />
+                            Create
                           </button>
 
                           <button
@@ -200,8 +203,8 @@ const InvoicesTab = ({ vendorDetails }) => {
                               }`}
                             title={!grn.invoiceId ? 'No invoice available' : ''}
                           >
-                            <Receipt className="h-4 w-4" />
-                            View Invoice
+                            <ReceiptText className="h-4 w-4" />
+                            View
                           </button>
                         </div>
                       </td>

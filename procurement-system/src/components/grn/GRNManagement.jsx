@@ -3,9 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Plus, Search, Eye, Edit, Trash, } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { toast ,ToastContainer} from 'react-toastify';
 import { baseURL } from '../../utils/endpoint';
-
 // Main GRN Form Component
 const GRNForm = ({ grn, onBack, onSuccess }) => {
     const { isDarkMode } = useTheme();
@@ -255,6 +254,7 @@ const GRNForm = ({ grn, onBack, onSuccess }) => {
     return (
         <div>
             {/* Form Header */}
+            <ToastContainer />
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center">
                     <button

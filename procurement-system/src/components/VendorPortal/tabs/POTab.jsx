@@ -135,7 +135,7 @@ const POTab = ({ vendorDetails }) => {
                           className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium"
                         >
                           <Eye className="h-4 w-4" />
-                          View
+                          {/* View */}
                         </button>
                       </td>
                     </tr>

@@ -33,7 +33,14 @@ class GRNController {
             throw new Error('Error generating GRN number: ' + error.message);
         }
     }
-
+    async generateInvoiceNumber(grnNumber) {
+        // Generate a random 3-digit number
+        // Extract year, month and GRN sequence from GRN number
+        const [year, month, grnSeq] = grnNumber.split('-').slice(1);
+        
+        // Use the GRN sequence number as part of invoice number for traceability
+        return `INV-${year}-${month}-${grnSeq}`;
+    }
     // Create new GRN
     async createGRN(req, res) {
         const session = await mongoose.startSession();
@@ -106,7 +113,8 @@ class GRNController {
 
             // Generate GRN number and create GRN
             const grnNumber = await this.generateGRNNumber();
-
+            const invoiceNumber = await this.generateInvoiceNumber(grnNumber);
+            console.log("invoiceNumber generated", invoiceNumber);
             const grn = new GRN({
                 grnNumber,
                 purchaseOrder: poId,
@@ -133,6 +141,7 @@ class GRNController {
                     remarks: item.remarks || '',
                     itemDetails: item.itemDetails
                 })),
+                invoiceNumber,
                 totalValue: items.reduce((sum, item) =>
                     sum + (item.receivedQuantity * item.unitPrice), 0
                 )
@@ -456,12 +465,12 @@ class GRNController {
         try {
             const vendorId = req.params.id;
 
-            // Simply find GRNs associated with the vendor and populate necessary references
+
             const grns = await GRN.find({
                 'vendor.id': vendorId
             })
                 .populate('purchaseOrder')
-                // .populate('invoiceId') // To know if invoice exists
+                .populate('invoiceId', 'totalAmount') // Populate invoiceId and get totalAmount
                 .sort({ createdAt: -1 })
                 .lean();
 
