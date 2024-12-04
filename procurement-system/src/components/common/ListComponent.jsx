@@ -110,7 +110,11 @@ const ListComponent = ({
                                 <tr key={rowIndex} className={`border-b ${isDarkMode ? 'border-gray-700 hover:bg-gray-800' : 'border-gray-200 hover:bg-gray-100'} transition duration-300 ease-in-out`}>
                                     {columns.map((column, colIndex) => (
                                         <td key={colIndex} className="px-4 py-4">
-                                            {column.render ? column.render(item) : item[column.key]}
+                                            {column.render 
+                                                ? column.render(item) 
+                                                : item[column.key] === "" 
+                                                    ? "NaN" 
+                                                    : item[column.key]}
                                         </td>
                                     ))}
                                 </tr>

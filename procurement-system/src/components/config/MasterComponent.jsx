@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Search, Plus, Trash2 } from 'lucide-react';
@@ -9,6 +9,23 @@ const MasterComponent = ({ title, searchEndpoint, getAllEndpoint, createEndpoint
     const [newItemName, setNewItemName] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const { isDarkMode } = useTheme();
+
+    // Debounced search handler using useCallback
+    const debouncedSearch = useCallback(
+        (query) => {
+            handleSearch(query);
+        },
+        [searchEndpoint]
+    );
+
+    // Effect for debouncing search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            debouncedSearch(searchQuery);
+        }, 300); // Debounce time in milliseconds
+
+        return () => clearTimeout(timer);
+    }, [searchQuery, debouncedSearch]);
 
     useEffect(() => {
         fetchItems();
@@ -38,9 +55,9 @@ const MasterComponent = ({ title, searchEndpoint, getAllEndpoint, createEndpoint
         }
     };
 
-    const handleSearch = async () => {
+    const handleSearch = async (query) => {
         try {
-            const response = await axios.get(`${searchEndpoint}?query=${searchQuery}`);
+            const response = await axios.get(`${searchEndpoint}?query=${query}`);
             setItems(response.data.data);
         } catch (error) {
             alert(error + 'Failed to search items');
@@ -60,7 +77,7 @@ const MasterComponent = ({ title, searchEndpoint, getAllEndpoint, createEndpoint
     };
 
     return (
-        <div className={`p-6 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'} rounded - lg shadow - md`}>
+        <div className={`p-6 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'} rounded-lg shadow-md`}>
             <h2 className="text-2xl font-bold mb-6">{title}</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -95,7 +112,7 @@ const MasterComponent = ({ title, searchEndpoint, getAllEndpoint, createEndpoint
                             className="flex-grow mr-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <button
-                            onClick={handleSearch}
+                            onClick={() => handleSearch(searchQuery)}
                             className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         >
                             <Search size={18} className="mr-2" />
