@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Truck, ClipboardCheck, ShoppingCart, User, ChevronDown, ChevronUp, Building2, MapPin, Wallet, Package, Search, Filter, Eye, CheckCircle, AlertCircle, Clock, Calendar, LogOut } from 'lucide-react';
+import { FileText, Truck, ClipboardCheck, ShoppingCart, User, ChevronDown, ChevronUp, Building2, MapPin, Wallet, Package, Search, Filter, Eye, CheckCircle, AlertCircle, Clock, Calendar, LogOut, ChartBar } from 'lucide-react';
 
 import { useAuth } from '../../hooks/useAuth';
 import { baseURL } from '../../utils/endpoint';
@@ -21,7 +21,7 @@ const CustomCard = ({ children, className = '' }) => (
 );
 // Main Component
 const VendorDashboard = () => {
-  const [activeTab, setActiveTab] = useState('pos');
+  const [activeTab, setActiveTab] = useState('analytics');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [vendorDetails, setVendorDetails] = useState({
@@ -47,7 +47,7 @@ const VendorDashboard = () => {
       ifscCode: 'IFSC0001234'
     }
   });
-  const [showVendorDetails, setShowVendorDetails] = useState(false);
+  const [showVendorDetails, setShowVendorDetails] = useState(true);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [poLoading, setPoLoading] = useState(false);
   const [poError, setPoError] = useState(null);
@@ -284,10 +284,11 @@ const VendorDashboard = () => {
   };
 
   const tabs = [
+    { id: 'analytics', label: 'Analytics', icon: ChartBar },
     { id: 'pos', label: 'Purchase Orders', icon: ShoppingCart },
     { id: 'rfq', label: 'RFQ & Quotations', icon: ClipboardCheck },
     { id: 'invoices', label: 'Invoices', icon: FileText },
-    { id: 'deliveries', label: 'Deliveries', icon: Truck }
+    // { id: 'deliveries', label: 'Deliveries', icon: Truck }
   ];
 
   return (
@@ -318,8 +319,8 @@ const VendorDashboard = () => {
           </div>
         </div>
 
-        {showVendorDetails && (
-          <CustomCard className="transition-all duration-300">
+        <div className={`transition-all duration-300 ${showVendorDetails ? 'block' : 'hidden'}`}>
+          <CustomCard>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Contact Information */}
               <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
@@ -430,10 +431,10 @@ const VendorDashboard = () => {
               </div>
             </div>
           </CustomCard>
-        )}
+        </div>
       </div>
       {/* {JSON.stringify(vendorDetails)} */}
-      <AnalyticsDashboard />
+      {/* <AnalyticsDashboard /> */}
       {/* Tabs Section */}
       <div className="mb-6">
         <div className="flex space-x-1 border-b">
@@ -453,14 +454,11 @@ const VendorDashboard = () => {
         </div>
 
         <div className="mt-4">
-          {activeTab === 'pos' && (
-            <POTab 
-              vendorDetails={vendorDetails}
-            />
-          )}
+          {activeTab === 'analytics' && <AnalyticsDashboard />}
+          {activeTab === 'pos' && <POTab vendorDetails={vendorDetails} />}
           {activeTab === 'rfq' && <RFQTab vendorDetails={vendorDetails} />}
           {activeTab === 'invoices' && <InvoicesTab vendorDetails={vendorDetails} />}
-          {activeTab === 'deliveries' && <DeliveriesTab />}
+          {/* {activeTab === 'deliveries' && <DeliveriesTab />} */}
         </div>
       </div>
 

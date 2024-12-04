@@ -138,7 +138,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, grnData }) => {
     try {
       const invoicePayload = {
         grnId: grnData._id,
-        invoiceNumber: invoiceData.invoiceNumber,
+        invoiceNumber: grnData.invoiceNumber,
         invoiceDate: invoiceData.invoiceDate,
         items: invoiceData.items,
         taxType: selectedTaxType,
@@ -149,7 +149,8 @@ const CreateInvoiceModal = ({ isOpen, onClose, grnData }) => {
         igstAmount: invoiceData.igstAmount,
         totalAmount: invoiceData.totalAmount
       };
-
+      // console.log("invoicePayload", invoicePayload);
+      // toast.success("Invoice created successfully",invoicePayload);
       const response = await axios.post(`${baseURL}/invoice/create`, invoicePayload);
 
       if (response.data.success) {
@@ -220,7 +221,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, grnData }) => {
                   </label>
                   <input
                     type="text"
-                    value={invoiceData.invoiceNumber}
+                    value={grnData.invoiceNumber}
                     onChange={(e) => setInvoiceData(prev => ({
                       ...prev,
                       invoiceNumber: e.target.value

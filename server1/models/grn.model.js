@@ -107,6 +107,10 @@ const GRNSchema = new mongoose.Schema({
         ref: 'Invoice',
         default: null
     },
+    invoiceNumber: {
+        type: String,
+        default: null
+    },
     transportDetails: TransportDetailsSchema,
     items: [GRNItemSchema],
     totalValue: {

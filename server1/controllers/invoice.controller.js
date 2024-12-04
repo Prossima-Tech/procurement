@@ -18,7 +18,7 @@ class InvoiceController {
         igstAmount,
         totalAmount
       } = req.body;
-
+      console.log("req.body",req.body);
       // Fetch GRN with populated references
       const grn = await GRN.findById(grnId)
 
