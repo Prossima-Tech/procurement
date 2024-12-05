@@ -17,7 +17,6 @@ router.put('/updatePO/:id', authenticate, authorize(['admin', 'manager']), purch
 router.delete('/deletePO/:id', authenticate, authorize(['admin']), purchaseOrderController.deletePurchaseOrder);
 
 router.get('/grnHistory/:id', authenticate, purchaseOrderController.getGRNHistory);
-
 router.get('/generatePdf/:id', async (req, res) => {
   try {
     const purchaseOrder = await PurchaseOrder.findById(req.params.id)
@@ -27,8 +26,7 @@ router.get('/generatePdf/:id', async (req, res) => {
       .populate({
         path: 'items.partCode',
         populate: {
-          path: 'ItemCode',
-          select: 'ItemCode ItemName'
+          path: 'ItemCode'
         }
       });
 
@@ -50,6 +48,7 @@ router.get('/generatePdf/:id', async (req, res) => {
     res.status(500).json({ message: 'Error generating PDF' });
   }
 });
+
 router.post('/notify-vendor/:purchaseOrderId', purchaseOrderController.notifyVendors);
 
 

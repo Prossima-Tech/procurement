@@ -7,6 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { Plus, ChevronLeft, Trash2, Pencil, X, Send } from 'lucide-react';
 import { api, baseURL } from '../../utils/endpoint';
 import axios from 'axios';
+import { FileDown } from 'lucide-react';
 
 const PurchaseOrdersComponent = () => {
     const [purchaseOrders, setPurchaseOrders] = useState([]);
@@ -37,6 +38,36 @@ const PurchaseOrdersComponent = () => {
     };
 
     const getToken = () => localStorage.getItem('token');
+
+    const handlePrintPO = async (orderId) => {
+        try {
+            const response = await axios.get(
+                `${baseURL}/purchase-orders/generatePdf/${orderId}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Accept': 'application/pdf'
+                    },
+                    responseType: 'blob'
+                }
+            );
+
+            // Create blob and download
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `PO_${orderId}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            toast.error('Failed to generate PDF');
+        }
+    };
 
     const fetchPurchaseOrders = async (page = 1) => {
         console.log("fetching purchase orders");
@@ -192,7 +223,7 @@ const PurchaseOrdersComponent = () => {
             const response = await api(`${baseURL}/purchase-orders/notify-vendor/${selectedPO._id}`, 'post', {
                 customMessage
             });
-            
+
             if (response.data.success === true) {
                 toast.success(response.data.message || 'Vendor notification sent successfully', toastConfig);
             } else {
@@ -270,10 +301,16 @@ const PurchaseOrdersComponent = () => {
             render: (item) => (
                 <div className="flex items-center justify-end space-x-2">
                     <button
+                        onClick={() => handlePrintPO(item._id)}
+                        className="text-green-600 hover:text-green-900 focus:outline-none p-1 rounded-full transition-colors"
+                        title="Download PDF"
+                    >
+                        <FileDown size={20} />
+                    </button>
+                    {/* Your existing buttons */}
+                    <button
                         onClick={() => handleNotifyVendor(item)}
-                        className={`text-green-600 hover:text-green-900 focus:outline-none p-1 rounded-full transition-colors ${
-                            isLoading ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
+                        className={`text-green-600 hover:text-green-900 focus:outline-none p-1 rounded-full transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         title="Notify Vendor"
                         disabled={isLoading}
                     >
@@ -287,9 +324,8 @@ const PurchaseOrdersComponent = () => {
                                 handleEdit(item._id);
                             }
                         }}
-                        className={`text-blue-600 hover:text-blue-900 focus:outline-none p-1 rounded-full transition-colors ${
-                            isLoading ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
+                        className={`text-blue-600 hover:text-blue-900 focus:outline-none p-1 rounded-full transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
                         title="Edit Purchase Order"
                         disabled={isLoading}
                     >
@@ -303,9 +339,8 @@ const PurchaseOrdersComponent = () => {
                                 handleDeletePurchaseOrder(item._id, item.poCode);
                             }
                         }}
-                        className={`text-red-600 hover:text-red-900 focus:outline-none p-1 rounded-full transition-colors ${
-                            isLoading ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
+                        className={`text-red-600 hover:text-red-900 focus:outline-none p-1 rounded-full transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
                         title="Delete Purchase Order"
                         disabled={isLoading}
                     >
@@ -387,9 +422,8 @@ const PurchaseOrdersComponent = () => {
                             <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
                         </div>
 
-                        <div className={`inline-block align-middle rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full ${
-                            isDarkMode ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-white text-gray-900'
-                        }`}>
+                        <div className={`inline-block align-middle rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full ${isDarkMode ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-white text-gray-900'
+                            }`}>
                             <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-lg leading-6 font-medium text-gray-900">
