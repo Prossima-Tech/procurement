@@ -9,13 +9,15 @@ import {
   Package,
   CheckCircle,
   FilePlus2,
-  ReceiptText
+  ReceiptText,
+  FileDown
 } from 'lucide-react';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { baseURL } from '../../../utils/endpoint';
 import CreateInvoiceModal from '../CreateInvoiceModal';
 import ViewInvoiceModal from '../ViewInvoiceModal';
+import { toast, ToastContainer } from 'react-toastify';
 // import StatusBadge from '../../../utils/StatusBadge';
 const InvoicesTab = ({ vendorDetails }) => {
   const [grns, setGrns] = useState([]);
@@ -99,9 +101,44 @@ const InvoicesTab = ({ vendorDetails }) => {
     }
   };
 
+  const getToken = () => localStorage.getItem('token');
+
+  const handlePrintInvoice = async (invoiceId) => {
+    console.log("invoiceId",invoiceId);
+    toast.info(`Generating PDF... ${invoiceId._id}`);
+    try {
+      const response = await axios.get(
+        `${baseURL}/invoice/generatePdf/${invoiceId._id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${getToken()}`,
+            'Accept': 'application/pdf'
+          },
+          responseType: 'blob'
+        }
+      );
+
+      // Create blob and download
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Invoice_${invoiceId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    }
+  };
+
   return (
     <>
       <div className="bg-white rounded-lg shadow">
+      <ToastContainer/>
         {/* Header */}
         <div className="p-4 border-b flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -206,6 +243,18 @@ const InvoicesTab = ({ vendorDetails }) => {
                             <ReceiptText className="h-4 w-4" />
                             View
                           </button>
+                            
+                          {grn.invoiceId && (
+                            <button
+                              onClick={() => handlePrintInvoice(grn.invoiceId)}
+                              className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md border
+                                text-green-600 hover:text-green-700 border-green-600 hover:bg-green-50"
+                              title="Download Invoice PDF"
+                            >
+                              <FileDown className="h-4 w-4" />
+                              Print
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
