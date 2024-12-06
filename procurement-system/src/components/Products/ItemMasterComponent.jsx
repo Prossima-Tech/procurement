@@ -270,6 +270,7 @@ const ItemMasterComponent = () => {
                         setIsModalOpen(true);
                     }}
                     isLoading={isLoading}
+                    enableClickableSearch={true}
                 />
             </div>
             <ItemModal

@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Calendar, Clock, PlusCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Calendar, Clock, PlusCircle, X } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const ListComponent = ({
@@ -11,7 +11,9 @@ const ListComponent = ({
     totalPages,
     onCreateNew,
     isLoading,
-    showHeader = true // New prop to control header visibility
+    showHeader = true,
+    debounceTime = 300,
+    enableClickableSearch = false
 }) => {
     const { isDarkMode } = useTheme();
     const [currentPage, setCurrentPage] = useState(1);
@@ -28,11 +30,25 @@ const ListComponent = ({
         onFetch(1, 10, event.target.value);
     };
 
+    const handleClearSearch = () => {
+        setSearchTerm('');
+        setCurrentPage(1);
+        onFetch(1, 10, ''); // Reset search
+    };
+
     const filteredData = safeData.filter(item =>
         columns.some(column =>
             String(item[column.key]).toLowerCase().includes(searchTerm.toLowerCase())
         )
     );
+
+    const handleCellClick = (value) => {
+        if (enableClickableSearch && value) {
+            setSearchTerm(String(value));
+            setCurrentPage(1);
+            debouncedSearch(String(value));
+        }
+    };
 
     return (
         <div className="">
@@ -49,13 +65,13 @@ const ListComponent = ({
                 </div>
             )}
             <div className="mb-6 flex justify-between items-center">
-                <div className="relative">
+                <div className="relative flex-1 max-w-md">
                     <input
                         type="text"
                         placeholder="Search..."
                         value={searchTerm}
                         onChange={handleSearch}
-                        className={`${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-800'} pl-10 pr-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600`}
+                        className={`w-full ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-800'} pl-10 pr-10 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600`}
                     />
                     <svg
                         className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
@@ -71,6 +87,14 @@ const ListComponent = ({
                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                         />
                     </svg>
+                    {searchTerm && (
+                        <button
+                            onClick={handleClearSearch}
+                            className={`absolute right-3 top-2.5 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors`}
+                        >
+                            <X size={18} className="text-gray-400" />
+                        </button>
+                    )}
                 </div>
                 <div className="flex space-x-2">
                     <button className={`p-2 ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'} rounded-md transition duration-300 ease-in-out`}>
@@ -109,7 +133,11 @@ const ListComponent = ({
                             filteredData.map((item, rowIndex) => (
                                 <tr key={rowIndex} className={`border-b ${isDarkMode ? 'border-gray-700 hover:bg-gray-800' : 'border-gray-200 hover:bg-gray-100'} transition duration-300 ease-in-out`}>
                                     {columns.map((column, colIndex) => (
-                                        <td key={colIndex} className="px-4 py-4">
+                                        <td 
+                                            key={colIndex} 
+                                            className={`px-4 py-4 ${enableClickableSearch ? 'cursor-pointer hover:bg-opacity-80' : ''}`}
+                                            onClick={() => handleCellClick(item[column.key])}
+                                        >
                                             {column.render 
                                                 ? column.render(item) 
                                                 : item[column.key] === "" 

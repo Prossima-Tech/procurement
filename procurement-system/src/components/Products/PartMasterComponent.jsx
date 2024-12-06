@@ -294,6 +294,7 @@ const PartMasterComponent = () => {
                     }}
                     onSearch={handleSearch}
                     isLoading={isLoading}
+                    enableClickableSearch={true}
                 />
             </div>
             <PartModal
