@@ -2,122 +2,376 @@ const PDFDocument = require('pdfkit');
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
-  const date = new Date(dateString);
-  return isNaN(date.getTime()) ? 'Invalid Date' : date.toDateString();
+  return new Date(dateString).toLocaleDateString();
 };
 
-exports.generatePoPdf = (purchaseOrder) => {
+const generatePoPdf = (purchaseOrder) => {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
-    let buffers = [];
-    doc.on('data', buffers.push.bind(buffers));
-    doc.on('end', () => {
-      let pdfData = Buffer.concat(buffers);
-      resolve(pdfData);
-    });
-
-    // Header
-    doc.fontSize(16).text('KING SECURITY GUARD SERVICES (P) LTD.', { align: 'center' });
-    doc.fontSize(10).text('Company Address', { align: 'center' }); // Replace with actual company address
-    doc.text('Telephone: Company Phone, Email: Company Email', { align: 'center' }); // Replace with actual company contact info
-    doc.moveDown();
-
-    // Purchase Order title
-    doc.fontSize(14).text('PURCHASE ORDER', { align: 'center', underline: true });
-    doc.moveDown();
-
-    // Order details
-    doc.fontSize(10);
-    doc.text(`PO Code: ${purchaseOrder.poCode || 'N/A'}`);
-    doc.text(`PO Date: ${formatDate(purchaseOrder.poDate)}`);
-    doc.text(`Valid Upto: ${formatDate(purchaseOrder.validUpto)}`);
-    doc.moveDown();
-
-    // Invoice To
-    doc.text('Invoice To:');
-    doc.text(`${purchaseOrder.invoiceTo?.name || 'N/A'}`);
-    doc.text(`${purchaseOrder.invoiceTo?.branchName || 'N/A'}`);
-    doc.text(`${purchaseOrder.invoiceTo?.address || 'N/A'}`);
-    doc.text(`${purchaseOrder.invoiceTo?.city || 'N/A'}, ${purchaseOrder.invoiceTo?.state || 'N/A'} - ${purchaseOrder.invoiceTo?.pin || 'N/A'}`);
-    doc.moveDown();
-
-    // Dispatch To
-    doc.text('Dispatch To:');
-    doc.text(`${purchaseOrder.dispatchTo?.name || 'N/A'}`);
-    doc.text(`${purchaseOrder.dispatchTo?.branchName || 'N/A'}`);
-    doc.text(`${purchaseOrder.dispatchTo?.address || 'N/A'}`);
-    doc.text(`${purchaseOrder.dispatchTo?.city || 'N/A'}, ${purchaseOrder.dispatchTo?.state || 'N/A'} - ${purchaseOrder.dispatchTo?.pin || 'N/A'}`);
-    doc.moveDown();
-
-    doc.text(`Supplier Ref.: ${purchaseOrder.supplierRef || 'N/A'}`);
-    doc.text(`Other Ref.: ${purchaseOrder.otherRef || 'N/A'}`);
-    doc.text(`Dispatch Through: ${purchaseOrder.dispatchThrough || 'N/A'}`);
-    doc.text(`Destination: ${purchaseOrder.destination || 'N/A'}`);
-    doc.text(`Payment Terms: ${purchaseOrder.paymentTerms || 'N/A'}`);
-    doc.text(`Delivery Terms: ${purchaseOrder.deliveryTerms || 'N/A'}`);
-    doc.moveDown();
-
-    // Items table
-    const tableTop = doc.y + 10;
-    const tableHeaders = ['S.No', 'Part Code', 'Quantity', 'Unit Price', 'Total Price'];
-    const tableData = (purchaseOrder.items || []).map((item, index) => [
-      (index + 1).toString(),
-      item.partCode?.$oid || 'N/A',
-      item.quantity?.toString() || 'N/A',
-      item.unitPrice?.toFixed(2) || 'N/A',
-      item.totalPrice?.toFixed(2) || 'N/A'
-    ]);
-
-    // Draw table
-    const cellPadding = 5;
-    const cellWidth = (doc.page.width - 100) / tableHeaders.length;
-    const cellHeight = 20;
-
-    // Draw headers
-    doc.font('Helvetica-Bold').fontSize(8);
-    tableHeaders.forEach((header, i) => {
-      doc.text(header, 50 + (i * cellWidth), tableTop, {
-        width: cellWidth,
-        align: 'center'
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: {
+          top: 50,
+          bottom: 50,
+          left: 40,
+          right: 40
+        },
+        bufferPages: true
       });
-    });
 
-    // Draw rows
-    let y = tableTop + cellHeight;
-    doc.font('Helvetica').fontSize(8);
-    tableData.forEach((row) => {
-      row.forEach((cell, i) => {
-        doc.text(cell, 50 + (i * cellWidth), y + cellPadding, {
-          width: cellWidth,
-          align: 'center'
+      // Collect PDF buffers
+      let buffers = [];
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => {
+        let pdfData = Buffer.concat(buffers);
+        resolve(pdfData);
+      });
+
+      // Set initial coordinates
+      const pageWidth = 515;
+      const startX = 40;
+      let startY = 50;
+
+      // Header Section with Logo
+      doc.image('logoprossima.png', startX, startY, { width: 80, height: 80 });
+
+      // Company header text with adjusted spacing
+      const headerTextX = startX + 100;
+      const headerTextWidth = pageWidth - 100;
+
+      doc.font('Helvetica-Bold')
+        .fontSize(16)
+        .text('KING SECURITY GUARDS SERVICES (P) LTD.',
+          headerTextX,
+          startY,
+          {
+            width: headerTextWidth,
+            align: 'center',
+            lineBreak: true
+          });
+
+      doc.fontSize(10)
+        .text('17/8 VIDHYAM KHAND GOMTI NAGAR NEAR LIC KNOW-226010 U.P, UTTAR PRADESH - 226010',
+          headerTextX,
+          startY + 45,
+          {
+            width: headerTextWidth,
+            align: 'center',
+            lineBreak: true
+          });
+
+      doc.moveDown(0.5);
+      doc.text('Telephone: 0522-4044135 | Email: corporate@kinggroupworld.com',
+        headerTextX,
+        null,
+        {
+          width: headerTextWidth,
+          align: 'center',
+          lineBreak: true
         });
+
+      // Title section with adjusted spacing
+      startY += 110;
+      doc.moveTo(startX, startY).lineTo(startX + pageWidth, startY).stroke();
+      doc.fontSize(14)
+        .text('PURCHASE ORDER',
+          startX,
+          startY + 10,
+          {
+            width: pageWidth,
+            align: 'center',
+            lineBreak: true
+          });
+      doc.moveTo(startX, startY + 30).lineTo(startX + pageWidth, startY + 30).stroke();
+
+      // Main content section with proper spacing
+      startY += 50;
+      const contentWidth = pageWidth / 2 - 10;
+
+      // Left section (Address Details)
+      const leftSection = startX;
+      const rightSection = startX + contentWidth + 20;
+
+      // Invoice To Box with text wrapping
+      doc.rect(leftSection, startY, contentWidth, 80).stroke();
+      doc.fontSize(11)
+        .text('Invoice To:',
+          leftSection + 10,
+          startY + 10,
+          {
+            width: contentWidth - 20,
+            lineBreak: true
+          });
+
+      // Format address with proper wrapping
+      const invoiceAddress = [
+        purchaseOrder.invoiceTo?.name || 'N/A',
+        purchaseOrder.invoiceTo?.address || '',
+        `${purchaseOrder.invoiceTo?.city || ''}, ${purchaseOrder.invoiceTo?.state || ''} - ${purchaseOrder.invoiceTo?.pin || ''}`
+      ].filter(Boolean).join('\n');
+
+      doc.fontSize(9)
+        .text(invoiceAddress,
+          leftSection + 10,
+          startY + 25,
+          {
+            width: contentWidth - 20,
+            lineBreak: true,
+            lineGap: 5
+          });
+
+      // Dispatch To Box with text wrapping
+      startY += 90;
+      doc.rect(leftSection, startY, contentWidth, 80).stroke();
+      doc.fontSize(11)
+        .text('Dispatch To:',
+          leftSection + 10,
+          startY + 10,
+          {
+            width: contentWidth - 20,
+            lineBreak: true
+          });
+
+      // Format dispatch address with proper wrapping
+      const dispatchAddress = [
+        purchaseOrder.dispatchTo?.name || 'N/A',
+        purchaseOrder.dispatchTo?.address || '',
+        `${purchaseOrder.dispatchTo?.city || ''}, ${purchaseOrder.dispatchTo?.state || ''} - ${purchaseOrder.dispatchTo?.pin || ''}`
+      ].filter(Boolean).join('\n');
+
+      doc.fontSize(9)
+        .text(dispatchAddress,
+          leftSection + 10,
+          startY + 25,
+          {
+            width: contentWidth - 20,
+            lineBreak: true,
+            lineGap: 5
+          });
+
+      // Right section (Order Details) with adjusted spacing
+      const rightContentStart = startY - 90;
+      doc.rect(rightSection, rightContentStart, contentWidth, 170).stroke();
+
+      const detailsData = [
+        ['Order No:', purchaseOrder.poCode || 'N/A'],
+        ['Order Date:', formatDate(purchaseOrder.poDate)],
+        ['GST No:', purchaseOrder.vendorGst || 'N/A'],
+        ['Supplier Ref:', purchaseOrder.supplierRef || 'N/A'],
+        ['Dispatch Through:', purchaseOrder.dispatchThrough || 'N/A'],
+        ['Project ID:', purchaseOrder.projectId.projectCode || 'N/A'],
+        ['Unit Name:', purchaseOrder.unitName || 'N/A'],
+        ['Terms of Payment:', purchaseOrder.paymentTerms || 'N/A'],
+        ['Terms of Delivery:', purchaseOrder.deliveryTerms || 'N/A'],
+        ['Date of Delivery:', formatDate(purchaseOrder.deliveryDate)]
+      ];
+
+      // Render details with proper wrapping
+      detailsData.forEach((detail, index) => {
+        const yPos = rightContentStart + 10 + (index * 15);
+        doc.fontSize(9)
+          .text(detail[0],
+            rightSection + 10,
+            yPos,
+            { continued: true });
+
+        doc.text(detail[1],
+          {
+            left: rightSection + 100,
+            width: contentWidth - 110,
+            lineBreak: true
+          });
       });
-      y += cellHeight;
-    });
 
-    // Draw lines
-    doc.lineWidth(1);
-    // Horizontal lines
-    for (let i = 0; i <= tableData.length + 1; i++) {
-      doc.moveTo(50, tableTop + (i * cellHeight))
-         .lineTo(doc.page.width - 50, tableTop + (i * cellHeight))
-         .stroke();
+      // Items Table with adjusted column widths
+      startY = rightContentStart + 190;
+      const tableTop = startY;
+
+      // Adjusted column widths to prevent overflow
+      const colWidths = {
+        desc: pageWidth * 0.25,    // Increased width for description
+        partNo: pageWidth * 0.1,
+        size: pageWidth * 0.07,
+        color: pageWidth * 0.07,
+        unit: pageWidth * 0.06,
+        qty: pageWidth * 0.06,
+        rate: pageWidth * 0.08,
+        amount: pageWidth * 0.08,
+        cgst: pageWidth * 0.08,
+        sgst: pageWidth * 0.08,
+        total: pageWidth * 0.07
+      };
+
+      // Draw table headers with proper spacing
+      let currentX = startX;
+      const headerHeight = 20;
+
+      Object.entries(colWidths).forEach(([key, width]) => {
+        doc.rect(currentX, tableTop, width, headerHeight).stroke();
+        doc.fontSize(8)
+          .text(key.toUpperCase(),
+            currentX + 2,
+            tableTop + 6,
+            {
+              width: width - 4,
+              align: 'center',
+              lineBreak: true
+            });
+        currentX += width;
+      });
+
+      // Draw items with proper text wrapping
+      let currentY = tableTop + headerHeight;
+      const rowHeight = 30;  // Increased height for better content fitting
+
+      if (purchaseOrder.items?.length > 0) {
+        purchaseOrder.items.forEach((item) => {
+          currentX = startX;
+          const subtotal = item.quantity * item.unitPrice;
+          const cgstAmount = (subtotal * (item.partCode?.ItemCode?.CGST_Rate || 0)) / 100;
+          const sgstAmount = (subtotal * (item.partCode?.ItemCode?.SGST_Rate || 0)) / 100;
+
+          Object.entries(colWidths).forEach(([key, width]) => {
+            doc.rect(currentX, currentY, width, rowHeight).stroke();
+
+            let value = '';
+            let align = 'left';
+
+            switch (key) {
+              case 'desc':
+                value = item.partCode?.ItemCode?.ItemName || 'N/A';
+                break;
+              case 'partNo':
+                value = item.partCode?.PartCodeNumber || 'N/A';
+                break;
+              case 'size':
+                value = item.partCode?.SizeName || '-';
+                break;
+              case 'color':
+                value = item.partCode?.ColourName || '-';
+                break;
+              case 'unit':
+                value = item.partCode?.MeasurementUnit || '-';
+                break;
+              case 'qty':
+                value = item.quantity.toString();
+                align = 'right';
+                break;
+              case 'rate':
+                value = item.unitPrice.toFixed(2);
+                align = 'right';
+                break;
+              case 'amount':
+                value = subtotal.toFixed(2);
+                align = 'right';
+                break;
+              case 'cgst':
+                value = `${item.partCode?.ItemCode?.CGST_Rate || 0}%\n${cgstAmount.toFixed(2)}`;
+                align = 'right';
+                break;
+              case 'sgst':
+                value = `${item.partCode?.ItemCode?.SGST_Rate || 0}%\n${sgstAmount.toFixed(2)}`;
+                align = 'right';
+                break;
+              case 'total':
+                value = (subtotal + cgstAmount + sgstAmount).toFixed(2);
+                align = 'right';
+                break;
+            }
+
+            doc.fontSize(8)
+              .text(value,
+                currentX + 2,
+                currentY + 6,
+                {
+                  width: width - 4,
+                  align,
+                  lineBreak: true
+                });
+
+            currentX += width;
+          });
+
+          currentY += rowHeight;
+        });
+      }
+
+      // Totals section with proper spacing
+      const totals = purchaseOrder.items?.reduce((acc, item) => {
+        const subtotal = item.quantity * item.unitPrice;
+        const cgst = (subtotal * (item.partCode?.ItemCode?.CGST_Rate || 0)) / 100;
+        const sgst = (subtotal * (item.partCode?.ItemCode?.SGST_Rate || 0)) / 100;
+
+        return {
+          subtotal: acc.subtotal + subtotal,
+          cgst: acc.cgst + cgst,
+          sgst: acc.sgst + sgst,
+          total: acc.total + subtotal + cgst + sgst
+        };
+      }, { subtotal: 0, cgst: 0, sgst: 0, total: 0 });
+
+      // Add totals with proper alignment
+      currentY += 20;
+      const totalsX = pageWidth - 150;
+      doc.fontSize(10);
+
+      ['Sub Total', 'CGST', 'SGST', 'Total'].forEach((label, index) => {
+        const amount = Object.values(totals)[index].toFixed(2);
+        doc.text(`${label}: ${amount}`,
+          totalsX,
+          currentY + (index * 15),
+          {
+            width: 150,
+            align: 'left',
+            lineBreak: true
+          });
+      });
+
+      // Signature section with proper spacing
+      const signatureY = doc.page.height - 150;
+      doc.fontSize(10)
+        .text('For KING SECURITY GUARDS SERVICES (P) LTD.',
+          pageWidth - 150,
+          signatureY,
+          {
+            width: 150,
+            align: 'center',
+            lineBreak: true
+          })
+        .moveDown(2)
+        .text('Authorized Signatory',
+          pageWidth - 150,
+          signatureY + 50,
+          {
+            width: 150,
+            align: 'center',
+            lineBreak: true
+          });
+
+      // Footer with proper spacing and wrapping
+      const footerText = [
+        'AN ISO 9001:2008,ISO14001:2015 AND OHSAS18001:2007 CERTIFIED',
+        'Regd Office:king House,270 Vohwas Khand Gomti Nagar,Lucknow-226010(U.P)',
+        'Phone: 0522-4044135 Fax: 0522-4068036',
+        'E-mail:corporate@kinggroupworld.com Web:www.kinggroupworld'
+      ].join('\n');
+
+      doc.fontSize(8)
+        .text(footerText,
+          startX,
+          doc.page.height - 50,
+          {
+            width: pageWidth,
+            align: 'center',
+            lineBreak: true,
+            lineGap: 2
+          });
+
+      doc.end();
+    } catch (error) {
+      reject(error);
     }
-    // Vertical lines
-    for (let i = 0; i <= tableHeaders.length; i++) {
-      doc.moveTo(50 + (i * cellWidth), tableTop)
-         .lineTo(50 + (i * cellWidth), tableTop + ((tableData.length + 1) * cellHeight))
-         .stroke();
-    }
-
-    // PO Narration
-    doc.moveDown();
-    doc.text(`PO Narration: ${purchaseOrder.poNarration || 'N/A'}`);
-
-    // Footer
-    doc.moveDown();
-    doc.fontSize(8).text('This is a computer-generated document. No signature is required.', { align: 'center' });
-
-    doc.end();
   });
 };
+
+module.exports = { generatePoPdf };
