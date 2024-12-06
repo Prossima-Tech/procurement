@@ -374,4 +374,227 @@ const generatePoPdf = (purchaseOrder) => {
   });
 };
 
-module.exports = { generatePoPdf };
+const generateInvoicePdf = (invoice) => {
+  // console.log("invoice in pdf service",invoice);
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: {
+          top: 50,
+          bottom: 50,
+          left: 40,
+          right: 40
+        },
+        bufferPages: true
+      });
+
+      // Collect PDF buffers
+      let buffers = [];
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => {
+        let pdfData = Buffer.concat(buffers);
+        resolve(pdfData);
+      });
+
+      // Set initial coordinates
+      const pageWidth = 515;
+      const startX = 40;
+      let startY = 50;
+
+      // Vendor Header
+      doc.font('Helvetica-Bold')
+        .fontSize(16)
+        .text(invoice.vendorId.name,
+          startX,
+          startY,
+          {
+            width: pageWidth,
+            align: 'center'
+          });
+
+      // Vendor Address
+      doc.fontSize(10)
+        .text(`${invoice.vendorId.address.line1}, ${invoice.vendorId.address.line2}`,
+          startX,
+          startY + 25,
+          {
+            width: pageWidth,
+            align: 'center'
+          });
+      doc.text(`${invoice.vendorId.address.city}, ${invoice.vendorId.address.state} - ${invoice.vendorId.address.pinCode}`,
+        {
+          width: pageWidth,
+          align: 'center'
+        });
+
+      // Three Column Section
+      startY += 80;
+      const columnWidth = pageWidth / 3;
+
+      // Bill To Details
+      doc.font('Helvetica-Bold').text('Bill To:', startX, startY);
+      doc.font('Helvetica')
+        .fontSize(9)
+        .text([
+          invoice.poId.invoiceTo.name,
+          invoice.poId.invoiceTo.address,
+          `${invoice.poId.invoiceTo.city}, ${invoice.poId.invoiceTo.state}`,
+          invoice.poId.invoiceTo.pin
+        ].join('\n'), startX, startY + 20);
+
+      // Dispatch To Details
+      doc.font('Helvetica-Bold')
+        .text('Dispatch To:', startX + columnWidth, startY);
+      doc.font('Helvetica')
+        .text([
+          invoice.poId.dispatchTo.name,
+          invoice.poId.dispatchTo.address,
+          `${invoice.poId.dispatchTo.city}, ${invoice.poId.dispatchTo.state}`,
+          invoice.poId.dispatchTo.pin
+        ].join('\n'), startX + columnWidth, startY + 20);
+
+      // Invoice Details
+      doc.font('Helvetica-Bold')
+        .text('Invoice Details:', startX + (columnWidth * 2), startY);
+      const invoiceDetails = [
+        ['Invoice No:', invoice.invoiceNumber],
+        ['Date:', new Date().toLocaleDateString()],
+        ['Place of Supply:', invoice.poId.destination || 'N/A'],
+        ['PO Date:', new Date(invoice.poId.poDate).toLocaleDateString()],
+        ['PO Number:', invoice.poId.poCode]
+      ];
+      
+      let detailY = startY + 20;
+      invoiceDetails.forEach(([label, value]) => {
+        doc.font('Helvetica-Bold')
+          .text(label, startX + (columnWidth * 2), detailY, { continued: true })
+          .font('Helvetica')
+          .text(` ${value}`);
+        detailY += 15;
+      });
+
+      // Items Table
+      startY += 120;
+      const tableTop = startY;
+      const tableHeaders = ['Part Code', 'Item Name', 'HSN/SAC', 'Qty', 'Unit Price', 'Base Amount', 'Tax Amount', 'Total'];
+      const colWidths = [80, 100, 60, 40, 60, 60, 60, 55];
+
+      // Draw Headers
+      let currentX = startX;
+      tableHeaders.forEach((header, i) => {
+        doc.rect(currentX, tableTop, colWidths[i], 20).stroke();
+        doc.font('Helvetica-Bold')
+          .fontSize(8)
+          .text(header, currentX + 2, tableTop + 6, { width: colWidths[i] - 4 });
+        currentX += colWidths[i];
+      });
+
+      // Draw Items
+      let currentY = tableTop + 20;
+      invoice.items.forEach(item => {
+        const taxAmount = item.cgstAmount + item.sgstAmount;
+        currentX = startX;
+        const rowHeight = 25;
+
+        const itemData = [
+          item.itemDetails.partCode,
+          item.itemDetails.itemName,
+          item.itemDetails.sacHsnCode,
+          item.acceptedQuantity.toString(),
+          `₹${item.unitPrice.toFixed(2)}`,
+          `₹${item.baseAmount.toFixed(2)}`,
+          `₹${taxAmount.toFixed(2)}`,
+          `₹${item.totalAmount.toFixed(2)}`
+        ];
+
+        itemData.forEach((text, i) => {
+          doc.rect(currentX, currentY, colWidths[i], rowHeight).stroke();
+          doc.font('Helvetica')
+            .fontSize(8)
+            .text(text, currentX + 2, currentY + 6, { width: colWidths[i] - 4 });
+          currentX += colWidths[i];
+        });
+
+        currentY += rowHeight;
+      });
+
+      // Tax Details and Total
+      startY = currentY + 20;
+      doc.font('Helvetica-Bold')
+        .fontSize(10)
+        .text('Tax Details:', startX, startY);
+
+      startY += 20;
+      const taxTable = [
+        ['Tax Type', 'Rate', 'Taxable Amount', 'Tax Amount'],
+        ['CGST', `${invoice.cgstRate}%`, `₹${invoice.subTotal.toFixed(2)}`, `₹${invoice.cgstAmount.toFixed(2)}`],
+        ['SGST', `${invoice.sgstRate}%`, `₹${invoice.subTotal.toFixed(2)}`, `₹${invoice.sgstAmount.toFixed(2)}`]
+      ];
+
+      taxTable.forEach((row, i) => {
+        currentX = startX;
+        row.forEach((cell, j) => {
+          doc.rect(currentX, startY, 100, 20).stroke();
+          doc.text(cell, currentX + 5, startY + 6);
+          currentX += 100;
+        });
+        startY += 20;
+      });
+
+      // Final Amounts
+      startY += 20;
+      const finalAmounts = [
+        ['Sub Total:', `₹${invoice.subTotal.toFixed(2)}`],
+        ['Total Tax:', `₹${(invoice.cgstAmount + invoice.sgstAmount).toFixed(2)}`],
+        ['Round Off:', `₹${(Math.round(invoice.totalAmount) - invoice.totalAmount).toFixed(2)}`],
+        ['Final Amount:', `₹${Math.round(invoice.totalAmount).toFixed(2)}`]
+      ];
+
+      finalAmounts.forEach(([label, amount]) => {
+        doc.font('Helvetica-Bold')
+          .text(label, pageWidth - 200, startY, { continued: true })
+          .font('Helvetica')
+          .text(amount, { align: 'right' });
+        startY += 15;
+      });
+
+      // Bank Details
+      startY += 20;
+      doc.font('Helvetica-Bold')
+        .text('Bank Details:', startX, startY);
+      startY += 15;
+      
+      const bankDetails = [
+        ['Bank Name:', invoice.vendorId.bankDetails.name],
+        ['Branch:', invoice.vendorId.bankDetails.branchName],
+        ['Account No:', invoice.vendorId.bankDetails.accountNumber],
+        ['IFSC Code:', invoice.vendorId.bankDetails.ifscCode]
+      ];
+
+      bankDetails.forEach(([label, value]) => {
+        doc.font('Helvetica-Bold')
+          .text(label, startX, startY, { continued: true })
+          .font('Helvetica')
+          .text(` ${value}`);
+        startY += 15;
+      });
+
+      // Signature
+      doc.font('Helvetica-Bold')
+        .text('Authorized Signatory',
+          pageWidth - 100,
+          doc.page.height - 100,
+          {
+            width: 100,
+            align: 'center'
+          });
+
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+module.exports = { generatePoPdf, generateInvoicePdf };
