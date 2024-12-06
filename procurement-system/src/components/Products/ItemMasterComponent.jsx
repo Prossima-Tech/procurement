@@ -5,7 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import axios from 'axios';
 import ItemForm from './ItemForm';
 import { Trash2, X, Pencil } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import { baseURL } from '../../utils/endpoint';
 const ItemModal = ({ isOpen, onClose, title, children }) => {
     const { isDarkMode } = useTheme();
@@ -270,6 +270,7 @@ const ItemMasterComponent = () => {
                         setIsModalOpen(true);
                     }}
                     isLoading={isLoading}
+                    enableClickableSearch={true}
                 />
             </div>
             <ItemModal
