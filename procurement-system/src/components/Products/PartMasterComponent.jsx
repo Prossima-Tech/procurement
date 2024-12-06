@@ -5,7 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import axios from 'axios';
 import PartForm from './partForm';
 import { Trash2, X, Pencil } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { toast ,ToastContainer} from 'react-toastify';
 import { baseURL } from '../../utils/endpoint';
 const PartModal = ({ isOpen, onClose, title, children }) => {
     const { isDarkMode } = useTheme();
@@ -281,6 +281,7 @@ const PartMasterComponent = () => {
     return (
         <>
             <div className='p-6'>
+                <ToastContainer />
                 <ListComponent
                     title="Part Master"
                     data={parts}
@@ -293,6 +294,7 @@ const PartMasterComponent = () => {
                     }}
                     onSearch={handleSearch}
                     isLoading={isLoading}
+                    enableClickableSearch={true}
                 />
             </div>
             <PartModal
