@@ -12,12 +12,7 @@ exports.authenticate = async (req, res, next) => {
       if (!user) {
         throw new Error('User not found');
       }
-  
-      console.log('Authenticated User:', {
-        id: user._id,
-        role: user.role,
-        permissions: user.permissions
-      });
+
   
       req.user = user;
       req.token = token;
@@ -33,13 +28,7 @@ exports.authenticate = async (req, res, next) => {
       if (!req.user) {
         return res.status(401).json({ message: 'User not authenticated' });
       }
-  
-      console.log('Authorization Check:', {
-        userRole: req.user.role,
-        userPermissions: req.user.permissions,
-        requiredRoles: roles,
-        requiredPermissions: permissions
-      });
+
   
       const hasRole = roles.length === 0 || roles.includes(req.user.role);
       const hasPermission = permissions.length === 0 || 
