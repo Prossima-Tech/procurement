@@ -60,7 +60,7 @@ const ListComponent = ({
                         onClick={onCreateNew}
                     >
                         <PlusCircle size={20} className="mr-2" />
-                        New {title.replace("Master", "")}
+                        New {title ? title.replace("Master", "") : ''}
                     </button>
                 </div>
             )}

@@ -2,35 +2,39 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Spin } from 'antd';
+import { Form, Input, Button, Card, Typography, Spin, Layout, Avatar, Select } from 'antd';
+import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+const { Title } = Typography;
+const { Content } = Layout;
+const { Option } = Select;
 
 const RegisterPage = () => {
-    const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [role, setRole] = useState('employee');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const { register } = useAuth();
     const navigate = useNavigate();
     const { isDarkMode } = useTheme();
-    const [loading, setLoading] = useState(false);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault(); 
+    const onFinish = async (values) => {
         setError('');
 
-        if (password !== confirmPassword) {
+        if (values.password !== values.confirmPassword) {
             setError("Passwords don't match");
+            toast.error("Passwords don't match");
             return;
         }
 
         setLoading(true);
         try {
-            await register(username, email, password, role);
+            await register(values.username, values.email, values.password, values.role);
             navigate('/');
         } catch (err) {
-            setError('Failed to register');
+            const errorMessage = err.response?.data?.message || 'Failed to register';
+            setError(errorMessage);
+            toast.error(errorMessage);
             console.error('Registration error:', err);
         } finally {
             setLoading(false);
@@ -38,110 +42,114 @@ const RegisterPage = () => {
     };
 
     return (
-        <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
-            <div className={`max-w-md w-full space-y-8 p-10 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-md`}>
-                <div>
-                    <h2 className={`mt-6 text-center text-3xl font-extrabold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        Create your account
-                    </h2>
-                </div>
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    <div className="rounded-md shadow-sm -space-y-px">
-                        <div>
-                            <label htmlFor="username" className="sr-only">Username</label>
-                            <input
-                                id="username"
-                                name="username"
-                                type="text"
-                                required
-                                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${isDarkMode ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-900'} placeholder-gray-500 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
-                                placeholder="Username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                            />
+        <Layout>
+            <Content className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+                <ToastContainer />
+                <div className="flex items-center justify-center min-h-screen px-4">
+                    <Card
+                        className={`w-full max-w-md ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}
+                        bordered={false}
+                    >
+                        <div className="text-center mb-8">
+                            <Avatar size={64} icon={<UserOutlined />} className="mb-4" />
+                            <Title level={2} className={isDarkMode ? 'text-white' : ''}>
+                                Create your account
+                            </Title>
                         </div>
-                        <div>
-                            <label htmlFor="email-address" className="sr-only">Email address</label>
-                            <input
-                                id="email-address"
-                                name="email"
-                                type="email"
-                                autoComplete="email"
-                                required
-                                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${isDarkMode ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-900'} placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
-                                placeholder="Email address"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="password" className="sr-only">Password</label>
-                            <input
-                                id="password"
-                                name="password"
-                                type="password"
-                                autoComplete="new-password"
-                                required
-                                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${isDarkMode ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-900'} placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="confirm-password" className="sr-only">Confirm Password</label>
-                            <input
-                                id="confirm-password"
-                                name="confirm-password"
-                                type="password"
-                                autoComplete="new-password"
-                                required
-                                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${isDarkMode ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-900'} placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
-                                placeholder="Confirm Password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="role" className="sr-only">Role</label>
-                            <select
-                                id="role"
-                                name="role"
-                                required
-                                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${isDarkMode ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-900'} placeholder-gray-500 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
-                                value={role}
-                                onChange={(e) => setRole(e.target.value)}
-                            >
-                                <option value="employee">Employee</option>
-                                <option value="manager">Manager</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                        </div>
-                    </div>
 
-                    {error && <div className="text-red-500 text-sm">{error}</div>}
-
-                    <div>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white 
-                            ${isDarkMode ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-indigo-600 hover:bg-indigo-700'}
-                            ${loading ? 'opacity-70 cursor-not-allowed' : ''}
-                            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+                        <Form
+                            name="register"
+                            onFinish={onFinish}
+                            layout="vertical"
+                            size="large"
+                            initialValues={{ role: 'employee' }}
                         >
-                            {loading ? (
-                                <Spin size="small" className="mr-2" />
-                            ) : null}
-                            {loading ? 'Creating account...' : 'Register'}
-                        </button>
-                    </div>
-                </form>
-                <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Already have an account? <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">Sign in</Link>
+                            <Form.Item
+                                name="username"
+                                rules={[{ required: true, message: 'Please input your username!' }]}
+                            >
+                                <Input
+                                    prefix={<UserOutlined />}
+                                    placeholder="Username"
+                                    className={isDarkMode ? 'bg-gray-700 text-white border-gray-600' : ''}
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="email"
+                                rules={[
+                                    { required: true, message: 'Please input your email!' },
+                                    { type: 'email', message: 'Please enter a valid email!' }
+                                ]}
+                            >
+                                <Input
+                                    prefix={<MailOutlined />}
+                                    placeholder="Email address"
+                                    className={isDarkMode ? 'bg-gray-700 text-white border-gray-600' : ''}
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="password"
+                                rules={[{ required: true, message: 'Please input your password!' }]}
+                            >
+                                <Input.Password
+                                    prefix={<LockOutlined />}
+                                    placeholder="Password"
+                                    className={isDarkMode ? 'bg-gray-700 text-white border-gray-600' : ''}
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="confirmPassword"
+                                rules={[{ required: true, message: 'Please confirm your password!' }]}
+                            >
+                                <Input.Password
+                                    prefix={<LockOutlined />}
+                                    placeholder="Confirm Password"
+                                    className={isDarkMode ? 'bg-gray-700 text-white border-gray-600' : ''}
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="role"
+                                rules={[{ required: true, message: 'Please select a role!' }]}
+                            >
+                                <Select
+                                    className={isDarkMode ? 'bg-gray-700 text-white border-gray-600' : ''}
+                                >
+                                    <Option value="employee">Employee</Option>
+                                    <Option value="manager">Manager</Option>
+                                    <Option value="admin">Admin</Option>
+                                </Select>
+                            </Form.Item>
+
+                            {error && (
+                                <div className="text-red-500 text-sm mb-4">{error}</div>
+                            )}
+
+                            <Form.Item>
+                                <Button
+                                    type="primary"
+                                    htmlType="submit"
+                                    block
+                                    loading={loading}
+                                >
+                                    {loading ? 'Creating account...' : 'Register'}
+                                </Button>
+                            </Form.Item>
+                        </Form>
+
+                        <div className={`text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Already have an account?{' '}
+                            <Link to="/login" className="text-blue-500 hover:text-blue-600">
+                                Sign in
+                            </Link>
+                        </div>
+                    </Card>
                 </div>
-            </div>
-        </div>
+            </Content>
+        </Layout>
     );
 };
 

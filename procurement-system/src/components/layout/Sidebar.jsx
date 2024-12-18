@@ -1,8 +1,7 @@
-/* eslint-disable react/prop-types */
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { ShoppingCart, Users, Package, Settings, ChevronRight, Home } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import LogoSVG from '../../assets/prossimaLogo.svg'; // Adjust the path if necessary
+import LogoSVG from '../../assets/prossimaLogo.svg';
 
 const AccordionItem = React.memo(({ title, icon, children, isCollapsed, isActive, onClick, onSubItemClick, setIsCollapsed }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -24,34 +23,35 @@ const AccordionItem = React.memo(({ title, icon, children, isCollapsed, isActive
     }, [isOpen, children, isCollapsed]);
 
     useEffect(() => {
-        if (isCollapsed) {
-            setIsOpen(false);
-        }
+        if (isCollapsed) setIsOpen(false);
     }, [isCollapsed]);
 
     return (
-        <div className={`border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} ${isActive ? (isDarkMode ? 'bg-gray-800' : 'bg-gray-100') : ''}`}>
+        <div className={`group ${isActive ? 'bg-gray-50/50 dark:bg-gray-800/50' : ''}`}>
             <button
-                className={`flex items-center w-full p-4 text-left ${isDarkMode ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'} transition-all duration-300 ${isActive ? (isDarkMode ? 'text-white' : 'text-black') : ''}`}
+                className="flex items-center w-full py-2.5 px-3 text-left transition-colors group-hover:bg-gray-50 dark:group-hover:bg-gray-800/80"
                 onClick={toggleOpen}
             >
-                <div className={`flex items-center justify-center w-8 h-8 transition-all duration-300 ${isCollapsed ? 'mx-auto' : ''}`}>{icon}</div>
+                <div className={`${isCollapsed ? 'mx-auto' : ''}`}>
+                    {React.cloneElement(icon, {
+                        size: 18,
+                        className: `text-gray-500 dark:text-gray-400 ${isActive ? 'text-blue-600 dark:text-blue-400' : ''}`
+                    })}
+                </div>
                 {!isCollapsed && (
                     <>
-                        <span className="ml-4 flex-grow font-medium text-base whitespace-nowrap overflow-hidden">{title}</span>
-                        <ChevronRight className={`transition-transform duration-300 ${isOpen ? 'transform rotate-90' : ''}`} />
+                        <span className={`ml-3 text-sm font-medium ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-200'}`}>
+                            {title}
+                        </span>
+                        <ChevronRight className={`ml-auto h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
                     </>
                 )}
             </button>
-            <div
-                ref={contentRef}
-                className={`overflow-hidden transition-all duration-300 ease-in-out ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}
-                style={{ maxHeight: '0px' }}
-            >
-                {children.map((subItem, subIndex) => (
+            <div ref={contentRef} className="overflow-hidden transition-all bg-gray-50/30 dark:bg-gray-900/30" style={{ maxHeight: '0px' }}>
+                {children.map((subItem, idx) => (
                     <div
-                        key={subIndex}
-                        className={`pl-16 pr-4 py-3 text-base ${isDarkMode ? 'text-gray-400 hover:bg-gray-800 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-black'} cursor-pointer transition-all duration-300`}
+                        key={idx}
+                        className="py-2 px-3 pl-9 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60 cursor-pointer"
                         onClick={() => onSubItemClick(subItem)}
                     >
                         {subItem}
@@ -68,48 +68,38 @@ const Sidebar = ({ onNavigate }) => {
     const [isCollapsed, setIsCollapsed] = useState(true);
     const [activeItem, setActiveItem] = useState(null);
     const { isDarkMode } = useTheme();
-    const sidebarRef = useRef(null);
     const timeoutRef = useRef(null);
 
-    const expandSidebar = () => {
+    const handleExpand = () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         setIsCollapsed(false);
     };
 
-    const collapseSidebar = () => {
-        timeoutRef.current = setTimeout(() => {
-            setIsCollapsed(true);
-        }, 300);
+    const handleCollapse = () => {
+        timeoutRef.current = setTimeout(() => setIsCollapsed(true), 300);
     };
 
-    useEffect(() => {
-        return () => {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        };
+    useEffect(() => () => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
     }, []);
 
     const menuItems = useMemo(() => [
-        { title: 'Dashboard', icon: <Home size={24} />, component: 'Dashboard' },
+        { title: 'Dashboard', icon: <Home />, component: 'Dashboard' },
         {
-            title: 'Orders', icon: <ShoppingCart size={24} />, subItems: [
-                'Request for Quotation',
-                'Purchase Orders',
-                'Goods Receipt Note',
-                'Quality Inspection'
-            ]
+            title: 'Orders',
+            icon: <ShoppingCart />,
+            subItems: ['Request for Quotation', 'Purchase Orders', 'Goods Receipt Note', 'Quality Inspection']
         },
-        { title: 'Vendors', icon: <Users size={24} />, component: 'Vendors' },
-        { title: 'Products', icon: <Package size={24} />, subItems: ['Item Master', 'Part Master'] },
-        { title: 'Config', icon: <Settings size={24} />, subItems: ['Size Master', 'Colour Master', 'MakerName Master', 'Unit of Measurement Master'] },
+        { title: 'Vendors', icon: <Users />, component: 'Vendors' },
+        { title: 'Products', icon: <Package />, subItems: ['Item Master', 'Part Master'] },
+        { title: 'Config', icon: <Settings />, subItems: ['Size Master', 'Colour Master', 'MakerName Master', 'Unit of Measurement Master'] },
     ], []);
 
     const handleItemClick = useCallback((index) => {
         setActiveItem(index);
         setIsCollapsed(false);
         const item = menuItems[index];
-        if (!item.subItems) {
-            onNavigate(item.component);
-        }
+        if (!item.subItems) onNavigate(item.component);
     }, [menuItems, onNavigate]);
 
     const handleSubItemClick = useCallback((mainItem, subItem) => {
@@ -118,34 +108,29 @@ const Sidebar = ({ onNavigate }) => {
 
     return (
         <div
-            ref={sidebarRef}
-            className={`h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'} shadow-xl transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'} relative`}
-            onMouseEnter={expandSidebar}
-            onMouseLeave={collapseSidebar}
+            className={`h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-60'}`}
+            onMouseEnter={handleExpand}
+            onMouseLeave={handleCollapse}
         >
-            <div className={`flex items-center h-20 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} px-4 transition-all duration-300`}>
+            <div className="h-14 flex items-center px-3 border-b border-gray-200 dark:border-gray-800">
                 <img
                     src={LogoSVG}
                     alt="Logo"
-                    className={`transition-all duration-300 ${isCollapsed ? 'w-12 h-12 mx-auto' : 'w-10 h-10 mr-3'}`}
+                    className={`transition-all duration-300 ${isCollapsed ? 'w-8 h-8 mx-auto' : 'w-7 h-7'}`}
                 />
-                <h1
-                    className={`font-semibold whitespace-nowrap overflow-hidden transition-all duration-300 ${isCollapsed
-                        ? 'w-0 opacity-0'
-                        : 'w-auto opacity-100'
-                        } ${isDarkMode ? 'text-white' : 'text-gray-800'}`}
-                >
-                    <span className="text-xl">Prossima</span>
-                    <span className="text-xl font-bold text-blue-500">Tech</span>
-                </h1>
+                {!isCollapsed && (
+                    <h1 className="ml-2.5 text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                        Prossima<span className="text-blue-600">Tech</span>
+                    </h1>
+                )}
             </div>
-            <nav className="mt-4 overflow-y-auto" style={{ height: 'calc(100vh - 80px)' }}>
+            <nav className="py-2 space-y-0.5 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700"
+                style={{ height: 'calc(100vh - 56px)' }}>
                 {menuItems.map((item, index) => (
                     item.subItems ? (
                         <AccordionItem
                             key={index}
-                            title={item.title}
-                            icon={item.icon}
+                            {...item}
                             isCollapsed={isCollapsed}
                             isActive={activeItem === index}
                             onClick={() => handleItemClick(index)}
@@ -157,11 +142,22 @@ const Sidebar = ({ onNavigate }) => {
                     ) : (
                         <div
                             key={index}
-                            className={`flex items-center p-4 ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} cursor-pointer transition-all duration-300 ${activeItem === index ? (isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-200 text-black') : (isDarkMode ? 'text-gray-300' : 'text-gray-700')}`}
                             onClick={() => handleItemClick(index)}
+                            className={`group flex items-center py-2.5 px-3 cursor-pointer transition-colors
+                                ${activeItem === index ? 'bg-gray-50/50 dark:bg-gray-800/50' : ''}
+                                hover:bg-gray-50 dark:hover:bg-gray-800/80`}
                         >
-                            <div className={`flex items-center justify-center w-8 h-8 transition-all duration-300 ${isCollapsed ? 'mx-auto' : ''}`}>{item.icon}</div>
-                            {!isCollapsed && <span className="ml-4 font-medium text-base whitespace-nowrap overflow-hidden">{item.title}</span>}
+                            <div className={`${isCollapsed ? 'mx-auto' : ''}`}>
+                                {React.cloneElement(item.icon, {
+                                    size: 18,
+                                    className: `text-gray-500 dark:text-gray-400 ${activeItem === index ? 'text-blue-600 dark:text-blue-400' : ''}`
+                                })}
+                            </div>
+                            {!isCollapsed && (
+                                <span className={`ml-3 text-sm font-medium ${activeItem === index ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-200'}`}>
+                                    {item.title}
+                                </span>
+                            )}
                         </div>
                     )
                 ))}
@@ -172,4 +168,7 @@ const Sidebar = ({ onNavigate }) => {
 
 Sidebar.displayName = 'Sidebar';
 
-export default React.memo(Sidebar);
+const MemoizedSidebar = React.memo(Sidebar);
+MemoizedSidebar.displayName = 'MemoizedSidebar';
+
+export default MemoizedSidebar;
