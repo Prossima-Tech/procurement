@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import { Form, Input, Select, Space, Button } from 'antd';
 import { useState, useEffect } from 'react';
 import axios from 'axios';

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Modal, Button, Input, Space, Card, Typography, Form } from 'antd';
+import { Table, Modal, Button, Input, Space, Card, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import axios from 'axios';
@@ -147,15 +147,15 @@ const ItemMasterComponent = () => {
             key: 'actions',
             render: (_, record) => (
                 <Space>
-                    <Button 
-                        type="text" 
-                        icon={<EditOutlined />} 
+                    <Button
+                        type="text"
+                        icon={<EditOutlined />}
                         onClick={() => handleEdit(record)}
                     />
-                    <Button 
-                        type="text" 
-                        danger 
-                        icon={<DeleteOutlined />} 
+                    <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
                         onClick={() => handleDelete(record._id, record.ItemName)}
                     />
                 </Space>
@@ -174,8 +174,8 @@ const ItemMasterComponent = () => {
                             onSearch={(value) => fetchItems(1, 10, value)}
                             style={{ width: 250 }}
                         />
-                        <Button 
-                            type="primary" 
+                        <Button
+                            type="primary"
                             icon={<PlusOutlined />}
                             onClick={handleCreateNew}
                         >
