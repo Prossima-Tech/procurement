@@ -11,7 +11,6 @@ import {
   ChevronDown, ShoppingCart, Settings
 } from 'lucide-react';
 
-
 const InternalForm = () => {
   const navigate = useNavigate();
 
@@ -70,7 +69,6 @@ const InternalForm = () => {
         }
       ]);
       toast.success('Item added successfully');
-      // Reset input after adding
       setNewItemInput({
         name: '',
         quantity: 1
@@ -86,7 +84,6 @@ const InternalForm = () => {
       try {
         setLoading(true);
         const response = await axios.get(`${baseURL}/items`);
-        console.log("response for availabe item",response.data.data);
         setAvailableItems(response.data.data);
         setError(null);
       } catch (err) {
@@ -114,21 +111,16 @@ const InternalForm = () => {
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [projectError, setProjectError] = useState(null);
 
-  // Add these state variables at the top with your other states
   const [employees, setEmployees] = useState([]);
   const [managers, setManagers] = useState([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
 
-  // Add this function to fetch users
   const fetchUsers = async () => {
     setIsLoadingUsers(true);
     try {
       const response = await axios.get(`${baseURL}/users`);
-      
-      // Filter users based on their roles
       const employeesList = response.data.filter(user => user.role === 'employee');
       const managersList = response.data.filter(user => user.role === 'manager');
-      
       setEmployees(employeesList);
       setManagers(managersList);
     } catch (error) {
@@ -139,7 +131,6 @@ const InternalForm = () => {
     }
   };
 
-  // Add this useEffect to fetch users when component mounts
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -208,7 +199,6 @@ const InternalForm = () => {
           itemCode: selectedItem.ItemCode
         }
       ]);
-      console.log("selectedItems",selectedItems);
       toast.success('Item added successfully');
       setShowQuantityPopup(false);
       setSelectedItem(null);
@@ -239,12 +229,12 @@ const InternalForm = () => {
       prevItems.map((item, i) => {
         if (i === index) {
           if (item.quantity <= 1) {
-            return null; // This item will be filtered out
+            return null;
           }
           return { ...item, quantity: item.quantity - 1 };
         }
         return item;
-      }).filter(Boolean) // Remove null items
+      }).filter(Boolean)
     );
   };
 
@@ -300,7 +290,7 @@ const InternalForm = () => {
         priority: formData.priority,
         status: "submitted"
       };
-      console.log("submitData",submitData);
+
       const response = await axios.post(`${baseURL}/indents/`, submitData);
 
       if (response.data.success) {
@@ -333,7 +323,6 @@ const InternalForm = () => {
     setProjectError(null);
     try {
       const response = await axios.get(`${baseURL}/projects/`);
-      // Transform the API data to match our required format
       const transformedProjects = response.data.map(project => ({
         id: project.projectCode,
         name: `${project.projectName} (${project.projectLocation || 'N/A'})`,
@@ -345,7 +334,6 @@ const InternalForm = () => {
       console.error('Error fetching projects:', error);
       toast.error('Failed to load projects');
       setProjectError('Failed to load projects. Please try again later.');
-      // Fallback dummy data
       setAvailableProjects([
         { id: '001', name: 'Lucknow Office (LKO)', status: 'Active' },
         { id: '002D', name: 'Delhi', status: 'Active' }
@@ -360,20 +348,17 @@ const InternalForm = () => {
     setUnitError(null);
     try {
       const response = await axios.get(`${baseURL}/units/`);
-      // Transform the API data to match our required format
       const transformedUnits = response.data.map(unit => ({
         id: unit._id,
         code: unit.unitCode,
         name: unit.unitName,
         status: unit.unitStatus
       }));
-      console.log("transformedUnits",transformedUnits);
       setAvailableUnits(transformedUnits);
     } catch (error) {
       console.error('Error fetching units:', error);
       toast.error('Failed to load units');
       setUnitError('Failed to load units. Please try again later.');
-      // Fallback dummy data
       setAvailableUnits([
         { id: '1', code: 'IT', name: 'IT Department', status: 'Active' },
         { id: '2', code: 'HR', name: 'Human Resources', status: 'Active' },
@@ -394,74 +379,54 @@ const InternalForm = () => {
   }, []);
 
   const handleLogout = () => {
-    // Clear any stored tokens/user data
     localStorage.removeItem('token');
     localStorage.removeItem('userData');
-    // Redirect to login page
     navigate('/login');
   };
 
   return (
     <div className="min-h-screen bg-gray-50/50">
-      {/* Modern Navigation */}
-      <nav className="bg-white border-b px-6 py-4 fixed top-0 w-full z-50 shadow-sm">
+      <nav className="bg-white border-b px-4 py-2 fixed top-0 w-full z-50 shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-3">
-              <ShoppingCart size={24} className="text-indigo-600" />
-              <h1 className="text-xl font-semibold text-gray-800">Procurement Hub</h1>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <ShoppingCart size={20} className="text-indigo-600" />
+              <h1 className="text-lg font-semibold text-gray-800">Procurement Hub</h1>
             </div>
-            {/* <div className="hidden md:flex items-center gap-6">
-              <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-                <Package size={18} />
-                <span>Orders</span>
-              </button>
-              <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-                <Users size={18} />
-                <span>Team</span>
-              </button>
-              <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-                <Settings size={18} />
-                <span>Settings</span>
-              </button>
-            </div> */}
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-1 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
             <span>Sign Out</span>
           </button>
         </div>
       </nav>
 
-      {/* Main Content */}
-      <div className="pt-24 pb-12 px-6">
+      <div className="pt-16 pb-8 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-semibold text-gray-800">New Purchase Request</h2>
-            <div className="flex items-center gap-3">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold text-gray-800">New Purchase Request</h2>
+            <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Request ID:</span>
-              <span className="px-3 py-1 bg-gray-100 rounded-full text-sm font-medium text-gray-700">
+              <span className="px-2 py-1 bg-gray-100 rounded-full text-sm font-medium text-gray-700">
                 PR-{Math.random().toString(36).substr(2, 9).toUpperCase()}
               </span>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Request Details Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-6 border-b border-gray-100">
-                <h3 className="text-lg font-medium text-gray-800 flex items-center gap-2">
-                  <Users size={20} className="text-indigo-500" />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+              <div className="p-4 border-b border-gray-100">
+                <h3 className="text-base font-medium text-gray-800 flex items-center gap-2">
+                  <Users size={18} className="text-indigo-500" />
                   Request Details
                 </h3>
               </div>
               
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Employee Selection */}
-                <div className="space-y-4">
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
                   <label className="block text-sm font-medium text-gray-700">
                     Requesting Employee
                   </label>
@@ -470,7 +435,7 @@ const InternalForm = () => {
                       name="employeeCode"
                       value={formData.employeeCode}
                       onChange={handleInputChange}
-                      className="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-lg appearance-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
+                      className="w-full pl-3 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg appearance-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
                       required
                     >
                       <option value="">
@@ -483,21 +448,20 @@ const InternalForm = () => {
                       ))}
                     </select>
                     <ChevronDown 
-                      size={20} 
+                      size={16} 
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" 
                     />
                   </div>
                   <input
                     type="email"
                     value={formData.employeeEmail}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg"
                     placeholder="Employee Email"
                     readOnly
                   />
                 </div>
 
-                {/* Manager Selection */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <label className="block text-sm font-medium text-gray-700">
                     Approving Manager
                   </label>
@@ -506,7 +470,7 @@ const InternalForm = () => {
                       name="managerId"
                       value={formData.managerId}
                       onChange={handleInputChange}
-                      className="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-lg appearance-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
+                      className="w-full pl-3 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg appearance-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
                       required
                     >
                       <option value="">
@@ -519,7 +483,7 @@ const InternalForm = () => {
                       ))}
                     </select>
                     <ChevronDown 
-                      size={20} 
+                      size={16} 
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" 
                     />
                   </div>
@@ -527,18 +491,16 @@ const InternalForm = () => {
               </div>
             </div>
 
-            {/* Organization Details Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-6 border-b border-gray-100">
-                <h3 className="text-lg font-medium text-gray-800 flex items-center gap-2">
-                  <Building2 size={20} className="text-indigo-500" />
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+              <div className="p-4 border-b border-gray-100">
+                <h3 className="text-base font-medium text-gray-800 flex items-center gap-2">
+                  <Building2 size={18} className="text-indigo-500" />
                   Organization Details
                 </h3>
               </div>
               
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Unit Selection */}
-                <div className="space-y-4">
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
                   <label className="block text-sm font-medium text-gray-700">
                     Business Unit
                   </label>
@@ -547,7 +509,7 @@ const InternalForm = () => {
                       name="unit"
                       value={formData.unit}
                       onChange={handleInputChange}
-                      className="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-lg appearance-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
+                      className="w-full pl-3 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg appearance-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
                       required
                     >
                       <option value="">
@@ -560,14 +522,13 @@ const InternalForm = () => {
                       ))}
                     </select>
                     <ChevronDown 
-                      size={20} 
+                      size={16} 
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" 
                     />
                   </div>
                 </div>
 
-                {/* Project Selection */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <label className="block text-sm font-medium text-gray-700">
                     Project
                   </label>
@@ -576,7 +537,7 @@ const InternalForm = () => {
                       name="project"
                       value={formData.project}
                       onChange={handleInputChange}
-                      className="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-lg appearance-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
+                      className="w-full pl-3 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg appearance-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
                       required
                     >
                       <option value="">
@@ -589,7 +550,7 @@ const InternalForm = () => {
                       ))}
                     </select>
                     <ChevronDown 
-                      size={20} 
+                      size={16} 
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" 
                     />
                   </div>
@@ -597,29 +558,26 @@ const InternalForm = () => {
               </div>
             </div>
 
-            {/* Items Section */}
-            <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-              {/* Available Items */}
-              <div className="xl:col-span-3 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
-                  <h3 className="text-lg font-medium text-gray-800 flex items-center gap-2">
-                    <Package size={20} className="text-indigo-500" />
+            <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
+              <div className="xl:col-span-3 bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-4 border-b border-gray-100">
+                  <h3 className="text-base font-medium text-gray-800 flex items-center gap-2">
+                    <Package size={18} className="text-indigo-500" />
                     Available Items
                   </h3>
                 </div>
 
-                <div className="p-6 space-y-6">
-                  {/* Custom Item Input */}
-                  <div className="bg-gray-50/50 rounded-lg p-4 border border-gray-100">
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Add Custom Item</h4>
-                    <div className="flex gap-3">
+                <div className="p-4 space-y-4">
+                  <div className="bg-gray-50/50 rounded-lg p-3 border border-gray-100">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Add Custom Item</h4>
+                    <div className="flex gap-2">
                       <input
                         type="text"
                         name="name"
                         placeholder="Item name"
                         value={newItemInput.name}
                         onChange={handleNewItemInputChange}
-                        className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
+                        className="flex-1 px-3 py-1 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
                       />
                       <input
                         type="number"
@@ -627,40 +585,38 @@ const InternalForm = () => {
                         min="1"
                         value={newItemInput.quantity}
                         onChange={handleNewItemInputChange}
-                        className="w-24 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
+                        className="w-20 px-3 py-1 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
                       />
                       <button
                         type="button"
                         onClick={handleAddNewItem}
-                        className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors flex items-center gap-2"
+                        className="px-3 py-1 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors flex items-center gap-1"
                       >
-                        <Plus size={18} />
+                        <Plus size={16} />
                         Add
                       </button>
                     </div>
                   </div>
 
-                  {/* Search */}
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                     <input
                       type="text"
                       placeholder="Search items by name or code..."
                       value={itemInput}
                       onChange={(e) => setItemInput(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
+                      className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
                     />
                   </div>
 
-                  {/* Items List */}
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                     {loading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                      <div className="flex items-center justify-center py-6">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
                       </div>
                     ) : error ? (
-                      <div className="flex items-center justify-center py-8 text-red-500 gap-2">
-                        <AlertCircle size={20} />
+                      <div className="flex items-center justify-center py-6 text-red-500 gap-2">
+                        <AlertCircle size={16} />
                         <span>{error}</span>
                       </div>
                     ) : (
@@ -674,20 +630,20 @@ const InternalForm = () => {
                             key={item._id}
                             type="button"
                             onClick={() => handleItemSelect(item)}
-                            className="w-full text-left p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50/50 transition-all group"
+                            className="w-full text-left p-3 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50/50 transition-all group"
                           >
                             <div className="flex justify-between items-start">
                               <div>
-                                <h4 className="font-medium text-gray-800 group-hover:text-indigo-600 transition-colors">
+                                <h4 className="text-sm font-medium text-gray-800 group-hover:text-indigo-600 transition-colors">
                                   {item.ItemName}
                                 </h4>
-                                <div className="flex items-center gap-3 mt-1">
-                                  <span className="text-sm text-gray-500">Code: {item.ItemCode}</span>
-                                  <span className="text-sm text-gray-500">Type: {item.type}</span>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-xs text-gray-500">Code: {item.ItemCode}</span>
+                                  <span className="text-xs text-gray-500">Type: {item.type}</span>
                                 </div>
                               </div>
                               <span className="p-1 rounded-full bg-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                <Plus size={18} />
+                                <Plus size={14} />
                               </span>
                             </div>
                           </button>
@@ -697,25 +653,24 @@ const InternalForm = () => {
                 </div>
               </div>
 
-              {/* Selected Items */}
-              <div className="xl:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
-                  <h3 className="text-lg font-medium text-gray-800 flex items-center gap-2">
-                    <ShoppingCart size={20} className="text-indigo-500" />
+              <div className="xl:col-span-2 bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-4 border-b border-gray-100">
+                  <h3 className="text-base font-medium text-gray-800 flex items-center gap-2">
+                    <ShoppingCart size={18} className="text-indigo-500" />
                     Selected Items
-                    <span className="ml-auto text-sm text-gray-500">
+                    <span className="ml-auto text-xs text-gray-500">
                       {selectedItems.length} items
                     </span>
                   </h3>
                 </div>
 
-                <div className="p-6">
-                  <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                <div className="p-4">
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                     {selectedItems.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed border-gray-200 rounded-lg">
-                        <Package size={48} className="text-gray-300 mb-3" />
-                        <p className="text-gray-500 text-center">No items selected yet</p>
-                        <p className="text-sm text-gray-400 text-center mt-1">
+                      <div className="flex flex-col items-center justify-center py-8 px-4 border-2 border-dashed border-gray-200 rounded-lg">
+                        <Package size={32} className="text-gray-300 mb-2" />
+                        <p className="text-sm text-gray-500 text-center">No items selected yet</p>
+                        <p className="text-xs text-gray-400 text-center mt-1">
                           Select items from the list or add custom items
                         </p>
                       </div>
@@ -723,21 +678,21 @@ const InternalForm = () => {
                       selectedItems.map((item, index) => (
                         <div 
                           key={item.id || item._id} 
-                          className="group relative bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-all"
+                          className="group relative bg-white border border-gray-200 rounded-lg p-3 hover:border-gray-300 transition-all"
                         >
                           <div className="flex flex-col gap-2">
                             <div className="flex items-start justify-between">
                               <div>
-                                <h4 className="font-medium text-gray-800">
+                                <h4 className="text-sm font-medium text-gray-800">
                                   {item.ItemName}
                                   {item.isCustom && (
-                                    <span className="ml-2 text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded-full">
+                                    <span className="ml-2 text-xs px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full">
                                       Custom
                                     </span>
                                   )}
                                 </h4>
                                 {!item.isCustom && item.ItemCode && (
-                                  <p className="text-sm text-gray-500 mt-1">Code: {item.ItemCode}</p>
+                                  <p className="text-xs text-gray-500 mt-1">Code: {item.ItemCode}</p>
                                 )}
                               </div>
                               <button
@@ -745,30 +700,30 @@ const InternalForm = () => {
                                 onClick={() => removeItem(index)}
                                 className="p-1 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
                               >
-                                <X size={18} />
+                                <X size={14} />
                               </button>
                             </div>
-                            <div className="flex items-center gap-3 mt-2">
+                            <div className="flex items-center gap-2 mt-1">
                               <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
                                 <button
                                   type="button"
                                   onClick={() => decrementQuantity(index)}
-                                  className="p-2 hover:bg-gray-50 text-gray-600"
+                                  className="p-1 hover:bg-gray-50 text-gray-600"
                                 >
-                                  <Minus size={16} />
+                                  <Minus size={14} />
                                 </button>
-                                <span className="px-4 py-2 font-medium text-gray-700 bg-gray-50">
+                                <span className="px-3 py-1 font-medium text-sm text-gray-700 bg-gray-50">
                                   {item.quantity}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => incrementQuantity(index)}
-                                  className="p-2 hover:bg-gray-50 text-gray-600"
+                                  className="p-1 hover:bg-gray-50 text-gray-600"
                                 >
-                                  <Plus size={16} />
+                                  <Plus size={14} />
                                 </button>
                               </div>
-                              <span className="text-sm text-gray-500">units</span>
+                              <span className="text-xs text-gray-500">units</span>
                             </div>
                           </div>
                         </div>
@@ -779,18 +734,16 @@ const InternalForm = () => {
               </div>
             </div>
 
-            {/* Request Details */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-6 border-b border-gray-100">
-                <h3 className="text-lg font-medium text-gray-800 flex items-center gap-2">
-                  <Briefcase size={20} className="text-indigo-500" />
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+              <div className="p-4 border-b border-gray-100">
+                <h3 className="text-base font-medium text-gray-800 flex items-center gap-2">
+                  <Briefcase size={18} className="text-indigo-500" />
                   Request Information
                 </h3>
               </div>
               
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Purpose */}
-                <div className="space-y-4">
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
                   <label className="block text-sm font-medium text-gray-700">
                     Purpose
                     <span className="text-red-500 ml-1">*</span>

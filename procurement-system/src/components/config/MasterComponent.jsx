@@ -1,13 +1,16 @@
-/* eslint-disable react/prop-types */
 import { useState, useEffect, useCallback } from 'react';
+import { Table, Input, Button, Card, Space, Popconfirm, message } from 'antd';
+import { PlusOutlined, SearchOutlined, DeleteOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Search, Plus, Trash2 } from 'lucide-react';
+
+const { Search: AntSearch } = Input;
 
 const MasterComponent = ({ title, searchEndpoint, getAllEndpoint, createEndpoint, deleteEndpoint }) => {
     const [items, setItems] = useState([]);
     const [newItemName, setNewItemName] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [loading, setLoading] = useState(false);
     const { isDarkMode } = useTheme();
 
     // Debounced search handler using useCallback
@@ -22,7 +25,7 @@ const MasterComponent = ({ title, searchEndpoint, getAllEndpoint, createEndpoint
     useEffect(() => {
         const timer = setTimeout(() => {
             debouncedSearch(searchQuery);
-        }, 300); // Debounce time in milliseconds
+        }, 300);
 
         return () => clearTimeout(timer);
     }, [searchQuery, debouncedSearch]);
@@ -33,130 +36,138 @@ const MasterComponent = ({ title, searchEndpoint, getAllEndpoint, createEndpoint
 
     const fetchItems = async () => {
         try {
+            setLoading(true);
             const response = await axios.get(getAllEndpoint);
             setItems(response.data.data);
         } catch (error) {
-            alert(error + 'Failed to fetch items');
+            message.error('Failed to fetch items: ' + error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleCreate = async () => {
         if (!newItemName.trim()) {
-            alert('Please enter a name');
+            message.warning('Please enter a name');
             return;
         }
         try {
+            setLoading(true);
             await axios.post(createEndpoint, { name: newItemName });
-            alert('Item created successfully');
+            message.success('Item created successfully');
             setNewItemName('');
             fetchItems();
         } catch (error) {
-            alert(error + 'Failed to create item');
+            message.error('Failed to create item: ' + error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleSearch = async (query) => {
         try {
+            setLoading(true);
             const response = await axios.get(`${searchEndpoint}?query=${query}`);
             setItems(response.data.data);
         } catch (error) {
-            alert(error + 'Failed to search items');
+            message.error('Failed to search items: ' + error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this item?')) {
-            try {
-                await axios.delete(`${deleteEndpoint}/${id}`);
-                alert('Item deleted successfully');
-                fetchItems();
-            } catch (error) {
-                alert(error + 'Failed to delete item');
-            }
+        try {
+            setLoading(true);
+            await axios.delete(`${deleteEndpoint}/${id}`);
+            message.success('Item deleted successfully');
+            fetchItems();
+        } catch (error) {
+            message.error('Failed to delete item: ' + error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
-    return (
-        <div className={`p-6 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'} rounded-lg shadow-md`}>
-            <h2 className="text-2xl font-bold mb-6">{title}</h2>
+    const columns = [
+        {
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+        },
+        {
+            title: 'Actions',
+            key: 'actions',
+            align: 'right',
+            render: (_, record) => (
+                <Popconfirm
+                    title="Delete Item"
+                    description="Are you sure you want to delete this item?"
+                    onConfirm={() => handleDelete(record._id)}
+                    okText="Yes"
+                    cancelText="No"
+                >
+                    <Button 
+                        type="link" 
+                        danger 
+                        icon={<DeleteOutlined />}
+                    />
+                </Popconfirm>
+            ),
+        },
+    ];
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="space-y-2">
-                    <h3 className="text-lg font-semibold">Create New {title}</h3>
-                    <div className="flex">
-                        <input
-                            type="text"
+    return (
+        <Card 
+            title={title}
+            className={isDarkMode ? 'bg-gray-800 text-white' : ''}
+        >
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                {/* Create Section */}
+                <Card size="small" title={`Create New ${title}`}>
+                    <Space.Compact style={{ width: '100%' }}>
+                        <Input
                             value={newItemName}
                             onChange={(e) => setNewItemName(e.target.value)}
                             placeholder={`Enter ${title} name`}
-                            className="flex-grow mr-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onPressEnter={handleCreate}
                         />
-                        <button
+                        <Button 
+                            type="primary"
+                            icon={<PlusOutlined />}
                             onClick={handleCreate}
-                            className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            loading={loading}
                         >
-                            <Plus size={18} className="mr-2" />
                             Create
-                        </button>
-                    </div>
-                </div>
+                        </Button>
+                    </Space.Compact>
+                </Card>
 
-                <div className="space-y-2">
-                    <h3 className="text-lg font-semibold">Search {title}</h3>
-                    <div className="flex">
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder={`Search ${title}`}
-                            className="flex-grow mr-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <button
-                            onClick={() => handleSearch(searchQuery)}
-                            className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                        >
-                            <Search size={18} className="mr-2" />
-                            Search
-                        </button>
-                    </div>
-                </div>
-            </div>
+                {/* Search Section */}
+                <Card size="small" title={`Search ${title}`}>
+                    <AntSearch
+                        placeholder={`Search ${title}`}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onSearch={handleSearch}
+                        enterButton={<Button icon={<SearchOutlined />}>Search</Button>}
+                    />
+                </Card>
 
-            <div>
-                <h3 className="text-lg font-semibold mb-3">{title} List</h3>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className={isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}>
-                            <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Name
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className={isDarkMode ? 'bg-gray-800 divide-y divide-gray-700' : 'bg-white divide-y divide-gray-200'}>
-                            {items.map((item) => (
-                                <tr key={item._id}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                        {item.name}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button
-                                            onClick={() => handleDelete(item._id)}
-                                            className={`text-red-600 ml-5 hover:text-red-900 focus:outline-none`}
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+                {/* Table Section */}
+                <Table
+                    columns={columns}
+                    dataSource={items}
+                    rowKey="_id"
+                    loading={loading}
+                    pagination={{
+                        pageSize: 10,
+                        showTotal: (total, range) => 
+                            `${range[0]}-${range[1]} of ${total} items`,
+                    }}
+                />
+            </Space>
+        </Card>
     );
 };
 

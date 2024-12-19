@@ -6,7 +6,12 @@ import { Trash2, X, Pencil } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from 'react-toastify';
 import { baseURL } from '../../utils/endpoint';
-import { Modal } from 'antd';
+import { Modal, Table, Button, Input, Space, Card, Typography, Form } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+
+const { Title } = Typography;
+const { Search } = Input;
+
 const VendorsComponent = () => {
     const { isDarkMode } = useTheme();
     const [vendors, setVendors] = useState([]);
@@ -106,7 +111,6 @@ const VendorsComponent = () => {
             setError(null);
             
             if (editingVendor) {
-                // Handle edit case directly
                 setIsLoading(true);
                 await axios.put(
                     `${baseURL}/vendors/${editingVendor._id}`,
@@ -125,7 +129,7 @@ const VendorsComponent = () => {
             } else {
                 // For new vendor, show password modal
                 setTempFormData(formData);
-                setIsModalOpen(false); // Close the form modal
+                setIsModalOpen(false);
                 setIsPasswordModalVisible(true);
             }
         } catch (err) {
@@ -137,21 +141,15 @@ const VendorsComponent = () => {
         }
     };
 
-    const handlePasswordChange = (e) => {
-        const { name, value } = e.target;
-        setPasswordData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-        setPasswordError('');
-    };
-
     const handlePasswordSubmit = async () => {
-        if (passwordData.password !== passwordData.confirmPassword) {
+        const [form] = Form.useForm();
+        const values = await form.validateFields();
+        
+        if (values.password !== values.confirmPassword) {
             setPasswordError("Passwords don't match");
             return;
         }
-        if (passwordData.password.length < 6) {
+        if (values.password.length < 6) {
             setPasswordError("Password must be at least 6 characters long");
             return;
         }
@@ -162,10 +160,9 @@ const VendorsComponent = () => {
 
             const completeData = {
                 ...tempFormData,
-                password: passwordData.password
+                password: values.password
             };
 
-            // Use vendor-register endpoint for creating new vendor
             await axios.post(
                 `${baseURL}/auth/vendor-register`,
                 completeData,
@@ -180,7 +177,7 @@ const VendorsComponent = () => {
             toast.success('Vendor registered successfully!', toastConfig);
             await fetchVendors();
             setIsPasswordModalVisible(false);
-            setPasswordData({ password: '', confirmPassword: '' });
+            form.resetFields();
             setTempFormData(null);
         } catch (err) {
             const errorMessage = err.response?.data?.message || 'Failed to register vendor';
@@ -256,150 +253,165 @@ const VendorsComponent = () => {
         );
     };
 
-    const columns = [
-        { header: 'Vendor Code', key: 'vendorCode' },
-        { header: 'Name', key: 'name' },
-        { header: 'Contact Person', key: 'contactPerson' },
-        { header: 'Mobile', key: 'mobileNumber' },
-        { header: 'City', key: 'address', render: (item) => item.address?.city || '-' },
-        { header: 'State', key: 'address', render: (item) => item.address?.state || '-' },
+    const antColumns = [
         {
-            header: 'Actions',
+            title: 'Vendor Code',
+            dataIndex: 'vendorCode',
+            key: 'vendorCode',
+            sorter: (a, b) => {
+                // Handle cases where vendorCode might be undefined or null
+                const codeA = a.vendorCode || '';
+                const codeB = b.vendorCode || '';
+                return codeA.toString().localeCompare(codeB.toString());
+            },
+        },
+        {
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+            sorter: (a, b) => {
+                // Handle cases where name might be undefined or null
+                const nameA = a.name || '';
+                const nameB = b.name || '';
+                return nameA.toString().localeCompare(nameB.toString());
+            },
+        },
+        {
+            title: 'Contact Person',
+            dataIndex: 'contactPerson',
+            key: 'contactPerson',
+        },
+        {
+            title: 'Mobile',
+            dataIndex: 'mobileNumber',
+            key: 'mobileNumber',
+        },
+        {
+            title: 'City',
+            dataIndex: ['address', 'city'],
+            key: 'city',
+        },
+        {
+            title: 'State',
+            dataIndex: ['address', 'state'],
+            key: 'state',
+        },
+        {
+            title: 'Actions',
             key: 'actions',
-            render: (item) => (
-                <div className="flex items-center justify-end space-x-2">
-                    <button
-                        onClick={() => handleEdit(item)}
-                        className="text-blue-600 hover:text-blue-900 focus:outline-none p-1 hover:bg-blue-50 rounded-full transition-colors"
-                        title="Edit Vendor"
-                        disabled={isLoading}
-                    >
-                        <Pencil size={20} />
-                    </button>
-                    <button
-                        onClick={() => handleDeleteVendor(item._id, item.name)}
-                        className="text-red-600 hover:text-red-900 focus:outline-none p-1 hover:bg-red-50 rounded-full transition-colors"
-                        title="Delete Vendor"
-                        disabled={isLoading}
-                    >
-                        <Trash2 size={20} />
-                    </button>
-                </div>
-            )
-        }
+            render: (_, record) => (
+                <Space>
+                    <Button 
+                        type="text" 
+                        icon={<EditOutlined />} 
+                        onClick={() => handleEdit(record)}
+                    />
+                    <Button 
+                        type="text" 
+                        danger 
+                        icon={<DeleteOutlined />} 
+                        onClick={() => handleDeleteVendor(record._id, record.name)}
+                    />
+                </Space>
+            ),
+        },
     ];
 
     return (
-        <div className="container p-6">
-            {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
-                    role="alert"
-                >
-                    <strong className="font-bold">Error!</strong>
-                    <span className="block sm:inline"> {error}</span>
-                </div>
-            )}
-
-            <ListComponent
-                title="Vendors"
-                data={vendors}
-                columns={columns}
-                onFetch={fetchVendors}
-                totalPages={totalPages}
-                onCreateNew={handleCreateNew}
-                isLoading={isLoading}
-            />
-
-            {/* Modal */}
-            {isModalOpen && (
-                <>
-                    <div
-                        className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity"
-                        onClick={handleCloseModal}
-                    />
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div
-                            className={`relative w-full max-w-3xl max-h-[90vh] flex flex-col rounded-lg shadow-xl
-                                ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}
-                            onClick={e => e.stopPropagation()}
+        <Card className="">
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <Space className="flex justify-between">
+                    <Title level={4}>Vendors</Title>
+                    <Space>
+                        <Search
+                            placeholder="Search vendors..."
+                            onSearch={(value) => fetchVendors(1, 5, value)}
+                            style={{ width: 250 }}
+                        />
+                        <Button 
+                            type="primary" 
+                            icon={<PlusOutlined />}
+                            onClick={handleCreateNew}
                         >
-                            {/* Modal Header */}
-                            <div className="flex items-center justify-between p-4 border-b shrink-0">
-                                <h2 className="text-xl font-bold">
-                                    {editingVendor ? 'Edit Vendor' : 'Create New Vendor'}
-                                </h2>
-                                <button
-                                    onClick={handleCloseModal}
-                                    className="text-gray-500 hover:text-gray-700 focus:outline-none p-1 hover:bg-gray-100 rounded-full transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
+                            Add Vendor
+                        </Button>
+                    </Space>
+                </Space>
 
-                            {/* Modal Body */}
-                            <div className="flex-1 overflow-y-auto p-4 min-h-0">
-                                <VendorForm
-                                    onSubmit={handleSubmit}
-                                    onCancel={handleCloseModal}
-                                    isLoading={isLoading}
-                                    initialData={editingVendor}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
+                <Table
+                    columns={antColumns}
+                    dataSource={vendors}
+                    rowKey="_id"
+                    loading={isLoading}
+                    pagination={{
+                        total: totalPages * 5,
+                        pageSize: 5,
+                        onChange: (page) => fetchVendors(page),
+                    }}
+                />
+            </Space>
 
-            {/* Password Modal */}
+            <Modal
+                title={editingVendor ? 'Edit Vendor' : 'Create New Vendor'}
+                open={isModalOpen}
+                onCancel={handleCloseModal}
+                width={1000}
+                footer={null}
+                destroyOnClose
+            >
+                <VendorForm
+                    onSubmit={handleSubmit}
+                    onCancel={handleCloseModal}
+                    isLoading={isLoading}
+                    initialData={editingVendor}
+                />
+            </Modal>
+
             <Modal
                 title="Set Vendor Password"
                 open={isPasswordModalVisible}
-                onOk={handlePasswordSubmit}
                 onCancel={() => {
                     setIsPasswordModalVisible(false);
-                    setPasswordData({ password: '', confirmPassword: '' });
                     setPasswordError('');
                 }}
-                okText="Register Vendor"
-                cancelText="Cancel"
+                onOk={handlePasswordSubmit}
                 confirmLoading={isLoading}
+                destroyOnClose
             >
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Password*</label>
-                        <input
-                            type="password"
-                            name="password"
-                            value={passwordData.password}
-                            onChange={handlePasswordChange}
-                            className="w-full p-2 border rounded"
-                            required
-                            placeholder="Enter password"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Confirm Password*</label>
-                        <input
-                            type="password"
-                            name="confirmPassword"
-                            value={passwordData.confirmPassword}
-                            onChange={handlePasswordChange}
-                            className="w-full p-2 border rounded"
-                            required
-                            placeholder="Confirm password"
-                        />
-                    </div>
-                    {passwordError && (
-                        <div className="text-red-500 text-sm">
-                            {passwordError}
-                        </div>
-                    )}
-                    <div className="text-sm text-gray-500">
-                        Password must be at least 6 characters long.
-                    </div>
-                </div>
+                <Form layout="vertical">
+                    <Form.Item 
+                        label="Password" 
+                        name="password"
+                        rules={[
+                            { required: true, message: 'Please input password' },
+                            { min: 6, message: 'Password must be at least 6 characters' }
+                        ]}
+                        validateStatus={passwordError ? 'error' : ''}
+                        help={passwordError}
+                    >
+                        <Input.Password />
+                    </Form.Item>
+                    <Form.Item 
+                        label="Confirm Password"
+                        name="confirmPassword"
+                        dependencies={['password']}
+                        rules={[
+                            { required: true, message: 'Please confirm password' },
+                            ({ getFieldValue }) => ({
+                                validator(_, value) {
+                                    if (!value || getFieldValue('password') === value) {
+                                        return Promise.resolve();
+                                    }
+                                    return Promise.reject(new Error('Passwords do not match'));
+                                },
+                            }),
+                        ]}
+                    >
+                        <Input.Password />
+                    </Form.Item>
+                </Form>
             </Modal>
-        </div>
+        </Card>
     );
 };
 

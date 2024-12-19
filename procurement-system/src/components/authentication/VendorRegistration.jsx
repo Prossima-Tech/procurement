@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import VendorForm from '../Vendors/VendorForm';
-import { Spin, Modal } from 'antd';
+import { Spin, Modal, Button } from 'antd';
 import axios from 'axios';
 import { baseURL } from '../../utils/endpoint';
 
@@ -64,23 +64,33 @@ const VendorRegistration = () => {
         }
     };
 
-    const inputClass = `w-full p-2 text-sm rounded ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-800'}`;
+    const inputClass = `w-full p-1 text-sm rounded ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-800'}`;
     const labelClass = 'block text-xs font-medium mb-1';
 
     return (
-        <div className={`min-h-screen py-12 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
-            <div className={`max-w-4xl mx-auto ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-md p-8`}>
-                <h2 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+        <div className={`min-h-screen py-8 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+            <div className={`max-w-3xl mx-auto ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-sm p-6`}>
+                
+                {/* Back Button */}
+                <Button 
+                    type="link" 
+                    onClick={() => navigate('/login')}
+                    className="mb-2"
+                >
+                    Back to Login
+                </Button>
+
+                <h2 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                     Vendor Registration
                 </h2>
 
                 {error && (
-                    <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                    <div className="mb-3 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
                         {error}
                     </div>
                 )}
 
-                <div className="space-y-6">
+                <div className="space-y-4">
                     <VendorForm
                         onSubmit={handleFormSubmit}
                         onCancel={() => navigate('/login')}
@@ -102,7 +112,7 @@ const VendorRegistration = () => {
                     cancelText="Cancel"
                     confirmLoading={loading}
                 >
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         <div>
                             <label className={labelClass}>Password*</label>
                             <input

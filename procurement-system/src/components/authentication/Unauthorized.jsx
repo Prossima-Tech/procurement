@@ -1,12 +1,18 @@
 import { Link } from 'react-router-dom';
+import { Button, Result } from 'antd';
 
 const Unauthorized = () => {
     return (
-        <div>
-            <h2>Unauthorized Access</h2>
-            <p>You do not have permission to access this page.</p>
-            <Link to="/">Return to Login</Link>
-        </div>
+        <Result
+            status="403"
+            title="403"
+            subTitle="Sorry, you are not authorized to access this page."
+            extra={
+                <Link to="/">
+                    <Button type="primary">Return to Login</Button>
+                </Link>
+            }
+        />
     );
 };
 

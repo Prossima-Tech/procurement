@@ -45,8 +45,8 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-6 text-center">
-          <h2 className="text-xl text-red-600 mb-4">Something went wrong</h2>
+        <div className="p-4 text-center">
+          <h2 className="text-lg text-red-600 mb-2">Something went wrong</h2>
           <Button 
             type="primary" 
             onClick={() => {
@@ -79,27 +79,28 @@ const IndentItemsModal = ({ visible, indent, onClose }) => {
   return (
     <Modal
       title={
-        <div className="flex items-center space-x-2">
-          <FileText className="text-blue-500" size={20} />
+        <div className="flex items-center gap-1">
+          <FileText className="text-blue-500" size={16} />
           <span>Indent Items - {indent.indentNumber}</span>
         </div>
       }
       open={visible}
       onCancel={onClose}
       footer={null}
-      width={800}
+      width={600}
     >
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Existing Items Section */}
         {indent.items?.existing?.length > 0 && (
           <div>
-            <h3 className="text-lg font-semibold mb-3 flex items-center">
-              <Building2 className="mr-2 text-gray-500" size={18} />
+            <h3 className="text-base font-medium mb-2 flex items-center">
+              <Building2 className="mr-1 text-gray-500" size={14} />
               Existing Items
             </h3>
             <Table
               dataSource={indent.items.existing}
               pagination={false}
+              size="small"
               columns={[
                 {
                   title: 'Item Name',
@@ -118,14 +119,15 @@ const IndentItemsModal = ({ visible, indent, onClose }) => {
 
         {/* New Items Section */}
         {indent.items?.new?.length > 0 && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-3 flex items-center">
-              <FolderKanban className="mr-2 text-gray-500" size={18} />
+          <div className="mt-4">
+            <h3 className="text-base font-medium mb-2 flex items-center">
+              <FolderKanban className="mr-1 text-gray-500" size={14} />
               New Items
             </h3>
             <Table
               dataSource={indent.items.new}
               pagination={false}
+              size="small"
               columns={[
                 {
                   title: 'Item Name',
@@ -143,19 +145,19 @@ const IndentItemsModal = ({ visible, indent, onClose }) => {
         )}
 
         {/* Summary Section */}
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <div className="grid grid-cols-3 gap-4">
+        <div className="mt-4 p-3 bg-gray-50 rounded">
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <p className="text-sm text-gray-600">Priority</p>
-              <p className="font-medium capitalize">{indent.priority}</p>
+              <p className="text-xs text-gray-500">Priority</p>
+              <p className="text-sm font-medium capitalize">{indent.priority}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Purpose</p>
-              <p className="font-medium">{indent.purpose}</p>
+              <p className="text-xs text-gray-500">Purpose</p>
+              <p className="text-sm font-medium">{indent.purpose}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Created Date</p>
-              <p className="font-medium">
+              <p className="text-xs text-gray-500">Created Date</p>
+              <p className="text-sm font-medium">
                 {new Date(indent.createdAt).toLocaleDateString()}
               </p>
             </div>
@@ -170,7 +172,7 @@ const IndentItemsModal = ({ visible, indent, onClose }) => {
 const tabConfig = {
   submitted: {
     key: 'submitted',
-    label: 'Pending Approvals',
+    label: 'Pending',
     icon: Clock,
     bgColor: 'bg-indigo-50',
     textColor: 'text-indigo-600',
@@ -181,7 +183,7 @@ const tabConfig = {
   },
   approved: {
     key: 'approved',
-    label: 'Approved Indents',
+    label: 'Approved',
     icon: CheckCircle2,
     bgColor: 'bg-green-50',
     textColor: 'text-green-600',
@@ -192,7 +194,7 @@ const tabConfig = {
   },
   rejected: {
     key: 'rejected',
-    label: 'Rejected Indents',
+    label: 'Rejected',
     icon: XCircle,
     bgColor: 'bg-red-50',
     textColor: 'text-red-600',
@@ -212,7 +214,7 @@ const TabButton = ({ tab, isActive, count, onClick }) => {
     <button
       onClick={() => onClick(tab)}
       className={`
-        relative py-4 px-6 border-b-2 font-medium text-sm
+        relative py-2 px-4 border-b-2 font-medium text-xs
         transition-all duration-200 ease-in-out
         ${isActive 
           ? `${config.borderColor} ${config.textColor} ${config.bgColor}` 
@@ -220,17 +222,17 @@ const TabButton = ({ tab, isActive, count, onClick }) => {
         }
       `}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <Icon 
-          size={16} 
+          size={14} 
           className={isActive ? config.textColor : ''} 
         />
         <span>{config.label}</span>
         {count > 0 && (
           <span 
             className={`
-              absolute top-3 right-1
-              py-0.5 px-2.5 rounded-full text-xs font-medium
+              absolute top-1 right-0
+              py-0.5 px-1.5 rounded-full text-xs font-medium
               ${isActive 
                 ? `${config.badgeBg} ${config.badgeText}` 
                 : 'bg-gray-100 text-gray-600'
@@ -252,17 +254,17 @@ const StatsCard = ({ label, value, icon: Icon, type }) => {
   
   return (
     <div className={`
-      bg-white p-6 rounded-lg shadow-sm border border-gray-200 
-      hover:border-${type === 'submitted' ? 'indigo' : type === 'approved' ? 'green' : 'red'}-500 
+      bg-white p-4 rounded shadow-sm border border-gray-100 
+      hover:border-${type === 'submitted' ? 'indigo' : type === 'approved' ? 'green' : 'red'}-400 
       transition-colors duration-200
     `}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-600 mb-1">{label}</p>
-          <p className={config.textColor + ' text-2xl font-semibold'}>{value}</p>
+          <p className="text-xs text-gray-500">{label}</p>
+          <p className={config.textColor + ' text-lg font-medium'}>{value}</p>
         </div>
-        <div className={`p-3 rounded-full ${config.badgeBg}`}>
-          <Icon size={24} className={config.textColor} />
+        <div className={`p-2 rounded ${config.badgeBg}`}>
+          <Icon size={18} className={config.textColor} />
         </div>
       </div>
     </div>
@@ -386,9 +388,9 @@ const ManagerDashboard = () => {
 
   // Status tag configuration
   const statusConfig = {
-    submitted: { color: 'gold', icon: <Clock size={14} /> },
-    manager_approved: { color: 'green', icon: <CheckCircle2 size={14} /> },
-    manager_rejected: { color: 'red', icon: <XCircle size={14} /> }
+    submitted: { color: 'gold', icon: <Clock size={12} /> },
+    manager_approved: { color: 'green', icon: <CheckCircle2 size={12} /> },
+    manager_rejected: { color: 'red', icon: <XCircle size={12} /> }
   };
 
   const getActionColumn = () => {
@@ -397,21 +399,21 @@ const ManagerDashboard = () => {
         title: 'Actions',
         key: 'actions',
         render: (_, record) => (
-          <Space>
+          <Space size="small">
             <Button
-              type="default"
-              icon={<Eye size={16} />}
+              type="text"
+              icon={<Eye size={14} />}
               onClick={() => {
                 setSelectedIndentForItems(record);
                 setItemsModalVisible(true);
               }}
             >
-              View Items
+              View
             </Button>
             <Button
-              type="primary"
-              icon={<CheckCircle2 size={16} />}
-              className="bg-green-500 hover:bg-green-600"
+              type="text"
+              icon={<CheckCircle2 size={14} />}
+              className="text-green-600"
               onClick={() => {
                 setSelectedIndent(record);
                 setActionType('approve');
@@ -422,8 +424,9 @@ const ManagerDashboard = () => {
               Approve
             </Button>
             <Button
+              type="text"
               danger
-              icon={<XCircle size={16} />}
+              icon={<XCircle size={14} />}
               onClick={() => {
                 setSelectedIndent(record);
                 setActionType('reject');
@@ -444,14 +447,14 @@ const ManagerDashboard = () => {
       key: 'actions',
       render: (_, record) => (
         <Button
-          type="default"
-          icon={<Eye size={16} />}
+          type="text"
+          icon={<Eye size={14} />}
           onClick={() => {
             setSelectedIndentForItems(record);
             setItemsModalVisible(true);
           }}
         >
-          View Items
+          View
         </Button>
       ),
     };
@@ -463,8 +466,8 @@ const ManagerDashboard = () => {
       dataIndex: 'indentNumber',
       key: 'indentNumber',
       render: (text) => (
-        <Space>
-          <FileText size={16} className="text-gray-500" />
+        <Space size="small">
+          <FileText size={14} className="text-gray-400" />
           {text}
         </Space>
       )
@@ -474,8 +477,8 @@ const ManagerDashboard = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       render: (date) => (
-        <Space>
-          <Calendar size={16} className="text-gray-500" />
+        <Space size="small">
+          <Calendar size={14} className="text-gray-400" />
           {new Date(date).toLocaleDateString()}
         </Space>
       )
@@ -485,8 +488,8 @@ const ManagerDashboard = () => {
       dataIndex: 'employee',
       key: 'employee',
       render: (employee) => (
-        <Space>
-          <User size={16} className="text-gray-500" />
+        <Space size="small">
+          <User size={14} className="text-gray-400" />
           {employee?.username || 'N/A'}
         </Space>
       )
@@ -496,8 +499,8 @@ const ManagerDashboard = () => {
       dataIndex: 'unit',
       key: 'unit',
       render: (unit) => (
-        <Space>
-          <Building2 size={16} className="text-gray-500" />
+        <Space size="small">
+          <Building2 size={14} className="text-gray-400" />
           {unit?.unitName || 'N/A'}
         </Space>
       )
@@ -507,8 +510,8 @@ const ManagerDashboard = () => {
       dataIndex: 'project',
       key: 'project',
       render: (project) => (
-        <Space>
-          <FolderKanban size={16} className="text-gray-500" />
+        <Space size="small">
+          <FolderKanban size={14} className="text-gray-400" />
           {project?.projectName || 'N/A'}
         </Space>
       )
@@ -532,8 +535,8 @@ const ManagerDashboard = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status) => (
-        <Tag color={statusConfig[status]?.color || 'default'} className="px-2 py-1">
-          <Space>
+        <Tag color={statusConfig[status]?.color || 'default'} className="px-1.5 py-0.5">
+          <Space size="small">
             {statusConfig[status]?.icon}
             {status?.replace('_', ' ').toUpperCase()}
           </Space>
@@ -551,8 +554,8 @@ const ManagerDashboard = () => {
   // Add loading skeleton
   const loadingSkeleton = (
     <div className="animate-pulse">
-      <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      <div className="h-3 bg-gray-200 rounded w-3/4 mb-2"></div>
+      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
     </div>
   );
 
@@ -575,44 +578,45 @@ const ManagerDashboard = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex justify-between items-center">
+    <div className="p-4">
+      <div className="mb-4 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Manager Dashboard</h1>
-          <p className="text-gray-600">Manage indent approvals and rejections</p>
+          <h1 className="text-xl font-medium text-gray-800">Manager Dashboard</h1>
+          <p className="text-sm text-gray-500">Manage indent approvals and rejections</p>
         </div>
         <Button 
-          type="primary" 
+          type="text" 
           danger 
-          icon={<LogOut size={16} />}
+          icon={<LogOut size={14} />}
           onClick={handleLogout}
-          className="flex items-center gap-2"
+          className="flex items-center gap-1"
         >
           Logout
         </Button>
       </div>
       
       {/* Search Input */}
-      <div className="mb-4">
+      <div className="mb-3">
         <Input.Search
           placeholder="Search by indent number or employee name"
           allowClear
           enterButton
           onChange={(e) => handleSearch(e.target.value)}
           className="max-w-md"
+          size="small"
         />
       </div>
 
       {/* Updated Tabs */}
-      <div className="mb-6">
+      <div className="mb-4">
         <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
+          <nav className="-mb-px flex gap-4">
             {Object.values(tabConfig).map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => handleTabChange(tab.status)}
                 className={`
-                  py-4 px-6 border-b-2 font-medium text-sm
+                  py-2 px-4 border-b-2 font-medium text-xs
                   transition-all duration-200
                   ${activeTab === tab.status
                     ? `${tab.borderColor} ${tab.textColor} ${tab.bgColor}`
@@ -620,8 +624,8 @@ const ManagerDashboard = () => {
                   }
                 `}
               >
-                <div className="flex items-center gap-2">
-                  <tab.icon size={16} />
+                <div className="flex items-center gap-1">
+                  <tab.icon size={14} />
                   {tab.label}
                 </div>
               </button>
@@ -631,28 +635,30 @@ const ManagerDashboard = () => {
       </div>
 
       {/* Existing Table */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded shadow-sm">
         <Table
           columns={columns}
           dataSource={indents}
           rowKey="_id"
           loading={loading || filterLoading}
+          size="small"
           pagination={{
             ...pagination,
+            size: "small",
             onChange: (page, pageSize) => {
               fetchIndents(activeTab, page, pageSize, searchText);
             },
             showTotal: (total, range) => (
-              <span className="text-gray-600">
+              <span className="text-xs text-gray-500">
                 Showing {range[0]}-{range[1]} of {total} indents
               </span>
             ),
           }}
           locale={{
             emptyText: (
-              <div className="py-8 text-center text-gray-500">
-                <FolderKanban size={40} className="mx-auto mb-4 opacity-50" />
-                <p>No {activeTab === 'submitted' ? 'pending' : 'rejected'} indents found</p>
+              <div className="py-6 text-center text-gray-500">
+                <FolderKanban size={32} className="mx-auto mb-2 opacity-40" />
+                <p className="text-sm">No {activeTab === 'submitted' ? 'pending' : 'rejected'} indents found</p>
               </div>
             )
           }}
@@ -661,10 +667,10 @@ const ManagerDashboard = () => {
 
       <Modal
         title={
-          <Space>
+          <Space size="small">
             {actionType === 'approve' ? 
-              <CheckCircle2 className="text-green-500" size={20} /> : 
-              <XCircle className="text-red-500" size={20} />
+              <CheckCircle2 className="text-green-500" size={16} /> : 
+              <XCircle className="text-red-500" size={16} />
             }
             {`${actionType === 'approve' ? 'Approve' : 'Reject'} Indent`}
           </Space>
@@ -679,8 +685,8 @@ const ManagerDashboard = () => {
         okButtonProps={{
           danger: actionType === 'reject',
           icon: actionType === 'approve' ? 
-            <CheckCircle2 size={16} /> : 
-            <XCircle size={16} />
+            <CheckCircle2 size={14} /> : 
+            <XCircle size={14} />
         }}
       >
         <Form layout="vertical">
@@ -691,7 +697,7 @@ const ManagerDashboard = () => {
             <Input.TextArea
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
-              rows={4}
+              rows={3}
               placeholder="Enter your remarks (optional)"
               className="mt-1"
             />
