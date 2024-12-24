@@ -3,7 +3,7 @@ import {
   ShoppingCart, 
   Search, 
   Eye, 
-  AlertCircle 
+  AlertCircle ,FileDown
 } from 'lucide-react';
 import { format } from 'date-fns';
 import axios from 'axios';
@@ -60,6 +60,40 @@ const POTab = ({ vendorDetails }) => {
     const matchesStatus = statusFilter === 'all' || po.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const getToken = () => localStorage.getItem('token');
+
+  const handlePrintPO = async (orderId) => {
+      try {
+          const response = await axios.get(
+              `${baseURL}/purchase-orders/generatePdf/${orderId}`,
+              {
+                  headers: {
+                      'Authorization': `Bearer ${getToken()}`,
+                      'Accept': 'application/pdf'
+                  },
+                  responseType: 'blob'
+              }
+          );
+
+          // Create blob and download
+          const blob = new Blob([response.data], { type: 'application/pdf' });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `PO_${orderId}.pdf`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+
+      } catch (error) {
+          console.error('Error generating PDF:', error);
+          toast.error('Failed to generate PDF');
+      }
+  };
+
+
 
   return (
     <>
@@ -130,13 +164,23 @@ const POTab = ({ vendorDetails }) => {
                       </td>
                       <td className="px-4 py-3">{format(new Date(po.deliveryDate), 'dd MMM yyyy')}</td>
                       <td className="px-4 py-3">
+                      <div className="flex flex-row gap-2">
                         <button
-                          onClick={() => handleViewPO(po)}
-                          className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                        >
-                          <Eye className="h-4 w-4" />
-                          {/* View */}
-                        </button>
+                          onClick={() => handlePrintPO(po._id)}
+                          className="text-green-600 hover:text-green-900 focus:outline-none p-1 rounded-full transition-colors"
+                          title="Download PDF"
+                          >
+                              <FileDown size={20} />
+                          </button>
+                          <button
+                            onClick={() => handleViewPO(po)}
+                            className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            title="View Purchase Order"
+                          >
+                            <Eye className="h-4 w-4" />
+                            {/* View */}
+                          </button>
+                      </div>
                       </td>
                     </tr>
                   ))}
