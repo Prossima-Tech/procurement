@@ -121,36 +121,22 @@ exports.getVendorByCode = async (req, res) => {
 // GET /api/vendors/searchVendors?query=:query
 exports.searchVendors = async (req, res) => {
   try {
-    console.log("query received", req.query.query);
     const searchTerm = req.query.query;
+    const isNumber = /^\d+$/.test(searchTerm);
 
-    // Create separate queries for numeric and text searches
-    let searchQuery;
-
-    // Check if the search term is a number
-    if (!isNaN(searchTerm) && searchTerm.trim() !== '') {
-      // If numeric, search exact vendorCode or regex name
-      searchQuery = {
-        $or: [
-          { vendorCode: Number(searchTerm) },
-          { name: { $regex: searchTerm, $options: 'i' } }
-        ]
-      };
-    } else {
-      // If not numeric, only search in name
-      searchQuery = {
-        name: { $regex: searchTerm, $options: 'i' }
-      };
-    }
+    const searchQuery = {
+      $or: [
+        { name: { $regex: searchTerm, $options: 'i' } },
+        ...(isNumber ? [{ vendorCode: Number(searchTerm) }] : [])
+      ]
+    };
 
     const vendors = await Vendor.find(searchQuery)
       .select('vendorCode name gstNumber address email contactPerson mobileNumber')
       .limit(10);
 
-    console.log("Found vendors:", vendors);
     res.json(vendors);
   } catch (error) {
-    console.error("Search error:", error);
     res.status(500).json({ message: error.message });
   }
 };
