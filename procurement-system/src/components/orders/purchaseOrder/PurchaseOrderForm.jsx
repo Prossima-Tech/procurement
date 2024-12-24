@@ -207,6 +207,7 @@ const PurchaseOrderForm = ({
             const partDetails = response.data.data;
 
             if (response.data.success) {
+                console.log(partDetails);
                 const newItemWithDetails = {
                     partCode: partDetails._id,
                     partCodeDisplay: partDetails.ItemCode.ItemName,
@@ -681,7 +682,7 @@ const PurchaseOrderForm = ({
                                 {formData.items.map((item, index) => (
                                     item.partCode && (
                                         <tr key={index} className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                                            <td className="p-2">{item.partCodeDisplay || item.itemDetails?.partCodeNumber}</td>
+                                            <td className="p-2">{item.itemDetails?.partCodeNumber}</td>
                                             <td className="p-2">{item.masterItemName}</td>
                                             <td className="p-2">{item.quantity}</td>
                                             <td className="p-2">{item.unitPrice}</td>
