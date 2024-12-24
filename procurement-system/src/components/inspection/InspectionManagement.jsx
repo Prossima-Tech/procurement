@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -23,16 +24,18 @@ import {
     EyeOutlined,
     CheckOutlined,
     PlusOutlined,
-    RollbackOutlined
+    RollbackOutlined,
+    EditOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import { baseURL } from '../../utils/endpoint';
 import InspectionDetail from './InspectionDetail';
+import InspectionView from './InspectionView';
 
 const { Title, Text } = Typography;
 
 // Status Tag Component
-const StatusTag = ({ status }) => {
+export const StatusTag = ({ status }) => {
     const colorMap = {
         pending: 'gold',
         in_progress: 'blue',
@@ -56,6 +59,8 @@ const InspectionManagement = () => {
     const [loading, setLoading] = useState(false);
     const [selectedInspection, setSelectedInspection] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isViewMode, setIsViewMode] = useState(false);
+
     const [filters, setFilters] = useState({
         search: '',
         status: ''
@@ -200,6 +205,7 @@ const InspectionManagement = () => {
                         icon={<EyeOutlined />}
                         onClick={() => {
                             setSelectedInspection(record);
+                            setIsViewMode(true); // Add this state
                             setIsModalOpen(true);
                         }}
                     >
@@ -207,9 +213,10 @@ const InspectionManagement = () => {
                     </Button>
                     {record.status !== 'completed' && (
                         <Button
-                            icon={<CheckOutlined />}
+                            icon={<EditOutlined />}
                             onClick={() => {
                                 setSelectedInspection(record);
+                                setIsViewMode(false); // Add this state
                                 setIsModalOpen(true);
                             }}
                         >
@@ -306,19 +313,24 @@ const InspectionManagement = () => {
                 onCancel={() => {
                     setIsModalOpen(false);
                     setSelectedInspection(null);
+                    setIsViewMode(false);
                 }}
                 width={1000}
                 footer={null}
             >
                 {selectedInspection && (
-                    <InspectionDetail
-                        inspection={selectedInspection}
-                        onClose={() => {
-                            setIsModalOpen(false);
-                            setSelectedInspection(null);
-                            fetchData();
-                        }}
-                    />
+                    isViewMode ? (
+                        <InspectionView inspection={selectedInspection} />
+                    ) : (
+                        <InspectionDetail
+                            inspection={selectedInspection}
+                            onClose={() => {
+                                setIsModalOpen(false);
+                                setSelectedInspection(null);
+                                fetchData();
+                            }}
+                        />
+                    )
                 )}
             </Modal>
         </div>
