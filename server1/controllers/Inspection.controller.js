@@ -1,7 +1,7 @@
 // inspection.controller.js
 
 const mongoose = require('mongoose');
-const Inspection = require('../models/inspection.model');
+const Inspection = require('../models/Inspection.model');
 const GRN = require('../models/grn.model');
 
 class InspectionController {
