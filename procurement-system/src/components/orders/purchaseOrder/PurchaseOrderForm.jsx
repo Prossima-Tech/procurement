@@ -5,6 +5,7 @@ import { Search, Plus, Trash2, ChevronLeft } from 'lucide-react';
 import { api, baseURL } from '../../../utils/endpoint';
 import { useTheme } from '../../../contexts/ThemeContext';
 import axios from 'axios';
+import _ from 'lodash';
 import PropTypes from 'prop-types';
 
 const PurchaseOrderForm = ({
@@ -101,6 +102,17 @@ const PurchaseOrderForm = ({
         }));
     };
 
+    const debouncedSearch = useCallback(
+        _.debounce((value) => {
+            if (value.length < 2) {
+                setVendorSuggestions([]);
+                return;
+            }
+            searchVendors('name', value);
+        }, 300),
+        []
+    );
+
     const fetchVendor = async () => {
         if (!formData.vendorCode.trim()) {
             toast.error("Please enter a vendor code");
@@ -128,10 +140,26 @@ const PurchaseOrderForm = ({
         }
     };
 
-    const searchVendors = async () => {
+    const searchVendors = async (searchType = 'code', searchValue) => {
         try {
-            const response = await api(`/vendors/searchVendors?query=${formData.vendorCode}`, 'get');
-            setVendorSuggestions(response.data);
+            const query = searchType === 'code' ? formData.vendorCode : searchValue;
+            if (!query) {
+                setVendorSuggestions([]);
+                return;
+            }
+
+            const response = await api(`/vendors/searchVendors?query=${query}`, 'get');
+            const vendors = response.data.map(vendor => ({
+                _id: vendor._id,
+                code: vendor.vendorCode,
+                name: vendor.name,
+                gstNumber: vendor.gstNumber,
+                address: {
+                    line1: vendor.address?.line1 || '',
+                    line2: vendor.address?.line2 || ''
+                }
+            }));
+            setVendorSuggestions(vendors);
         } catch (error) {
             toast.error(`Error: ${error.response?.data?.message || "Failed to search vendors"}`);
         }
@@ -143,7 +171,7 @@ const PurchaseOrderForm = ({
             vendorId: vendor._id,
             vendorCode: vendor.code,
             vendorName: vendor.name,
-            vendorAddress: vendor.address.line1 + ', ' + vendor.address.line2,
+            vendorAddress: `${vendor.address.line1}${vendor.address.line2 ? ', ' + vendor.address.line2 : ''}`,
             vendorGst: vendor.gstNumber
         }));
         setVendorSuggestions([]);
@@ -438,23 +466,57 @@ const PurchaseOrderForm = ({
             {/* Vendor Information */}
             <fieldset className="border p-4 rounded-lg bg-white">
                 <legend className="text-sm font-medium px-2">Vendor Info</legend>
+                <div className='mb-3'>
+                    <label className={labelClass}>Search by Name</label>
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            placeholder="Type to search vendors..."
+                            onChange={(e) => debouncedSearch(e.target.value)}
+                            className={`${inputClass} flex-grow`}
+                        />
+                    </div>
+                    {vendorSuggestions.length > 0 && (
+                        <ul className="mt-2 border rounded-lg max-h-48 overflow-y-auto text-sm bg-white shadow-lg">
+                            {vendorSuggestions.map(vendor => (
+                                <li
+                                    key={vendor._id}
+                                    className="p-2 hover:bg-gray-100 cursor-pointer transition-colors flex justify-between items-center"
+                                    onClick={() => selectVendor(vendor)}
+                                >
+                                    <div>
+                                        <span className="font-medium">{vendor.name}</span>
+                                        <br />
+                                        <span className="text-xs text-gray-600">Code: {vendor.code}</span>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
                 <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className={labelClass}>Vendor Code*</label>
-                        <div className="flex gap-2">
-                            <input name="vendorCode" value={formData.vendorCode} onChange={handleChange} className={`${inputClass} flex-grow`} required />
-                            <button type="button" onClick={fetchVendor} className={buttonClass}>Show</button>
-                            <button type="button" onClick={searchVendors} className={buttonClass}>Search</button>
+                    <div className="space-y-3">
+                        <div>
+                            <label className={labelClass}>Vendor Code*</label>
+                            <div className="flex gap-2">
+                                <input
+                                    name="vendorCode"
+                                    value={formData.vendorCode}
+                                    onChange={handleChange}
+                                    className={`${inputClass} flex-grow`}
+                                    required
+                                    placeholder="Enter vendor code..."
+                                />
+                                {/* <button type="button" onClick={fetchVendor} className={buttonClass}>
+                                    Show
+                                </button>
+                                <button type="button" onClick={() => searchVendors('code')} className={buttonClass}>
+                                    Search
+                                </button> */}
+                            </div>
                         </div>
-                        {vendorSuggestions.length > 0 && (
-                            <ul className="mt-2 border rounded-lg max-h-32 overflow-y-auto text-sm bg-white">
-                                {vendorSuggestions.map(vendor => (
-                                    <li key={vendor.code} className="p-2 hover:bg-gray-100 cursor-pointer transition-colors" onClick={() => selectVendor(vendor)}>
-                                        {vendor.name} ({vendor.code})
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
+
+
                     </div>
                     <div>
                         <label className={labelClass}>Vendor Name</label>

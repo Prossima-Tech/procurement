@@ -118,24 +118,32 @@ exports.getVendorByCode = async (req, res) => {
   }
 };
 
-// GET /api/vendors/searchsearchVendors?query=:query
+// GET /api/vendors/searchVendors?query=:query
 exports.searchVendors = async (req, res) => {
   try {
     console.log("query received", req.query.query);
+    const searchTerm = req.query.query;
 
-    // Convert query to number if it's a number, otherwise keep as string for name search
-    const searchQuery = !isNaN(req.query.query) ? Number(req.query.query) : req.query.query;
+    // Create separate queries for numeric and text searches
+    let searchQuery;
 
-    const vendors = await Vendor.find({
-      $or: [
-        // If searchQuery is a number, do exact match for vendorCode
-        typeof searchQuery === 'number' ?
-          { vendorCode: searchQuery } :
-          { vendorCode: { $regex: req.query.query, $options: 'i' } },
-        // Always do regex search for name
-        { name: { $regex: req.query.query, $options: 'i' } }
-      ]
-    })
+    // Check if the search term is a number
+    if (!isNaN(searchTerm) && searchTerm.trim() !== '') {
+      // If numeric, search exact vendorCode or regex name
+      searchQuery = {
+        $or: [
+          { vendorCode: Number(searchTerm) },
+          { name: { $regex: searchTerm, $options: 'i' } }
+        ]
+      };
+    } else {
+      // If not numeric, only search in name
+      searchQuery = {
+        name: { $regex: searchTerm, $options: 'i' }
+      };
+    }
+
+    const vendors = await Vendor.find(searchQuery)
       .select('vendorCode name gstNumber address email contactPerson mobileNumber')
       .limit(10);
 
@@ -151,9 +159,9 @@ exports.getVendorByUserId = async (req, res) => {
   try {
     console.log("userId received", req.params.userId);
     const user = await User.findById(req.params.userId);
-    console.log("user",user);
+    console.log("user", user);
     const vendor = await Vendor.findById(user.vendorId);
-    console.log("vendor",vendor);
+    console.log("vendor", vendor);
     if (!vendor) {
       return res.status(404).json({ message: 'Vendor not found' });
     }

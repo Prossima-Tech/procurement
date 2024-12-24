@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     Table,
@@ -160,7 +161,7 @@ const InspectionManagement = () => {
                     icon={<PlusOutlined />}
                     onClick={() => handleCreateInspection(record)}
                 >
-                    Create Inspection
+                    Move to Inspection
                 </Button>
             ),
         },
