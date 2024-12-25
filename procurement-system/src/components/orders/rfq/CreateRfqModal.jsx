@@ -14,7 +14,6 @@ const CreateRfqModal = ({ isOpen, onClose, indent, onSuccess }) => {
     const [selectedVendors, setSelectedVendors] = useState([]);
     const [vendors, setVendors] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [validationError, setValidationError] = useState('');
 
     useEffect(() => {
         if (step === 1) {
@@ -54,20 +53,6 @@ const CreateRfqModal = ({ isOpen, onClose, indent, onSuccess }) => {
             return [...prev, itemId];
         });
     };
-
-    const handleNext = () => {
-        if (step === 0 && selectedItems.length === 0) {
-            message.error('Please select at least one item before proceeding');
-            return;
-        }
-        if (step === 1 && selectedVendors.length === 0) {
-            message.error('Please select at least one vendor before proceeding');
-            return;
-        }
-        setValidationError('');
-        setStep(step + 1);
-    };
-
 
     const handleCreateRfq = async () => {
         try {
@@ -119,7 +104,7 @@ const CreateRfqModal = ({ isOpen, onClose, indent, onSuccess }) => {
 
             const token = localStorage.getItem('token');
             const response = await axios.post(`${baseURL}/rfq/createRFQ`, rfqData, {
-                headers: {
+                headers: { 
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
@@ -182,26 +167,6 @@ const CreateRfqModal = ({ isOpen, onClose, indent, onSuccess }) => {
         </Card>
     );
 
-    useEffect(() => {
-        if (step === 1) {
-            form.setFieldsValue({
-                vendors: selectedVendors
-            });
-        }
-    }, [step, selectedVendors, form]);
-
-    const handlePrevious = () => {
-        // Preserve form values before going back
-        if (step === 2) {
-            const values = form.getFieldsValue();
-            form.setFieldsValue({
-                ...values,
-                vendors: selectedVendors
-            });
-        }
-        setStep(step - 1);
-    };
-
     const steps = [
         {
             title: 'Select Items',
@@ -225,62 +190,18 @@ const CreateRfqModal = ({ isOpen, onClose, indent, onSuccess }) => {
         {
             title: 'Select Vendors',
             content: (
-                <div>
-                    <Form.Item
-                        label="Select Vendors"
-                        name="vendors"
-                        rules={[{ required: true, message: 'Please select at least one vendor' }]}
-                        validateStatus={step === 1 && selectedVendors.length === 0 ? 'error' : ''}
-                        help={step === 1 && selectedVendors.length === 0 ? 'At least one vendor must be selected' : ''}
-                    >
-                        <Select
-                            mode="multiple"
-                            loading={isLoading}
-                            value={selectedVendors}
-                            onChange={(values) => {
-                                setSelectedVendors(values);
-                                form.setFieldsValue({ vendors: values });
-                            }}
-                            options={vendors.map(v => ({ label: v.name, value: v._id }))}
-                            className={step === 1 && selectedVendors.length === 0 ? 'border-red-500' : ''}
-                        />
-                    </Form.Item>
-
-                    {/* Selected Vendors List */}
-                    {selectedVendors.length > 0 && (
-                        <div className="mt-4">
-                            <h4 className="text-sm font-medium mb-2">Selected Vendors ({selectedVendors.length})</h4>
-                            <div className="space-y-2">
-                                {selectedVendors.map(vendorId => {
-                                    const vendor = vendors.find(v => v._id === vendorId);
-                                    return vendor && (
-                                        <Card key={vendor._id} size="small" className="bg-gray-50">
-                                            <div className="flex justify-between items-center">
-                                                <div>
-                                                    <div className="font-medium">{vendor.name}</div>
-                                                    <div className="text-sm text-gray-500">
-                                                        {vendor.email || 'No email provided'}
-                                                    </div>
-                                                </div>
-                                                <Button
-                                                    type="link"
-                                                    danger
-                                                    onClick={() => {
-                                                        const newVendors = selectedVendors.filter(id => id !== vendor._id);
-                                                        setSelectedVendors(newVendors);
-                                                        form.setFieldsValue({ vendors: newVendors });
-                                                    }}
-                                                >
-                                                    Remove
-                                                </Button>
-                                            </div>
-                                        </Card>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
-                </div>
+                <Form.Item
+                    label="Select Vendors"
+                    name="vendors"
+                    rules={[{ required: true, message: 'Please select at least one vendor' }]}
+                >
+                    <Select
+                        mode="multiple"
+                        loading={isLoading}
+                        onChange={setSelectedVendors}
+                        options={vendors.map(v => ({ label: v.name, value: v._id }))}
+                    />
+                </Form.Item>
             )
         },
         {
@@ -326,19 +247,12 @@ const CreateRfqModal = ({ isOpen, onClose, indent, onSuccess }) => {
             </div>
             <div className="flex justify-end space-x-2">
                 {step > 0 && (
-                    <Button onClick={handlePrevious}>
+                    <Button onClick={() => setStep(step - 1)}>
                         Previous
                     </Button>
                 )}
                 {step < steps.length - 1 && (
-                    <Button
-                        type="primary"
-                        onClick={handleNext}
-                        disabled={
-                            (step === 0 && selectedItems.length === 0) ||
-                            (step === 1 && selectedVendors.length === 0)
-                        }
-                    >
+                    <Button type="primary" onClick={() => setStep(step + 1)}>
                         Next
                     </Button>
                 )}

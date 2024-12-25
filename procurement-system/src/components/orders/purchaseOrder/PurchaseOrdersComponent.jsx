@@ -174,40 +174,12 @@ const PurchaseOrdersComponent = () => {
                 `${baseURL}/purchase-orders/getPO/${orderId}`,
                 { headers: { 'Authorization': `Bearer ${getToken()}` } }
             );
-
-            // Fetch part details for each item
-            const poData = response.data;
-            // console.log(poData);
-            const itemsWithDetails = await Promise.all(
-                poData.items.map(async (item) => {
-                    try {
-                        const partResponse = await axios.get(
-                            `${baseURL}/parts/getPart/${item.partId._id}`,
-                            { headers: { 'Authorization': `Bearer ${getToken()}` } }
-                        );
-                        console.log(partResponse.data.data)
-                        return {
-                            ...item,
-                            partDetails: partResponse.data.data
-                        };
-
-                    } catch (error) {
-                        console.error('Error fetching part details:', error);
-                        return item;
-                    }
-                })
-            );
-
             setState(s => ({
                 ...s,
-                selectedViewPO: {
-                    ...poData,
-                    items: itemsWithDetails
-                },
+                selectedViewPO: response.data,
                 viewModalOpen: true,
                 isLoading: false
             }));
-            console.log(itemsWithDetails)
         } catch (error) {
             message.error('Failed to fetch purchase order details');
             setState(s => ({ ...s, isLoading: false }));
@@ -375,8 +347,8 @@ const PurchaseOrdersComponent = () => {
                                 <Descriptions.Item label="Status">
                                     <Tag color={
                                         state.selectedViewPO.status === 'approved' ? 'success' :
-                                            state.selectedViewPO.status === 'draft' ? 'default' :
-                                                'processing'
+                                        state.selectedViewPO.status === 'draft' ? 'default' :
+                                        'processing'
                                     }>
                                         {state.selectedViewPO.status?.toUpperCase()}
                                     </Tag>
@@ -399,9 +371,8 @@ const PurchaseOrdersComponent = () => {
                                 columns={[
                                     {
                                         title: 'Part Code',
-                                        dataIndex: ['partId', 'PartCodeNumber'],
+                                        dataIndex: ['partCode', 'PartCodeNumber'],
                                         key: 'partCode',
-                                        render: (text, record) => record.partId?.PartCodeNumber || record.partCode
                                     },
                                     {
                                         title: 'Item Name',
