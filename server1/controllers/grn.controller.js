@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const GRN = require('../models/grn.model');
 const PurchaseOrder = require('../models/purchaseOrder.model');
-const Inspection = require('../models/inspection.model');
+const Inspection = require('../models/Inspection.model');
 
 class GRNController {
     // Generate GRN Number
@@ -37,7 +37,7 @@ class GRNController {
         // Generate a random 3-digit number
         // Extract year, month and GRN sequence from GRN number
         const [year, month, grnSeq] = grnNumber.split('-').slice(1);
-        
+
         // Use the GRN sequence number as part of invoice number for traceability
         return `INV-${year}-${month}-${grnSeq}`;
     }
