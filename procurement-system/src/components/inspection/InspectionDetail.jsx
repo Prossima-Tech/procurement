@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 import React, { useState } from 'react';
 import {
     Form,
@@ -29,20 +28,31 @@ const InspectionDetail = ({ inspection, onClose }) => {
     const [loading, setLoading] = useState(false);
     const [items, setItems] = useState(inspection.items.map(item => ({
         ...item,
-        parameters: Array.isArray(item.parameters) ? item.parameters : [],
-        rejectedQuantity: item.receivedQuantity - item.acceptedQuantity // Calculate initial rejected quantity
+        parameters: Array.isArray(item.parameters) ? item.parameters : []
     })));
 
-    const validateQuantities = (item, value) => {
+    const validateQuantities = (item, field, value) => {
         if (value < 0) {
             return Promise.reject('Quantities cannot be negative');
         }
-        if (value > item.receivedQuantity) {
-            return Promise.reject(`Cannot exceed received quantity (${item.receivedQuantity})`);
+
+        switch (field) {
+            case 'inspectedQuantity':
+                if (value > item.receivedQuantity) {
+                    return Promise.reject(`Cannot exceed received quantity (${item.receivedQuantity})`);
+                }
+                break;
+            case 'acceptedQuantity':
+            case 'rejectedQuantity':
+                const otherField = field === 'acceptedQuantity' ? 'rejectedQuantity' : 'acceptedQuantity';
+                const otherValue = item[otherField] || 0;
+                if (value + otherValue > item.inspectedQuantity) {
+                    return Promise.reject(`Total cannot exceed inspected quantity (${item.inspectedQuantity})`);
+                }
+                break;
         }
         return Promise.resolve();
     };
-
 
     const handleSave = async (status = 'in_progress') => {
         try {
@@ -146,7 +156,13 @@ const InspectionDetail = ({ inspection, onClose }) => {
     ];
 
     return (
-        <Form form={form} layout="vertical" initialValues={{ remarks: inspection.remarks }}>
+        <Form
+            form={form}
+            layout="vertical"
+            initialValues={{
+                remarks: inspection.remarks
+            }}
+        >
             {items.map((item, itemIndex) => (
                 <Card key={item._id} style={{ marginBottom: 16 }}>
                     <Space direction="vertical" style={{ width: '100%' }}>
@@ -164,20 +180,20 @@ const InspectionDetail = ({ inspection, onClose }) => {
                             </Form.Item>
 
                             <Form.Item
-                                label="Accepted Quantity"
+                                label="Inspected Quantity"
                                 rules={[
                                     {
-                                        validator: (_, value) => validateQuantities(item, value)
+                                        validator: (_, value) => validateQuantities(item, 'inspectedQuantity', value)
                                     }
                                 ]}
                             >
                                 <InputNumber
-                                    value={item.acceptedQuantity}
+                                    value={item.inspectedQuantity}
                                     onChange={(value) => {
                                         const newItems = [...items];
-                                        newItems[itemIndex].acceptedQuantity = value || 0;
-                                        // Automatically calculate rejected quantity
-                                        newItems[itemIndex].rejectedQuantity = newItems[itemIndex].receivedQuantity - (value || 0);
+                                        newItems[itemIndex].inspectedQuantity = value;
+                                        newItems[itemIndex].acceptedQuantity = 0;
+                                        newItems[itemIndex].rejectedQuantity = 0;
                                         setItems(newItems);
                                     }}
                                     min={0}
@@ -186,10 +202,46 @@ const InspectionDetail = ({ inspection, onClose }) => {
                                 />
                             </Form.Item>
 
-                            <Form.Item label="Rejected Quantity">
+                            <Form.Item
+                                label="Accepted Quantity"
+                                rules={[
+                                    {
+                                        validator: (_, value) => validateQuantities(item, 'acceptedQuantity', value)
+                                    }
+                                ]}
+                            >
+                                <InputNumber
+                                    value={item.acceptedQuantity}
+                                    onChange={(value) => {
+                                        const newItems = [...items];
+                                        newItems[itemIndex].acceptedQuantity = value;
+                                        newItems[itemIndex].rejectedQuantity = item.inspectedQuantity - value;
+                                        setItems(newItems);
+                                    }}
+                                    min={0}
+                                    max={item.inspectedQuantity}
+                                    style={{ width: 120 }}
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                label="Rejected Quantity"
+                                rules={[
+                                    {
+                                        validator: (_, value) => validateQuantities(item, 'rejectedQuantity', value)
+                                    }
+                                ]}
+                            >
                                 <InputNumber
                                     value={item.rejectedQuantity}
-                                    disabled
+                                    onChange={(value) => {
+                                        const newItems = [...items];
+                                        newItems[itemIndex].rejectedQuantity = value;
+                                        newItems[itemIndex].acceptedQuantity = item.inspectedQuantity - value;
+                                        setItems(newItems);
+                                    }}
+                                    min={0}
+                                    max={item.inspectedQuantity}
                                     style={{ width: 120 }}
                                 />
                             </Form.Item>

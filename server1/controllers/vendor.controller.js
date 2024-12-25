@@ -118,25 +118,31 @@ exports.getVendorByCode = async (req, res) => {
   }
 };
 
-// GET /api/vendors/searchVendors?query=:query
+// GET /api/vendors/searchsearchVendors?query=:query
 exports.searchVendors = async (req, res) => {
   try {
-    const searchTerm = req.query.query;
-    const isNumber = /^\d+$/.test(searchTerm);
+    console.log("query received", req.query.query);
 
-    const searchQuery = {
+    // Convert query to number if it's a number, otherwise keep as string for name search
+    const searchQuery = !isNaN(req.query.query) ? Number(req.query.query) : req.query.query;
+
+    const vendors = await Vendor.find({
       $or: [
-        { name: { $regex: searchTerm, $options: 'i' } },
-        ...(isNumber ? [{ vendorCode: Number(searchTerm) }] : [])
+        // If searchQuery is a number, do exact match for vendorCode
+        typeof searchQuery === 'number' ?
+          { vendorCode: searchQuery } :
+          { vendorCode: { $regex: req.query.query, $options: 'i' } },
+        // Always do regex search for name
+        { name: { $regex: req.query.query, $options: 'i' } }
       ]
-    };
-
-    const vendors = await Vendor.find(searchQuery)
+    })
       .select('vendorCode name gstNumber address email contactPerson mobileNumber')
       .limit(10);
 
+    console.log("Found vendors:", vendors);
     res.json(vendors);
   } catch (error) {
+    console.error("Search error:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -145,9 +151,9 @@ exports.getVendorByUserId = async (req, res) => {
   try {
     console.log("userId received", req.params.userId);
     const user = await User.findById(req.params.userId);
-    console.log("user", user);
+    console.log("user",user);
     const vendor = await Vendor.findById(user.vendorId);
-    console.log("vendor", vendor);
+    console.log("vendor",vendor);
     if (!vendor) {
       return res.status(404).json({ message: 'Vendor not found' });
     }
