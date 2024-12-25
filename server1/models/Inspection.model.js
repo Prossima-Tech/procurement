@@ -32,27 +32,23 @@ const InspectionItemSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    inspectedQuantity: {
+    acceptedQuantity: {
         type: Number,
         required: true,
         default: 0,
         validate: {
             validator: function (v) {
-                return v <= this.receivedQuantity;
+                return v + (this.rejectedQuantity || 0) == this.receivedQuantity;
             },
-            message: 'Inspected quantity cannot exceed received quantity'
+            message: 'Sum of accepted and rejected quantities cannot exceed received quantity'
         }
-    },
-    acceptedQuantity: {
-        type: Number,
-        required: true,
-        default: 0
     },
     rejectedQuantity: {
         type: Number,
         required: true,
         default: 0
     },
+
     parameters: [InspectionParameterSchema],
     itemDetails: {
         partCodeNumber: String,
