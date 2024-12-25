@@ -1,7 +1,7 @@
 // inspection.controller.js
 
 const mongoose = require('mongoose');
-const Inspection = require('../models/inspection.model');
+const Inspection = require('../models/Inspection.model');
 const GRN = require('../models/grn.model');
 
 class InspectionController {
@@ -50,7 +50,6 @@ class InspectionController {
                 grnItem: grnItem._id,
                 partCode: grnItem.partCode,
                 receivedQuantity: grnItem.receivedQuantity,
-                inspectedQuantity: 0,
                 acceptedQuantity: 0,
                 rejectedQuantity: 0,
                 itemDetails: {
@@ -214,7 +213,7 @@ class InspectionController {
         }
     }
 
-    // Update inspection
+    // Update inspection method in inspection.controller.js
     updateInspection = async (req, res) => {
         const session = await mongoose.startSession();
         session.startTransaction();
@@ -230,13 +229,13 @@ class InspectionController {
 
             // Update inspection items
             if (items) {
+                // Modified validation to only check against receivedQuantity
                 for (const item of items) {
-                    if (item.inspectedQuantity > item.receivedQuantity) {
-                        throw new Error('Inspected quantity cannot exceed received quantity');
+                    if (item.acceptedQuantity > item.receivedQuantity) {
+                        throw new Error('Accepted quantity cannot exceed received quantity');
                     }
-                    if (item.acceptedQuantity + item.rejectedQuantity > item.inspectedQuantity) {
-                        throw new Error('Sum of accepted and rejected quantities cannot exceed inspected quantity');
-                    }
+                    // Calculate rejected quantity
+                    item.rejectedQuantity = item.receivedQuantity - item.acceptedQuantity;
                 }
 
                 inspection.items = items;
