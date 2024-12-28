@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { baseURL } from '../../utils/endpoint';
 import IndentDetailsModal from './IndentDetailsModal';
+import { useAuth } from '../../hooks/useAuth';
 
 const IndentList = () => {
   const [indents, setIndents] = useState([]);
@@ -34,6 +35,7 @@ const IndentList = () => {
   const [searchText, setSearchText] = useState('');
   const [selectedIndent, setSelectedIndent] = useState(null);
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+  const { user } = useAuth();
 
   // Create memoized debounce function
   const debouncedFetch = React.useMemo(
@@ -49,18 +51,22 @@ const IndentList = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       
-      const response = await axios.get(`${baseURL}/indents`, {
-        params: {
-          status: 'manager_approved',
-          page,
-          limit: pageSize,
-          search
-        },
+      console.log('Current user:', user);
+      console.log('Auth token:', token);
+      
+      const response = await axios.post(`${baseURL}/indents/manager/indents`, {
+        user: user,
+        page,
+        limit: pageSize,
+        search,
+        status: 'manager_approved'
+      }, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-      console.log("response",response.data.data);
+
+      console.log('Response from backend:', response.data);
       setIndents(response.data.data);
       setPagination({
         current: page,
@@ -69,8 +75,11 @@ const IndentList = () => {
       });
 
     } catch (error) {
+      console.error('Error details:', error.response || error);
       if (error.response?.status === 401) {
         message.error('Session expired. Please login again.');
+      } else if (error.response?.status === 403) {
+        message.error('You do not have permission to view these indents.');
       } else {
         message.error({
           content: 'Failed to fetch indents',
@@ -190,13 +199,13 @@ const IndentList = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
           <Package className="text-blue-500" />
-          Approved Purchase Indents
+          My Approved Purchase Indents
         </h1>
-        <p className="text-gray-600">View all approved purchase indents</p>
+        <p className="text-gray-600">View all purchase indents assigned to you</p>
       </div>
 
       {/* Search Bar */}
-      {/* <div className="mb-6">
+      <div className="mb-6">
         <div className="max-w-md">
           <Input.Search
             placeholder="Search by indent number or employee name"
@@ -207,7 +216,7 @@ const IndentList = () => {
             className="shadow-sm"
           />
         </div>
-      </div> */}
+      </div>
 
       {/* Indents Table */}
       <div className="bg-white rounded-lg shadow">
@@ -238,7 +247,6 @@ const IndentList = () => {
         />
       </div>
 
-      {/* Add the modal */}
       <IndentDetailsModal
         visible={detailsModalVisible}
         indent={selectedIndent}

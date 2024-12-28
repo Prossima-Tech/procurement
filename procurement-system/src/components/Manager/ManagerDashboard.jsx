@@ -307,29 +307,26 @@ const ManagerDashboard = () => {
   }, [debouncedFetch]);
 
   // Fetch indents
-  const fetchIndents = async (status, page = 1, pageSize = 10, search = '') => {
+  const fetchIndents = async () => {
     try {
-      setFilterLoading(true);
+      setLoading(true);
       const token = localStorage.getItem('token');
       
-      const response = await axios.get(`${baseURL}/indents`, {
-        params: {
-          status,
-          page,
-          limit: pageSize,
-          search
-        },
+      const response = await axios.get(`${baseURL}/indents/manager/indents`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
 
-      setIndents(response.data.data);
-      setPagination({
-        current: page,
-        pageSize,
-        total: response.data.totalCount
-      });
+      if (response.data.success) {
+        // Filter indents based on status if needed
+        const allIndents = response.data.data;
+        const submittedIndents = allIndents.filter(indent => indent.status === 'submitted');
+        const approvedIndents = allIndents.filter(indent => indent.status === 'manager_approved');
+        const rejectedIndents = allIndents.filter(indent => indent.status === 'manager_rejected');
+
+        setIndents(submittedIndents); // Or whichever status you want to show by default
+      }
 
     } catch (error) {
       if (error.response?.status === 401) {
@@ -338,13 +335,12 @@ const ManagerDashboard = () => {
         message.error('Failed to fetch indents');
       }
     } finally {
-      setFilterLoading(false);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchIndents(activeTab, pagination.current, pagination.pageSize);
+    fetchIndents();
   }, []);
 
   // Handle approval/rejection

@@ -149,11 +149,11 @@ exports.searchVendors = async (req, res) => {
 
 exports.getVendorByUserId = async (req, res) => {
   try {
-    console.log("userId received", req.params.userId);
+    // console.log("userId received", req.params.userId);
     const user = await User.findById(req.params.userId);
-    console.log("user",user);
+    // console.log("user",user);
     const vendor = await Vendor.findById(user.vendorId);
-    console.log("vendor",vendor);
+    // console.log("vendor",vendor);
     if (!vendor) {
       return res.status(404).json({ message: 'Vendor not found' });
     }

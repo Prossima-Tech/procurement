@@ -12,8 +12,10 @@ router.post('/notify-vendors', rfqController.notifyVendors);
 router.post('/ItemVendorsRelation', authenticate, rfqController.createOrUpdateItemVendors);// required list of items and list of vendors with price and availability
 
 router.get('/getVendorQuoteForm/:id', rfqController.getVendorQuoteForm);
-router.post('/submitVendorQuote', authenticate, rfqController.submitVendorQuote); 
+router.post('/submitVendorQuote', rfqController.submitVendorQuote); 
 router.get('/vendor/:id', rfqController.getVendorRFQs);
 router.get('/vendorQuote/:rfqId', rfqController.getVendorQuote);
 router.post('/submitVendorQuote/:rfqId', rfqController.submitVendorQuote);
+router.get('/quotes/:rfqId', rfqController.getVendorQuotes);
+
 module.exports = router;

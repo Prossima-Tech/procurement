@@ -163,7 +163,7 @@ exports.getAllIndents = async (req, res) => {
 
     // Build filter object
     const filter = {};
-
+    
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
     if (employeeId) filter.employee = employeeId;
@@ -473,3 +473,36 @@ exports.managerApproval = async (req, res) => {
 //     handleError(res, error);
 //   }
 // };
+
+exports.getManagerIndents = async (req, res) => {
+    try {
+        const managerId = req.user._id;
+        // console.log("managerId from auth:", managerId);
+
+        // Build filter object with manager ID
+        const filter = {
+            manager: managerId
+        };
+
+        // Get indents for this manager
+        const indents = await Indent.find(filter)
+            .populate('employee', 'username email')
+            .populate('manager', 'username email')
+            .populate('unit', 'unitName unitCode')
+            .populate('project', 'projectName projectCode projectLocation')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            data: indents
+        });
+
+    } catch (error) {
+        console.error('Error fetching manager indents:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching manager indents',
+            error: error.message
+        });
+    }
+};
