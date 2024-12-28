@@ -54,7 +54,24 @@ export const RequestForQuotationComponent = () => {
                 params: { status: 'manager_approved' },
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setApprovedIndents(response.data.data || []);
+
+            // Filter indents that meet our criteria
+            const filteredIndents = (response.data.data || []).filter(indent => {
+                // Check existing items
+                const existingItemsQualified = (indent.items?.existing || []).some(item =>
+                    item.status === 'indent' || item.status !== 'rfq'
+                );
+
+                // Check new items
+                const newItemsQualified = (indent.items?.new || []).some(item =>
+                    item.status === 'indent'
+                );
+
+                // At least one group should have qualifying items
+                return existingItemsQualified || newItemsQualified;
+            });
+
+            setApprovedIndents(filteredIndents);
         } catch (error) {
             console.error('Error fetching indents:', error);
             message.error('Failed to fetch approved indents');
@@ -357,7 +374,7 @@ export const RequestForQuotationComponent = () => {
     return (
         <Card className="">
             <Title level={4}>
-                    Request for Quotation
+                Request for Quotation
             </Title>
             <Tabs activeKey={activeTab} onChange={setActiveTab}>
                 <TabPane tab="RFQ List" key="rfqs" />
