@@ -378,9 +378,10 @@ exports.notifyVendors = async (req,res) =>{
 
         // Fetch vendor details
         const vendors = await Vendor.find({ _id: { $in: vendorIds } });
-
         // Send emails to each vendor
         for (const vendor of vendors) {
+            console.log("vendor", vendor);
+            console.log(`access the given link to submit quotations: http://localhost:5173/vendor-quote/${vendor._id}/${rfq._id}`);
             const emailContent = {
                 to: vendor.email,
                 subject: `New RFQ Request - ${rfq._id}`,
@@ -396,6 +397,8 @@ exports.notifyVendors = async (req,res) =>{
                             </li>
                         `).join('')}
                     </ul>
+                    <p> ${`access the given link to submit quotations: http://localhost:5173/vendor-quote/${vendor._id}/${rfq._id}`}</p>
+
                     <p><strong>Submission Deadline:</strong> ${new Date(submissionDeadline).toLocaleDateString()}</p>
                     <p><strong>General Terms:</strong></p>
                     <p>${generalTerms}</p>
@@ -646,11 +649,98 @@ exports.getVendorQuote = async (req, res) => {
 };
 
 exports.submitVendorQuote = async (req, res) => {
-    const { vendorId, rfqId } = req.params;
-    console.log("submitVendorQuote",req.body);
-    // now we need to save the quote to the database
-    const rfq = await RFQ.findById(rfqId);
-    rfq.vendorQuotes.push(req.body);
-    await rfq.save();
-    res.json(rfq);
-}
+    try {
+        const { vendorId, rfqId, items } = req.body;
+
+        // Find the RFQ by ID
+        const rfq = await RFQ.findById(rfqId);
+        if (!rfq) {
+            return res.status(404).json({
+                success: false,
+                message: 'RFQ not found'
+            });
+        }
+
+        // Check if the vendor is authorized for this RFQ
+        const isVendorAuthorized = rfq.selectedVendors.some(v => v.vendor.toString() === vendorId);
+        if (!isVendorAuthorized) {
+            return res.status(403).json({
+                success: false,
+                message: 'Vendor not authorized for this RFQ'
+            });
+        }
+
+        // Map the incoming items to the VendorQuoteSchema structure
+        const itemQuotes = items.map(item => ({
+            rfqItem: item.itemId,
+            unitPrice: item.quotedPrice,
+            quantity: item.quotedQuantity,
+            totalPrice: item.quotedPrice * item.quotedQuantity,
+            deliveryTime: item.deliveryTimeline,
+            specifications: {}, // Add any specifications if available
+            technicalRemarks: item.remarks,
+            commercialRemarks: '', // Add any commercial remarks if available
+            alternativeOffering: {
+                suggested: false,
+                details: '',
+                unitPrice: 0
+            }
+        }));
+
+        // Create a new vendor quote
+        const vendorQuote = {
+            vendor: vendorId,
+            quotationReference: `QT/${new Date().getFullYear()}/${Math.random().toString(36).substr(2, 5)}`,
+            items: itemQuotes,
+            totalAmount: itemQuotes.reduce((sum, item) => sum + item.totalPrice, 0),
+            status: 'submitted',
+            submissionDate: new Date()
+        };
+
+        // Add the vendor quote to the RFQ
+        rfq.vendorQuotes.push(vendorQuote);
+        await rfq.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Vendor quote submitted successfully',
+            data: vendorQuote
+        });
+
+    } catch (error) {
+        console.error('Error submitting vendor quote:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+exports.getVendorQuotes = async (req, res) => {
+    try {
+        const { rfqId } = req.params;
+        console.log("rfqId", rfqId);
+        const rfq = await RFQ.findById(rfqId)
+            .populate('vendorQuotes.vendor')
+            .select('vendorQuotes');
+
+        if (!rfq) {
+            return res.status(404).json({
+                success: false,
+                message: 'RFQ not found'
+            });
+        }
+        console.log("rfq", rfq.vendorQuotes);
+        return res.status(200).json({
+            success: true,
+            quotes: rfq.vendorQuotes || []
+        });
+
+    } catch (error) {
+        console.error('Error fetching vendor quotes:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};

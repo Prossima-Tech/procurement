@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+    import React, { useState, useEffect } from 'react';
 import { Modal, Table, Tabs, message } from 'antd';
 import axios from 'axios';
 import { baseURL } from '../../../utils/endpoint';
@@ -22,11 +22,32 @@ const ViewRfqModal = ({ isOpen, onClose, rfq }) => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
+            console.log("rfq._id", rfq);
             const response = await axios.get(`${baseURL}/rfq/quotes/${rfq._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            console.log("vendor quotes",response.data);
-            setVendorQuotes(response.data.quotes || []);
+            // console.log("vendor quotes", response.data);
+            // setVendorQuotes(response.data || []);
+            if (response.data.success) {
+                const formattedQuotes = response.data.quotes.map(quote => ({
+                    _id: quote._id,
+                    vendor: quote.vendor._id,
+                    vendorName: quote.vendor.name,
+                    items: quote.items.map(item => ({
+                        _id: item._id,
+                        name: item.name,
+                        quotedPrice: item.unitPrice,
+                        quantity: item.quantity,
+                        deliveryTimeline: item.deliveryTime,
+                        status: quote.status,
+                        remarks: item.technicalRemarks
+                    }))
+                }));
+                // setVendorQuotes(formattedQuotes);
+                console.log("formatted quotes", formattedQuotes);
+            } else {
+                message.error('Failed to fetch vendor quotes');
+            }
         } catch (error) {
             console.error('Error fetching vendor quotes:', error);
             message.error('Failed to fetch vendor quotes');

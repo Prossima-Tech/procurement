@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Table, Modal, Button, Space, Card, Tabs, Tag, message, Typography } from 'antd';
-import { PlusOutlined, EyeOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { Table, Modal, Button, Space, Card, Tabs, Tag, message, Typography, Input } from 'antd';
+import { PlusOutlined, EyeOutlined, CheckOutlined, CloseOutlined, SendOutlined } from '@ant-design/icons';
 import { useTheme } from '../../../contexts/ThemeContext';
 import axios from 'axios';
 import { baseURL } from '../../../utils/endpoint';
@@ -33,6 +33,10 @@ export const RequestForQuotationComponent = () => {
     const [isQuoteFormOpen, setIsQuoteFormOpen] = useState(false);
     const [selectedVendor, setSelectedVendor] = useState(null);
     const [isCreatePOModalOpen, setIsCreatePOModalOpen] = useState(false);
+    const [notifyModalState, setNotifyModalState] = useState({
+        isOpen: false,
+        selectedRfq: null
+    });
 
     // Add this function after your state declarations
     const handleViewRfq = (record) => {
@@ -263,22 +267,35 @@ export const RequestForQuotationComponent = () => {
             title: 'Actions',
             key: 'actions',
             render: (record) => (
-                <div className="flex space-x-2">
-                    <button
+                <Space>
+                    <Button
+                        icon={<EyeOutlined />}
                         onClick={() => handleViewRfq(record)}
-                        className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                    >
-                        View
-                    </button>
+                        type="link"
+                    />
                     {record.status === 'published' && (
-                        <button
-                            onClick={() => handleOpenQuoteForm(record, record.selectedVendors[0])}
-                            className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
-                        >
-                            Submit Quote
-                        </button>
+                        <>
+                            <Button
+                                icon={<SendOutlined />}
+                                onClick={() => setNotifyModalState({
+                                    isOpen: true,
+                                    selectedRfq: record
+                                })}
+                                type="primary"
+                                className="bg-blue-500"
+                            >
+                                Notify
+                            </Button>
+                            <Button
+                                onClick={() => handleOpenQuoteForm(record, record.selectedVendors[0])}
+                                type="primary"
+                                className="bg-green-500"
+                            >
+                                Quote
+                            </Button>
+                        </>
                     )}
-                </div>
+                </Space>
             )
         }
     ];
@@ -307,6 +324,52 @@ export const RequestForQuotationComponent = () => {
             selectedVendor
         });
     }, [isQuoteFormOpen, selectedRfq, selectedVendor]);
+
+    // Add notification handler
+    const handleNotifyVendor = async (message) => {
+        try {
+            setIsLoading(true);
+            const token = localStorage.getItem('token');
+            
+            // Get all vendor IDs from the selected RFQ
+            const vendorIds = notifyModalState.selectedRfq.selectedVendors.map(v => v.vendor);
+            
+            const response = await axios.post(
+                `${baseURL}/rfq/notify-vendors`,
+                {
+                    rfqId: notifyModalState.selectedRfq._id,
+                    vendorIds: vendorIds,
+                    submissionDeadline: notifyModalState.selectedRfq.submissionDeadline,
+                    generalTerms: message
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            if (response.data.success) {
+                // Show success message from backend response if available
+                message.success({
+                    content: response.data.message || 'Vendors notified successfully',
+                    duration: 5, // Show for 5 seconds
+                    icon: <SendOutlined style={{ color: '#52c41a' }} /> // Add an icon
+                });
+                // Optionally refresh RFQ list
+                fetchRfqs();
+            }
+        } catch (error) {
+            console.error('Error notifying vendors:', error);
+            // Show error message from backend if available
+            message.error({
+                content: error.response?.data?.message || 'Failed to notify vendors',
+                duration: 5,
+                icon: <AlertCircle className="text-red-500" />
+            });
+        } finally {
+            setIsLoading(false);
+            setNotifyModalState({ isOpen: false, selectedRfq: null });
+        }
+    };
 
     return (
         <Card className="">
@@ -387,6 +450,42 @@ export const RequestForQuotationComponent = () => {
                     }}
                 />
             )}
+
+            {/* Add Notification Modal */}
+            <Modal
+                title={`Notify Vendors - RFQ ${notifyModalState.selectedRfq?.rfqNumber}`}
+                open={notifyModalState.isOpen}
+                onCancel={() => setNotifyModalState({ isOpen: false, selectedRfq: null })}
+                onOk={() => {
+                    const message = document.getElementById('rfqNotificationMessage').value;
+                    handleNotifyVendor(message);
+                }}
+                confirmLoading={isLoading}
+            >
+                <div className="space-y-4">
+                    <div className="text-sm text-gray-600">
+                        Send notification to vendors regarding this RFQ
+                    </div>
+                    <Input.TextArea
+                        id="rfqNotificationMessage"
+                        rows={4}
+                        placeholder="Enter message for vendors..."
+                        className="w-full"
+                    />
+                    {notifyModalState.selectedRfq && (
+                        <div className="text-sm text-gray-500">
+                            <div>Selected Vendors:</div>
+                            <ul className="list-disc pl-4">
+                                {notifyModalState.selectedRfq.selectedVendors.map((vendorData) => (
+                                    <li key={vendorData._id}>
+                                        {getVendorName(vendorData.vendor)}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            </Modal>
         </Card>
     );
 };

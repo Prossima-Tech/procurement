@@ -12,4 +12,8 @@ router.post('/:id/manager-approval',
   indentController.managerApproval
 );
 router.get('/getIndent/:id', authenticate, indentController.getIndentById);
+
+// Add new route for manager indents
+router.get('/manager/indents', authenticate, authorize('manager'), indentController.getManagerIndents);
+
 module.exports = router;

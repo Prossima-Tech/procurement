@@ -78,7 +78,7 @@ const ExternalVendorQuoteForm = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        if (!rfq || !vendor) {
+        if (!rfqId || !vendorId) {
             message.error('Missing required information');
             return;
         }
@@ -112,18 +112,22 @@ const ExternalVendorQuoteForm = () => {
 
         try {
             setLoading(true);
-            console.log("data to the endpoint", {...formData, vendorId: vendor.id, rfqId: rfq._id})
-            const response = await fetch(`${baseURL}/rfq/submitVendorQuote/${vendor.id}/${rfq._id}`, {
+            console.log("data to the endpoint", {...formData, vendorId: vendorId, rfqId: rfqId})
+            const response = await fetch(`${baseURL}/rfq/submitVendorQuote`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData.map(item => ({
-                    ...item,
-                    quotedPrice: parseFloat(item.quotedPrice),
-                    quotedQuantity: parseInt(item.quotedQuantity),
-                    deliveryTimeline: parseInt(item.deliveryTimeline)
-                })))
+                body: JSON.stringify({
+                    vendorId,
+                    rfqId,
+                    items: formData.map(item => ({
+                        ...item,
+                        quotedPrice: parseFloat(item.quotedPrice),
+                        quotedQuantity: parseInt(item.quotedQuantity),
+                        deliveryTimeline: parseInt(item.deliveryTimeline)
+                    }))
+                })
             });
 
             if (!response.ok) {

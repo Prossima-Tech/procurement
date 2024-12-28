@@ -465,15 +465,15 @@ class GRNController {
         try {
             const vendorId = req.params.id;
 
-
+            console.log("vendorId",vendorId);
             const grns = await GRN.find({
-                'vendor._id': vendorId
+                'vendor.id': vendorId
             })
                 .populate('purchaseOrder')
                 .populate('invoiceId', 'totalAmount') // Populate invoiceId and get totalAmount
                 .sort({ createdAt: -1 })
                 .lean();
-
+            console.log("grns",grns.length);
             res.status(200).json({
                 success: true,
                 data: grns
