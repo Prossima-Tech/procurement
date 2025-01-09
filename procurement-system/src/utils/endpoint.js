@@ -1,8 +1,8 @@
 import axios from "axios"
 import { toast } from "react-toastify"
 
-export const baseURL = "http://localhost:5001/api" // local
-// export const baseURL = "https://procurement-3j6q.onrender.com/api" // server
+// export const baseURL = "http://localhost:5001/api" // local
+export const baseURL = "https://procurement-3j6q.onrender.com/api" // server
 
 const Axios = axios.create({
     baseURL: baseURL,
